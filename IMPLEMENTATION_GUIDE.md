@@ -63,15 +63,14 @@ CREATE DATABASE technical_management_db CHARACTER SET utf8mb4 COLLATE utf8mb4_un
 ### 1.5 Install Frontend Dependencies
 
 ```bash
-# Install Tailwind CSS
+# Install Tailwind CSS (run each command separately)
 npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
 
 # Install additional UI dependencies
-npm install alpinejs
-npm install @tailwindcss/forms
-npm install chart.js
+npm install alpinejs @tailwindcss/forms chart.js
 ```
+
+**Note:** Tailwind CSS v4 doesn't require the `init` command. The configuration files (`tailwind.config.js` and `postcss.config.js`) are provided in the project structure below.
 
 ---
 
