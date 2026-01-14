@@ -53,7 +53,14 @@ Route::middleware(['auth', 'verified'])->prefix('marketing')->name('marketing.')
     })->name('dashboard');
     
     Route::get('/job-orders', function () {
-        $jobOrders = \App\Models\JobOrder::with('customer')->latest()->paginate(10);
+        $query = \App\Models\JobOrder::with('customer')->latest();
+        
+        // Filter by status if provided
+        if (request()->has('status') && request('status') != '') {
+            $query->where('status', request('status'));
+        }
+        
+        $jobOrders = $query->paginate(10);
         return view('marketing.job-orders', compact('jobOrders'));
     })->name('job-orders');
     

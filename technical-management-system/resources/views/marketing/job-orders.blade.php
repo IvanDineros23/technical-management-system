@@ -2,6 +2,49 @@
 
 @section('title', 'Job Orders')
 
+@section('head')
+    <script>
+        function jobOrdersPage() {
+            return {
+                showJODetails: false,
+                selectedJO: null,
+                filterStatus: '{{ request("status") ?? "all" }}',
+                init() {
+                    window.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape' && this.showJODetails) {
+                            this.closeJODetails();
+                        }
+                    });
+                },
+                openJODetails(jo) {
+                    this.selectedJO = jo;
+                    this.showJODetails = true;
+                    document.body.style.overflow = 'hidden';
+                },
+                closeJODetails() {
+                    this.showJODetails = false;
+                    this.selectedJO = null;
+                    document.body.style.overflow = 'auto';
+                },
+                formatDate(d) {
+                    if (!d) return 'N/A';
+                    const dt = new Date(d);
+                    return isNaN(dt) ? d : dt.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                },
+                filterByStatus(status) {
+                    const url = new URL(window.location);
+                    if (status === 'all') {
+                        url.searchParams.delete('status');
+                    } else {
+                        url.searchParams.set('status', status);
+                    }
+                    window.location.href = url.toString();
+                }
+            }
+        }
+    </script>
+@endsection
+
 @section('sidebar-nav')
     <a href="{{ route('marketing.create-job-order') }}"
        class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
@@ -50,26 +93,27 @@
 @endsection
 
 @section('content')
-    <div class="mb-6">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Job Orders</h2>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">View and manage all job orders</p>
-    </div>
+    <div x-data="jobOrdersPage()">
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Job Orders</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">View and manage all job orders</p>
+        </div>
 
-    <!-- Filters -->
-    <div class="mb-6 flex flex-wrap gap-3">
-        <button class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-            All Orders
-        </button>
-        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            Pending
-        </button>
-        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            In Progress
-        </button>
-        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            Completed
-        </button>
-    </div>
+        <!-- Filters -->
+        <div class="mb-6 flex flex-wrap gap-3">
+            <button @click="filterByStatus('all')" :class="filterStatus === 'all' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                All Orders
+            </button>
+            <button @click="filterByStatus('pending')" :class="filterStatus === 'pending' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                Pending
+            </button>
+            <button @click="filterByStatus('in_progress')" :class="filterStatus === 'in_progress' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                In Progress
+            </button>
+            <button @click="filterByStatus('completed')" :class="filterStatus === 'completed' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                Completed
+            </button>
+        </div>
 
     <!-- Job Orders Table -->
     <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -109,7 +153,7 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium">View</button>
+                                <button @click='openJODetails(@json($jobOrder))' class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium">View</button>
                             </td>
                         </tr>
                     @empty
@@ -133,4 +177,108 @@
             </div>
         </div>
     </div>
+
+    <!-- JO Details Modal -->
+    <div x-show="showJODetails" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="showJODetails"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 @click="closeJODetails()"
+                 class="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div x-show="showJODetails"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+
+                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-semibold text-white" x-text="selectedJO?.job_order_number || 'Job Order Details'"></h3>
+                        <button @click="closeJODetails()" class="text-white hover:text-gray-200 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Customer</p>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="selectedJO?.customer?.name || 'N/A'"></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400" x-text="selectedJO?.customer?.email || ''"></p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                            <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full"
+                                  :class="{
+                                      'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300': selectedJO?.status === 'pending',
+                                      'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300': selectedJO?.status === 'in_progress',
+                                      'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300': selectedJO?.status === 'completed',
+                                      'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': !['pending','in_progress','completed'].includes(selectedJO?.status)
+                                  }" x-text="(selectedJO?.status || 'N/A').replace('_',' ')"></span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Service Type</p>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="selectedJO?.service_type || 'N/A'"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Priority</p>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="selectedJO?.priority || 'N/A'"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Expected Start</p>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="formatDate(selectedJO?.expected_start_date)"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Expected Completion</p>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="formatDate(selectedJO?.expected_completion_date)"></p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Service Description</p>
+                        <p class="mt-1 text-gray-900 dark:text-white" x-text="selectedJO?.service_description || 'N/A'"></p>
+                    </div>
+
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Service Address</p>
+                        <p class="mt-1 text-gray-900 dark:text-white" x-text="[selectedJO?.service_address, selectedJO?.city, selectedJO?.province, selectedJO?.postal_code].filter(Boolean).join(', ') || 'N/A'"></p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Created</p>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="formatDate(selectedJO?.created_at)"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Requested By</p>
+                            <p class="font-medium text-gray-900 dark:text-white" x-text="selectedJO?.requested_by || 'N/A'"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex justify-end gap-3">
+                    <button @click="closeJODetails()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
+
+<style>
+    [x-cloak] { display: none !important; }
+</style>
