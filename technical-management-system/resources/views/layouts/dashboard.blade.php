@@ -6,6 +6,8 @@
     <title>@yield('title', 'Dashboard') - Gemarc Enterprises Inc</title>
     <link rel="icon" type="image/png" href="{{ asset('assets/0fae4580-eff0-4ee7-98e2-8ab80dd542cf-removebg-preview.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @yield('head')
 </head>
 <body class="h-full bg-gray-100 dark:bg-gray-900 overflow-hidden transition-colors">
     <div class="flex h-full">
