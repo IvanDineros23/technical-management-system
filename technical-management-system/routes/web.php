@@ -256,11 +256,27 @@ Route::middleware(['auth', 'verified'])->prefix('marketing')->name('marketing.')
         $activeCustomers = \App\Models\Customer::where('is_active', true)->count();
         $avgJobValue = $completedJobs > 0 ? $totalRevenue / $completedJobs : 0;
         
+        // Job Orders Trend Data (Last 30 days)
+        $jobOrdersTrendData = \App\Models\JobOrder::selectRaw('DATE(created_at) as date, COUNT(*) as count')
+            ->where('created_at', '>=', now()->subDays(30))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+        
+        // Revenue Overview Data (Last 30 days)
+        $revenueOverviewData = \App\Models\JobOrder::selectRaw('DATE(created_at) as date, SUM(grand_total) as revenue')
+            ->where('created_at', '>=', now()->subDays(30))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+        
         return view('marketing.reports', compact(
             'totalRevenue',
             'completedJobs',
             'activeCustomers',
-            'avgJobValue'
+            'avgJobValue',
+            'jobOrdersTrendData',
+            'revenueOverviewData'
         ));
     })->name('reports');
 });

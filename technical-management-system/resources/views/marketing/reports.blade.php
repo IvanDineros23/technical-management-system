@@ -2,6 +2,10 @@
 
 @section('title', 'Reports')
 
+@section('head')
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+@endsection
+
 @section('sidebar-nav')
     <a href="{{ route('marketing.create-job-order') }}"
        class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
@@ -124,27 +128,13 @@
         <!-- Job Orders Chart -->
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Job Orders Trend</h3>
-            <div class="h-64 flex items-center justify-center text-gray-400 dark:text-gray-500">
-                <div class="text-center">
-                    <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                    </svg>
-                    <p>Chart visualization will be displayed here</p>
-                </div>
-            </div>
+            <canvas id="jobOrdersChart" class="max-h-64"></canvas>
         </div>
 
         <!-- Revenue Chart -->
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue Overview</h3>
-            <div class="h-64 flex items-center justify-center text-gray-400 dark:text-gray-500">
-                <div class="text-center">
-                    <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                    </svg>
-                    <p>Chart visualization will be displayed here</p>
-                </div>
-            </div>
+            <canvas id="revenueChart" class="max-h-64"></canvas>
         </div>
     </div>
 
@@ -194,4 +184,135 @@
             </button>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Job Orders Trend Chart
+            const jobOrdersTrendCtx = document.getElementById('jobOrdersChart').getContext('2d');
+            const jobOrdersTrendData = @json($jobOrdersTrendData);
+            
+            const jobOrdersDates = jobOrdersTrendData.map(item => {
+                const date = new Date(item.date);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+            const jobOrdersCounts = jobOrdersTrendData.map(item => item.count);
+            
+            new Chart(jobOrdersTrendCtx, {
+                type: 'line',
+                data: {
+                    labels: jobOrdersDates,
+                    datasets: [{
+                        label: 'Job Orders',
+                        data: jobOrdersCounts,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#2563eb',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#374151',
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
+                            },
+                            ticks: {
+                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
+                            },
+                            ticks: {
+                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Revenue Overview Chart
+            const revenueChartCtx = document.getElementById('revenueChart').getContext('2d');
+            const revenueOverviewData = @json($revenueOverviewData);
+            
+            const revenueDates = revenueOverviewData.map(item => {
+                const date = new Date(item.date);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+            const revenueAmounts = revenueOverviewData.map(item => item.revenue || 0);
+            
+            new Chart(revenueChartCtx, {
+                type: 'line',
+                data: {
+                    labels: revenueDates,
+                    datasets: [{
+                        label: 'Revenue (₱)',
+                        data: revenueAmounts,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#374151',
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
+                            },
+                            ticks: {
+                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280',
+                                callback: function(value) {
+                                    return '₱' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
+                            },
+                            ticks: {
+                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
 @endsection
