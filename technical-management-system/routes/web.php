@@ -281,12 +281,80 @@ Route::middleware(['auth', 'verified'])->prefix('marketing')->name('marketing.')
     })->name('reports');
 });
 
+// Technician Routes
+Route::middleware(['auth', 'verified'])->prefix('technician')->name('technician.')->group(function () {
+    Route::get('/dashboard', function () {
+        // Temporarily show all job orders until technician assignment is implemented
+        $todayAssignments = \App\Models\JobOrder::whereDate('created_at', today())->count();
+        $pendingJobs = \App\Models\JobOrder::where('status', 'pending')->count();
+        $inProgressJobs = \App\Models\JobOrder::where('status', 'in_progress')->count();
+        $completedJobs = \App\Models\JobOrder::where('status', 'completed')->count();
+        $recentAssignments = \App\Models\JobOrder::with('customer')
+            ->latest()
+            ->take(5)
+            ->get();
+        
+        return view('technician.dashboard', compact(
+            'todayAssignments',
+            'pendingJobs',
+            'inProgressJobs',
+            'completedJobs',
+            'recentAssignments'
+        ));
+    })->name('dashboard');
+    
+    Route::get('/assignments', function () {
+        // Temporarily show all job orders
+        $assignments = \App\Models\JobOrder::with('customer')
+            ->latest()
+            ->paginate(20);
+        return view('technician.assignments', compact('assignments'));
+    })->name('assignments');
+    
+    Route::get('/work-orders', function () {
+        // Temporarily show all job orders
+        $workOrders = \App\Models\JobOrder::with('customer')
+            ->latest()
+            ->paginate(20);
+        return view('technician.work-orders', compact('workOrders'));
+    })->name('work-orders');
+    
+    Route::get('/job-details/{id}', function ($id) {
+        $job = \App\Models\JobOrder::with('customer')->findOrFail($id);
+        return view('technician.job-details', compact('job'));
+    })->name('job-details');
+    
+    Route::get('/maintenance', function () {
+        return view('technician.maintenance');
+    })->name('maintenance');
+    
+    Route::get('/equipment', function () {
+        return view('technician.equipment');
+    })->name('equipment');
+    
+    Route::get('/inventory', function () {
+        return view('technician.inventory');
+    })->name('inventory');
+    
+    Route::get('/reports', function () {
+        return view('technician.reports');
+    })->name('reports');
+    
+    Route::get('/timeline', function () {
+        return view('technician.timeline');
+    })->name('timeline');
+    
+    Route::get('/notifications', function () {
+        return view('technician.notifications');
+    })->name('notifications');
+    
+    Route::get('/calendar', function () {
+        return view('technician.calendar');
+    })->name('calendar');
+});
+
 // Placeholder routes for other roles (to be implemented)
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/technician/dashboard', function () {
-        return 'Technician Dashboard - Coming Soon';
-    })->name('technician.dashboard');
-    
     Route::get('/tech-head/dashboard', function () {
         return 'Tech Head Dashboard - Coming Soon';
     })->name('tech-head.dashboard');
