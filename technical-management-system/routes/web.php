@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TimelineController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -32,7 +33,7 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // Marketing Routes
-Route::middleware(['auth', 'verified'])->prefix('marketing')->name('marketing.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->name('marketing.')->group(function () {
     Route::get('/dashboard', function () {
         $totalJobOrders = \App\Models\JobOrder::count();
         $pendingJobOrders = \App\Models\JobOrder::where('status', 'pending')->count();
@@ -279,10 +280,13 @@ Route::middleware(['auth', 'verified'])->prefix('marketing')->name('marketing.')
             'revenueOverviewData'
         ));
     })->name('reports');
+    
+    // Timeline route for Marketing
+    Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
 });
 
 // Technician Routes
-Route::middleware(['auth', 'verified'])->prefix('technician')->name('technician.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technician')->name('technician.')->group(function () {
     Route::get('/dashboard', function () {
         // Temporarily show all job orders until technician assignment is implemented
         $todayAssignments = \App\Models\JobOrder::whereDate('created_at', today())->count();
@@ -340,9 +344,8 @@ Route::middleware(['auth', 'verified'])->prefix('technician')->name('technician.
         return view('technician.reports');
     })->name('reports');
     
-    Route::get('/timeline', function () {
-        return view('technician.timeline');
-    })->name('timeline');
+    // Timeline route for Technician
+    Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
     
     Route::get('/notifications', function () {
         return view('technician.notifications');
@@ -353,23 +356,40 @@ Route::middleware(['auth', 'verified'])->prefix('technician')->name('technician.
     })->name('calendar');
 });
 
-// Placeholder routes for other roles (to be implemented)
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/tech-head/dashboard', function () {
+// Tech Head Routes
+Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->name('tech-head.')->group(function () {
+    Route::get('/dashboard', function () {
         return 'Tech Head Dashboard - Coming Soon';
-    })->name('tech-head.dashboard');
+    })->name('dashboard');
     
-    Route::get('/signatory/dashboard', function () {
+    Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
+});
+
+// Signatory Routes
+Route::middleware(['auth', 'verified', 'role:signatory'])->prefix('signatory')->name('signatory.')->group(function () {
+    Route::get('/dashboard', function () {
         return 'Signatory Dashboard - Coming Soon';
-    })->name('signatory.dashboard');
+    })->name('dashboard');
     
-    Route::get('/accounting/dashboard', function () {
+    Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
+});
+
+// Accounting Routes
+Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')->name('accounting.')->group(function () {
+    Route::get('/dashboard', function () {
         return 'Accounting Dashboard - Coming Soon';
-    })->name('accounting.dashboard');
+    })->name('dashboard');
     
-    Route::get('/admin/dashboard', function () {
+    Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
+});
+
+// Admin Routes
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', function () {
         return 'Admin Dashboard - Coming Soon';
-    })->name('admin.dashboard');
+    })->name('dashboard');
+    
+    Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
 });
 
 Route::middleware('auth')->group(function () {
