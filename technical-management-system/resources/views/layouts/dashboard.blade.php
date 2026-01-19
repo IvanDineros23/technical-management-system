@@ -46,15 +46,15 @@
 
             <!-- User Info -->
             <div class="px-4 py-3 border-t border-blue-200 dark:border-gray-700 flex-shrink-0">
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="w-8 h-8 rounded-full bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-xs font-semibold text-white">
+                <a href="{{ route('profile.show') }}" class="flex items-center gap-2 mb-2 p-2 rounded-lg hover:bg-blue-200 dark:hover:bg-gray-700 transition-colors cursor-pointer group">
+                    <div class="w-8 h-8 rounded-full bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-xs font-semibold text-white group-hover:ring-2 group-hover:ring-blue-300 dark:group-hover:ring-blue-400 transition-all">
                         {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-xs font-medium text-gray-800 dark:text-white truncate">{{ auth()->user()->name }}</p>
-                        <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">{{ auth()->user()->role->name ?? 'User' }}</p>
+                        <p class="text-xs font-medium text-gray-800 dark:text-white truncate group-hover:text-blue-700 dark:group-hover:text-blue-300">{{ auth()->user()->name }}</p>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate group-hover:text-gray-700 dark:group-hover:text-gray-300">{{ auth()->user()->role->name ?? 'User' }}</p>
                     </div>
-                </div>
+                </a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-gray-600 dark:text-gray-300 rounded-lg hover:bg-blue-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-colors">

@@ -6,11 +6,44 @@ use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    /**
+     * Display the user's profile.
+     */
+    public function show(Request $request): View
+    {
+        $user = $request->user();
+        
+        // Get user's assignments summary
+        $assignmentStats = \App\Models\Assignment::where('assigned_to', $user->id)
+            ->selectRaw('COUNT(*) as total, SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed, SUM(CASE WHEN status IN ("assigned", "in_progress") THEN 1 ELSE 0 END) as active')
+            ->first();
+        
+        // Get recent activity logs
+        $recentActivity = \App\Models\AuditLog::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+        
+        // Get last login from sessions table
+        $lastLogin = \DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->orderBy('last_activity', 'desc')
+            ->first();
+        
+        return view('profile.show', [
+            'user' => $user,
+            'assignmentStats' => $assignmentStats,
+            'recentActivity' => $recentActivity,
+            'lastLogin' => $lastLogin,
+        ]);
+    }
+
     /**
      * Display the user's profile form.
      */
@@ -34,7 +67,7 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return Redirect::route('profile.show')->with('status', 'profile-updated');
     }
 
     /**
