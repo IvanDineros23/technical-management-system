@@ -195,7 +195,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <!-- Alerts -->
         <div class="lg:col-span-1">
-            <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                     <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -203,7 +203,7 @@
                     </svg>
                     Alerts
                 </h3>
-                <div class="text-center py-8">
+                <div class="text-center py-4 flex-1 flex items-center justify-center">
                     <p class="text-gray-500 dark:text-gray-400 text-sm">No alerts at the moment</p>
                 </div>
             </div>
@@ -211,7 +211,7 @@
 
         <!-- Recent Assignments -->
         <div class="lg:col-span-2">
-            <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-base font-bold text-slate-900 dark:text-white">Recent Assignments</h3>
                     <a href="{{ route('technician.assignments') }}" 
@@ -221,7 +221,7 @@
                 </div>
 
                 @if($recentAssignments->count() > 0)
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto flex-1">
                         <table class="w-full">
                             <thead class="border-b border-gray-200 dark:border-gray-700">
                                 <tr class="text-left">
@@ -267,12 +267,14 @@
                         </table>
                     </div>
                 @else
-                    <div class="text-center py-12">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                        </svg>
-                        <p class="mt-4 text-gray-500 dark:text-gray-400">No assignments found</p>
+                    <div class="text-center py-12 flex-1 flex items-center justify-center">
+                        <div>
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            <p class="mt-4 text-gray-500 dark:text-gray-400">No assignments found</p>
+                        </div>
                     </div>
                 @endif
             </div>
