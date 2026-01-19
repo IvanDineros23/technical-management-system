@@ -341,7 +341,30 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     })->name('inventory');
     
     Route::get('/reports', function () {
-        return view('technician.reports');
+        $user = auth()->user();
+        
+        // Get pending reports (completed assignments without reports)
+        $pendingReports = \App\Models\Assignment::where('assigned_to', $user->id)
+            ->where('status', 'completed')
+            ->whereDoesntHave('report')
+            ->with(['jobOrder.customer'])
+            ->get();
+        
+        // Get submitted reports
+        $submittedReports = \App\Models\Assignment::where('assigned_to', $user->id)
+            ->whereHas('report')
+            ->with(['jobOrder.customer', 'report'])
+            ->latest()
+            ->get();
+        
+        // Stats
+        $pendingCount = $pendingReports->count();
+        $todayCount = $submittedReports->filter(function($assignment) {
+            return $assignment->report && $assignment->report->created_at->isToday();
+        })->count();
+        $totalCount = $submittedReports->count();
+        
+        return view('technician.reports', compact('pendingReports', 'submittedReports', 'pendingCount', 'todayCount', 'totalCount'));
     })->name('reports');
     
     // Timeline route for Technician
@@ -352,7 +375,26 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     })->name('notifications');
     
     Route::get('/calendar', function () {
-        return view('technician.calendar');
+        $user = auth()->user();
+        
+        // Get all assignments for the technician
+        $assignments = \App\Models\Assignment::where('assigned_to', $user->id)
+            ->whereNotNull('scheduled_date')
+            ->with(['jobOrder'])
+            ->get()
+            ->map(function($assignment) {
+                return [
+                    'id' => $assignment->id,
+                    'date' => $assignment->scheduled_date,
+                    'time' => $assignment->scheduled_time ? \Carbon\Carbon::parse($assignment->scheduled_time)->format('h:i A') : null,
+                    'title' => $assignment->jobOrder->service_type ?? 'Job Assignment',
+                    'location' => $assignment->location,
+                    'status' => $assignment->status,
+                    'priority' => $assignment->priority,
+                ];
+            });
+        
+        return view('technician.calendar', compact('assignments'));
     })->name('calendar');
 });
 

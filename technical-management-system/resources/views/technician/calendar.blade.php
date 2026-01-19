@@ -12,11 +12,7 @@
                 currentMonth: new Date().getMonth(),
                 currentYear: new Date().getFullYear(),
                 selectedDate: null,
-                jobs: [
-                    { date: '2026-01-15', title: 'Generator Repair', time: '09:00 AM' },
-                    { date: '2026-01-16', title: 'AC Maintenance', time: '02:00 PM' },
-                    { date: '2026-01-20', title: 'Equipment Check', time: '10:00 AM' }
-                ],
+                jobs: @json($assignments),
                 getDaysInMonth() {
                     return new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
                 },
@@ -202,15 +198,28 @@
             <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <h4 class="font-semibold text-gray-900 dark:text-white mb-4">Upcoming Jobs</h4>
                 <div class="space-y-3">
-                    <template x-for="job in jobs" :key="job.date">
-                        <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="job.title"></p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="job.date + ' at ' + job.time"></p>
+                    <template x-if="jobs.length > 0">
+                        <div class="space-y-3">
+                            <template x-for="job in jobs" :key="job.date">
+                                <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="job.title"></p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="job.date + ' at ' + job.time"></p>
+                                        </div>
+                                        <button class="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline">View</button>
+                                    </div>
                                 </div>
-                                <button class="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline">View</button>
-                            </div>
+                            </template>
+                        </div>
+                    </template>
+                    <template x-if="jobs.length === 0">
+                        <div class="text-center py-12">
+                            <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <p class="text-gray-500 dark:text-gray-400 text-sm">No scheduled jobs</p>
+                            <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">Check back soon for new assignments</p>
                         </div>
                     </template>
                 </div>
