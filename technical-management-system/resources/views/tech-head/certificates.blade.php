@@ -25,11 +25,15 @@
         showDetails: false,
         showRelease: false,
         showCreate: false,
+        showDeleteConfirm: false,
+        certificateToDelete: null,
+        deleteFormAction: '',
         selectedCertificate: null,
         init() {
             this.$watch('showDetails', value => this.handleModalState(value));
             this.$watch('showRelease', value => this.handleModalState(value));
             this.$watch('showCreate', value => this.handleModalState(value));
+            this.$watch('showDeleteConfirm', value => this.handleModalState(value));
         },
         handleModalState(isOpen) {
             if (isOpen) {
@@ -52,6 +56,7 @@
             this.showDetails = false;
             this.showRelease = false;
             this.showCreate = false;
+            this.showDeleteConfirm = false;
         },
         openDetails(cert) {
             this.selectedCertificate = cert;
@@ -60,6 +65,16 @@
         openRelease(cert) {
             this.selectedCertificate = cert;
             this.showRelease = true;
+        },
+        openDeleteConfirm(cert, formAction) {
+            this.certificateToDelete = cert;
+            this.deleteFormAction = formAction;
+            this.showDeleteConfirm = true;
+        },
+        confirmDelete() {
+            if (this.certificateToDelete?.id) {
+                document.getElementById('deleteForm-' + this.certificateToDelete.id).submit();
+            }
         }
     }" class="space-y-6">
         
@@ -195,7 +210,13 @@
                                     <p class="text-sm text-gray-700 dark:text-gray-300">{{ $cert->jobOrder->customer->name ?? 'N/A' }}</p>
                                 </td>
                                 <td class="py-3 text-center">
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ optional($cert->generated_at)->format('M d, Y h:i A') ?? 'Pending' }}</p>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">
+                                        @if($cert->generated_at)
+                                            {{ $cert->generated_at->format('M d, Y h:i A') }}
+                                        @else
+                                            Pending
+                                        @endif
+                                    </p>
                                 </td>
                                 <td class="py-3 text-center">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full
@@ -251,18 +272,19 @@
                                             </form>
                                         @endif
                                         
-                                        <form action="{{ route('tech-head.certificates.destroy', $cert->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this certificate? This action cannot be undone.')">
+                                        <form id="deleteForm-{{ $cert->id }}" action="{{ route('tech-head.certificates.destroy', $cert->id) }}" method="POST" class="hidden">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="px-3 py-1.5 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-800/50 rounded-md text-xs font-semibold transition-all duration-150">
-                                                <span class="flex items-center gap-1">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                    </svg>
-                                                    Delete
-                                                </span>
-                                            </button>
                                         </form>
+                                        
+                                        <button @click="openDeleteConfirm({{ json_encode($cert) }}, '{{ route('tech-head.certificates.destroy', $cert->id) }}')" type="button" class="px-3 py-1.5 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-800/50 rounded-md text-xs font-semibold transition-all duration-150">
+                                            <span class="flex items-center gap-1">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                                Delete
+                                            </span>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -327,8 +349,8 @@
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedCertificate?.job_order?.customer?.name || 'N/A'"></p>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Generated Date</p>
-                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedCertificate?.generated_at || 'Pending'"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Generated Date & Time</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedCertificate?.generated_at ? new Date(selectedCertificate.generated_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }) : 'Pending'"></p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>
@@ -598,6 +620,64 @@
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div 
+            x-show="showDeleteConfirm" 
+            x-cloak
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 z-[9999] overflow-y-auto"
+            @keydown.escape.window="showDeleteConfirm=false"
+        >
+            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showDeleteConfirm=false"></div>
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div 
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 transform scale-95"
+                    x-transition:enter-end="opacity-100 transform scale-100"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100 transform scale-100"
+                    x-transition:leave-end="opacity-0 transform scale-95"
+                    class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700 p-6"
+                >
+                    <div class="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full bg-rose-100 dark:bg-rose-900/30">
+                        <svg class="w-6 h-6 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">Delete Certificate?</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 text-center mb-6">
+                        Are you sure you want to delete certificate <span class="font-semibold text-gray-900 dark:text-white" x-text="certificateToDelete?.certificate_number"></span>? This action cannot be undone.
+                    </p>
+
+                    <div class="flex gap-3">
+                        <button 
+                            type="button"
+                            @click="showDeleteConfirm=false" 
+                            class="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="button"
+                            @click="confirmDelete()" 
+                            class="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            Delete
+                        </button>
                     </div>
                 </div>
             </div>

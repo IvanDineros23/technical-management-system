@@ -53,7 +53,7 @@
 }" @toast.window="addToast($event.detail.message, $event.detail.type)">
     
     <!-- Toast Container -->
-    <div class="fixed top-4 right-4 z-[9999] space-y-2" style="pointer-events: none;">
+    <div class="fixed top-4 right-4 z-[9999] space-y-3 w-96 pointer-events-none">
         <template x-for="toast in toasts" :key="toast.id">
             <div class="toast-enter pointer-events-auto"
                  x-show="true"
@@ -66,7 +66,7 @@
                      'bg-amber-500 dark:bg-amber-600': toast.type === 'warning',
                      'bg-blue-500 dark:bg-blue-600': toast.type === 'info'
                  }"
-                 class="min-w-[300px] max-w-md rounded-lg shadow-lg p-4 flex items-start gap-3">
+                 class="w-full rounded-lg shadow-lg p-4 flex items-start gap-3">
                 <div class="flex-shrink-0">
                     <template x-if="toast.type === 'success'">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,8 +89,8 @@
                         </svg>
                     </template>
                 </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-white" x-text="toast.message"></p>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-white break-words" x-text="toast.message"></p>
                 </div>
                 <button @click="removeToast(toast.id)" class="flex-shrink-0 text-white hover:text-gray-200 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
