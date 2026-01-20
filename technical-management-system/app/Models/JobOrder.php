@@ -35,6 +35,11 @@ class JobOrder extends Model
         'created_by',
         'approved_by',
         'approved_at',
+        'approval_signature',
+        'approval_comments',
+        'rejected_by',
+        'rejected_at',
+        'rejection_reason',
     ];
 
     protected $casts = [
@@ -43,6 +48,7 @@ class JobOrder extends Model
         'expected_start_date' => 'date',
         'expected_completion_date' => 'date',
         'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
         'total_amount' => 'decimal:2',
         'discount' => 'decimal:2',
         'tax_amount' => 'decimal:2',
@@ -52,6 +58,16 @@ class JobOrder extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function assignments()
+    {
+        return $this->hasMany(Assignment::class);
+    }
+
+    public function certificates()
+    {
+        return $this->hasMany(Certificate::class, 'job_order_id');
     }
 
     public function items()

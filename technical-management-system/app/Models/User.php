@@ -87,4 +87,12 @@ class User extends Authenticatable
 
         return in_array($permission, $permissions ?? []);
     }
+
+    /**
+     * Get assignments where user is the assignee (technician).
+     */
+    public function assignmentsAsAssignee()
+    {
+        return $this->hasMany(Assignment::class, 'assigned_to');
+    }
 }
