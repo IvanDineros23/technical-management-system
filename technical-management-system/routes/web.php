@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{ApprovalController, CalibrationController, ProfileController, TimelineController};
+use App\Http\Controllers\{ApprovalController, CalibrationController, ProfileController, SignatoryController, TimelineController};
 use App\Models\{Assignment, Calibration, Certificate, Customer, Equipment, JobOrder, Report, Role, User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1423,11 +1423,40 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
 
 // Signatory Routes
 Route::middleware(['auth', 'verified', 'role:signatory'])->prefix('signatory')->name('signatory.')->group(function () {
-    Route::get('/dashboard', function () {
-        return 'Signatory Dashboard - Coming Soon';
-    })->name('dashboard');
+    // Dashboard
+    Route::get('/dashboard', [SignatoryController::class, 'dashboard'])->name('dashboard');
     
-    Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
+    // For Review - Calibrations awaiting signature
+    Route::get('/for-review', [SignatoryController::class, 'forReview'])->name('for-review');
+    
+    // Review workspace
+    Route::get('/review/{calibration}', [SignatoryController::class, 'review'])->name('review');
+    
+    // Approve calibration (before signature)
+    Route::post('/review/{calibration}/approve', [SignatoryController::class, 'approve'])->name('approve');
+    
+    // Request revision
+    Route::post('/review/{calibration}/request-revision', [SignatoryController::class, 'requestRevision'])->name('request-revision');
+    
+    // Digital Signature workflow
+    Route::get('/sign/{calibration}', [SignatoryController::class, 'signatureForm'])->name('sign.form');
+    Route::post('/sign/{calibration}', [SignatoryController::class, 'sign'])->name('sign');
+    
+    // Signed Certificates
+    Route::get('/certificates', [SignatoryController::class, 'certificates'])->name('certificates');
+    Route::get('/certificates/{certificate}/preview', [SignatoryController::class, 'previewCertificate'])->name('certificate.preview');
+    
+    // Reports - View uploaded reports
+    Route::get('/reports', [SignatoryController::class, 'reports'])->name('reports');
+    Route::get('/reports/{report}', [SignatoryController::class, 'viewReport'])->name('report.view');
+    
+    // Timeline - Unified view
+    Route::get('/timelines', [SignatoryController::class, 'allTimelines'])->name('timelines');
+    Route::get('/timeline/{jobOrder}', [SignatoryController::class, 'timeline'])->name('timeline');
+    
+    // Profile
+    Route::get('/profile', [SignatoryController::class, 'profile'])->name('profile');
+    Route::patch('/profile', [SignatoryController::class, 'updateProfile'])->name('profile.update');
 });
 
 // Accounting Routes

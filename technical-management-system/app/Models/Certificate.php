@@ -26,6 +26,8 @@ class Certificate extends Model
         'issued_by',
         'reviewed_by',
         'approved_by',
+        'signed_by',
+        'signed_at',
         'supersedes_certificate_id',
         'notes',
         'generated_at',
@@ -34,6 +36,7 @@ class Certificate extends Model
         'released_by',
         'delivery_method',
         'release_notes',
+        'data',
     ];
 
     protected $casts = [
@@ -74,6 +77,11 @@ class Certificate extends Model
     public function approvedBy()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function signedBy()
+    {
+        return $this->belongsTo(User::class, 'signed_by');
     }
 
     public function releasedBy()

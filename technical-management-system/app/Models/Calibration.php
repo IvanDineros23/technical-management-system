@@ -23,6 +23,10 @@ class Calibration extends Model
         'status',
         'pass_fail',
         'remarks',
+        'signatory_id',
+        'signatory_remarks',
+        'reviewed_at',
+        'certificate_id',
     ];
 
     protected $casts = [
@@ -55,6 +59,16 @@ class Calibration extends Model
     public function technicalReview(): BelongsTo
     {
         return $this->belongsTo(TechnicalReview::class);
+    }
+
+    public function signatory(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'signatory_id');
+    }
+
+    public function certificate(): BelongsTo
+    {
+        return $this->belongsTo(Certificate::class);
     }
 
     // Scopes

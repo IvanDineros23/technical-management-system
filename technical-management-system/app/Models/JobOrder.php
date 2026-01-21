@@ -65,6 +65,11 @@ class JobOrder extends Model
         return $this->hasMany(Assignment::class);
     }
 
+    public function calibrations()
+    {
+        return $this->hasManyThrough(Calibration::class, Assignment::class);
+    }
+
     public function certificates()
     {
         return $this->hasMany(Certificate::class, 'job_order_id');
