@@ -4,7 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Assignment extends Model
 {
@@ -46,5 +48,15 @@ class Assignment extends Model
     public function report(): HasOne
     {
         return $this->hasOne(Report::class);
+    }
+
+    public function jobOrderItems(): HasManyThrough
+    {
+        return $this->hasManyThrough(JobOrderItem::class, JobOrder::class);
+    }
+
+    public function calibrations(): HasMany
+    {
+        return $this->hasMany(Calibration::class);
     }
 }

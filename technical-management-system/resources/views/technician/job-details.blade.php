@@ -134,10 +134,10 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Main Content -->
-            <div class="lg:col-span-2 space-y-6">
+            <div class="lg:col-span-2 space-y-5">
                 <!-- Job Information -->
-                <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Job Information</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-[16px] shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">Job Information</h3>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Customer</p>
@@ -170,8 +170,8 @@
                 </div>
 
                 <!-- Task Checklist -->
-                <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Task Checklist</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-[16px] shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">Task Checklist</h3>
                     <div class="space-y-3">
                         <template x-for="task in checklist" :key="task.id">
                             <label class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors">
@@ -183,29 +183,138 @@
                     </div>
                 </div>
 
-                <!-- Time Tracking -->
+                <!-- Notes -->
+                <div class="bg-white dark:bg-gray-800 rounded-[16px] shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">Notes</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Work Notes</label>
+                            <textarea x-model="remarks" placeholder="Record any observations, issues encountered, or special notes about the work performed..."
+                                class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 resize-none"
+                                rows="4"></textarea>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Document findings, issues, or special observations</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calibration Data Entry -->
                 <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Time Tracking</h3>
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Time Started</p>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="timeStarted || 'Not started'"></p>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Calibration Data Entry</h3>
+                    
+                    <form action="{{ route('technician.calibration.store-points', optional($job->assignments->first()?->calibrations()->latest()->first())->id ?? 0) }}" 
+                          method="POST" 
+                          class="space-y-6">
+                        @csrf
+
+                        <!-- Calibration Details -->
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Calibration Date *</label>
+                                    <input type="date" name="calibration_date" required 
+                                        value="{{ old('calibration_date', now()->format('Y-m-d')) }}"
+                                        class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Location</label>
+                                    <input type="text" name="location" placeholder="e.g., Lab A, Field, Customer Site"
+                                        class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Start Time</label>
+                                    <input type="time" name="start_time"
+                                        class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">End Time</label>
+                                    <input type="time" name="end_time"
+                                        class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Procedure Reference</label>
+                                    <input type="text" name="procedure_reference" placeholder="e.g., ISO/IEC 17025:2017"
+                                        class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Time Finished</p>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="timeFinished || 'Not finished'"></p>
+
+                        <!-- Measurement Points -->
+                        <div x-data="{ points: [{ id: 1 }] }" class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Measurement Points *</label>
+                                <button type="button" 
+                                        @click="points.push({ id: points.length + 1 })"
+                                        class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition">
+                                    + Add Point
+                                </button>
+                            </div>
+
+                            <template x-for="(point, index) in points" :key="point.id">
+                                <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Point #</label>
+                                            <input type="number" 
+                                                   :name="`measurement_points[${index}][point_number]`"
+                                                   placeholder="1"
+                                                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Reference Value</label>
+                                            <input type="number" step="0.0001" 
+                                                   :name="`measurement_points[${index}][reference_value]`"
+                                                   placeholder="0.0000"
+                                                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">UUT Reading</label>
+                                            <input type="number" step="0.0001" 
+                                                   :name="`measurement_points[${index}][uut_reading]`"
+                                                   placeholder="0.0000"
+                                                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Uncertainty</label>
+                                            <input type="number" step="0.0001" 
+                                                   :name="`measurement_points[${index}][uncertainty]`"
+                                                   placeholder="0.0000"
+                                                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+                                        </div>
+                                        <div class="flex items-end">
+                                            <button type="button" 
+                                                    @click="points.splice(index, 1)"
+                                                    x-show="points.length > 1"
+                                                    class="w-full px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-lg transition">
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Acceptance Criteria</label>
+                                        <input type="text" 
+                                               :name="`measurement_points[${index}][acceptance_criteria]`"
+                                               placeholder="e.g., ±0.5%"
+                                               class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+                                    </div>
+                                </div>
+                            </template>
                         </div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button @click="startTimer()" x-show="!timeStarted" 
-                                class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
-                            Start Timer
-                        </button>
-                        <button @click="stopTimer()" x-show="timeStarted && !timeFinished" 
-                                class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors">
-                            Stop Timer
-                        </button>
-                    </div>
+
+                        <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <button type="submit" 
+                                    class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition">
+                                Save & Submit for Review
+                            </button>
+                            <button type="reset" 
+                                    class="px-6 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-semibold rounded-lg transition">
+                                Reset
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
                 <!-- Attachments -->

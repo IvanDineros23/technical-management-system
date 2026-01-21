@@ -1,8 +1,7 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\TimelineController;
-use App\Models\{Assignment, Certificate, Customer, Equipment, JobOrder, Report, Role, User};
+use App\Http\Controllers\{ApprovalController, CalibrationController, ProfileController, TimelineController};
+use App\Models\{Assignment, Calibration, Certificate, Customer, Equipment, JobOrder, Report, Role, User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -399,6 +398,13 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         
         return view('technician.calendar', compact('assignments'));
     })->name('calendar');
+
+    // Calibration Data Entry Routes
+    Route::get('/calibration-assignments', [CalibrationController::class, 'index'])->name('calibration.assignments');
+    Route::get('/calibration/{assignment}', [CalibrationController::class, 'show'])->name('calibration.show');
+    Route::post('/calibration/{calibration}/store-points', [CalibrationController::class, 'storeMeasurementPoints'])->name('calibration.store-points');
+    Route::post('/calibration/{calibration}/submit', [CalibrationController::class, 'submitForReview'])->name('calibration.submit');
+    Route::post('/measurement-point/{measurementPoint}/uncertainty', [CalibrationController::class, 'storeUncertainty'])->name('measurement-point.uncertainty');
 });
 
 // Tech Head Routes
@@ -989,6 +995,12 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         return redirect()->route('tech-head.certificates')->with('status', 'Certificate ' . $certificateNumber . ' deleted successfully');
     })->name('certificates.destroy');
     
+    // Calibration Approval Routes
+    Route::get('/calibration-approvals', [ApprovalController::class, 'index'])->name('calibration-approvals');
+    Route::get('/calibration/{calibration}/review', [ApprovalController::class, 'show'])->name('calibration.show');
+    Route::post('/calibration/{calibration}/approve', [ApprovalController::class, 'approve'])->name('calibration.approve');
+    Route::get('/calibration/{calibration}/measurement-summary', [ApprovalController::class, 'getMeasurementSummary'])->name('calibration.measurement-summary');
+    
     Route::get('/technicians', function () {
         $technicianRoleId = Role::where('slug', 'tech_personnel')->value('id');
         
@@ -1167,15 +1179,46 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             ->latest()
             ->get();
         
-        // Stats
+        // Report stats
         $stats = [
             'total' => Report::count(),
             'pending' => Report::where('status', 'pending')->count(),
             'approved' => Report::where('status', 'approved')->count(),
             'rejected' => Report::where('status', 'rejected')->count(),
         ];
+
+        // Calibration stats
+        $calStats = [
+            'total' => Calibration::count(),
+            'pending' => Calibration::where('status', 'submitted_for_review')->count(),
+            'approved' => Calibration::where('status', 'approved')->count(),
+            'rejected' => Calibration::where('status', 'rejected')->count(),
+        ];
+
+        // Calibrations filter
+        $calFilter = request('cal_filter', 'pending');
+        $calibrationQuery = Calibration::with([
+            'jobOrderItem.jobOrder.customer',
+            'assignment.technician',
+            'performedBy',
+            'measurementPoints',
+        ]);
+
+        $calibrationQuery = match($calFilter) {
+            'approved' => $calibrationQuery->where('status', 'approved'),
+            'rejected' => $calibrationQuery->where('status', 'rejected'),
+            default => $calibrationQuery->where('status', 'submitted_for_review'),
+        };
+
+        $calibrations = $calibrationQuery->latest()->paginate(10)->withQueryString();
+        $pendingCalibrations = Calibration::with([
+            'jobOrderItem.jobOrder.customer',
+            'assignment.technician',
+            'performedBy',
+            'measurementPoints',
+        ])->where('status', 'submitted_for_review')->latest()->take(6)->get();
         
-        return view('tech-head.reports', compact('reports', 'pendingReports', 'stats', 'filter'));
+        return view('tech-head.reports', compact('reports', 'pendingReports', 'stats', 'filter', 'calStats', 'calFilter', 'calibrations', 'pendingCalibrations'));
     })->name('reports');
 
     // Reports approvals

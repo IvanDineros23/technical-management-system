@@ -112,6 +112,68 @@
             </div>
         </div>
         @endif
+
+        <!-- Pending Calibrations - Quick Action Cards -->
+        @if($pendingCalibrations->count() > 0)
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">🧪 Calibration Approvals - Needs Your Review</h3>
+                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">{{ $pendingCalibrations->count() }} waiting</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                @foreach($pendingCalibrations as $calibration)
+                    <div class="border border-amber-200 dark:border-amber-800 rounded-xl p-4 bg-amber-50/50 dark:bg-amber-900/20 hover:shadow-md transition-shadow" x-data="{ open:false }">
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $calibration->assignment->jobOrder->job_order_number ?? 'N/A' }}</p>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">⏳ Pending</span>
+                        </div>
+                        <div class="space-y-1 mb-3">
+                            <p class="text-xs text-gray-600 dark:text-gray-400">
+                                <span class="font-semibold">Customer:</span> {{ $calibration->assignment->jobOrder->customer->name ?? 'N/A' }}
+                            </p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">
+                                <span class="font-semibold">Technician:</span> {{ $calibration->performedBy->name ?? 'N/A' }}
+                            </p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">
+                                <span class="font-semibold">Calibration Date:</span> {{ optional($calibration->calibration_date)->format('M d, Y') ?? 'N/A' }}
+                            </p>
+                        </div>
+                        <button @click="open=!open" class="text-xs text-blue-600 dark:text-blue-400 hover:underline mb-2">{{ __('View measurement points') }}</button>
+                        <div x-show="open" x-cloak class="mb-3 space-y-1 text-xs text-gray-700 dark:text-gray-300">
+                            @forelse($calibration->measurementPoints as $point)
+                                <div class="p-2 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                    <div class="flex justify-between text-[11px] font-semibold">
+                                        <span>Point {{ $point->point_number }}</span>
+                                        <span class="text-gray-500">Ref: {{ $point->reference_value }}</span>
+                                    </div>
+                                    <div class="text-[11px] text-gray-600 dark:text-gray-400">UUT: {{ $point->uut_reading }} | Unc: {{ $point->uncertainty }} | {{ $point->acceptance_criteria }}</div>
+                                </div>
+                            @empty
+                                <p class="text-[11px] text-gray-500">No points</p>
+                            @endforelse
+                        </div>
+                        <div class="flex gap-2">
+                            <form method="POST" action="{{ route('tech-head.calibration.approve', $calibration) }}" class="flex-1">
+                                @csrf
+                                <input type="hidden" name="result" value="approved">
+                                <input type="hidden" name="findings" value="Approved via reports">
+                                <input type="hidden" name="data_reviewed" value="1">
+                                <input type="hidden" name="calculations_verified" value="1">
+                                <input type="hidden" name="standards_checked" value="1">
+                                <button type="submit" class="w-full px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors">✓ Approve</button>
+                            </form>
+                            <form method="POST" action="{{ route('tech-head.calibration.approve', $calibration) }}" class="flex-1">
+                                @csrf
+                                <input type="hidden" name="result" value="rejected">
+                                <input type="hidden" name="findings" value="Rejected via reports">
+                                <button type="submit" class="w-full px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-medium transition-colors">✗ Reject</button>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
         
         <!-- All Reports Table -->
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
