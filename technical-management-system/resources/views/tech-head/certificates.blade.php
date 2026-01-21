@@ -340,13 +340,40 @@
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
+                            <div class="col-span-2">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Certificate Source</p>
+                                <p class="text-sm font-semibold" :class="{
+                                    'text-blue-600 dark:text-blue-400': selectedCertificate?.job_order_id,
+                                    'text-orange-600 dark:text-orange-400': !selectedCertificate?.job_order_id
+                                }">
+                                    <span x-show="selectedCertificate?.job_order_id">📋 Generated from Work Order</span>
+                                    <span x-show="!selectedCertificate?.job_order_id">✍️ Manually Created Certificate</span>
+                                </p>
+                            </div>
+                            
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Work Order</p>
-                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedCertificate?.job_order?.job_order_number || 'N/A'"></p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedCertificate?.job_order?.job_order_number || 'N/A (Manual Entry)'"></p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Customer</p>
-                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedCertificate?.job_order?.customer?.name || 'N/A'"></p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="(() => {
+                                    if (selectedCertificate?.job_order?.customer?.name) {
+                                        return selectedCertificate.job_order.customer.name;
+                                    } else if (selectedCertificate?.notes) {
+                                        const match = selectedCertificate.notes.match(/Customer:\s*(.+)/);
+                                        return match ? match[1].trim() : 'N/A';
+                                    }
+                                    return 'N/A';
+                                })()"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Issue Date</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedCertificate?.issue_date ? new Date(selectedCertificate.issue_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Valid Until</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedCertificate?.valid_until ? new Date(selectedCertificate.valid_until).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'"></p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Generated Date & Time</p>
@@ -354,15 +381,51 @@
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>
-                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedCertificate?.status || 'N/A'"></p>
+                                <p class="text-sm font-semibold" :class="{
+                                    'text-green-600 dark:text-green-400': selectedCertificate?.status === 'generated',
+                                    'text-purple-600 dark:text-purple-400': selectedCertificate?.status === 'released',
+                                    'text-amber-600 dark:text-amber-400': selectedCertificate?.status === 'pending'
+                                }" x-text="selectedCertificate?.status ? selectedCertificate.status.charAt(0).toUpperCase() + selectedCertificate.status.slice(1) : 'N/A'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Template Used</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedCertificate?.template_used || 'Default'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Version</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="'v' + (selectedCertificate?.version || '1') + '.' + (selectedCertificate?.revision_number || '0')"></p>
+                            </div>
+                            <div x-show="selectedCertificate?.issued_by_name">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Issued By</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedCertificate?.issued_by_name || 'N/A'"></p>
+                            </div>
+                            <div x-show="selectedCertificate?.approved_by_name">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Approved By</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedCertificate?.approved_by_name || 'N/A'"></p>
                             </div>
                             <div x-show="selectedCertificate?.released_at">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Released Date</p>
-                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedCertificate?.released_at || 'Not released'"></p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedCertificate?.released_at ? new Date(selectedCertificate.released_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not released'"></p>
                             </div>
                             <div x-show="selectedCertificate?.released_to">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Released To</p>
                                 <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedCertificate?.released_to || 'N/A'"></p>
+                            </div>
+                            <div x-show="selectedCertificate?.delivery_method" class="col-span-2">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Delivery Method</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedCertificate?.delivery_method ? selectedCertificate.delivery_method.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'"></p>
+                            </div>
+                            <div x-show="selectedCertificate?.notes" class="col-span-2">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Certificate Details</p>
+                                <div class="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                                    <p class="whitespace-pre-wrap" x-text="selectedCertificate?.notes || 'No details available'"></p>
+                                </div>
+                            </div>
+                            <div x-show="selectedCertificate?.release_notes" class="col-span-2">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Release Notes</p>
+                                <div class="text-sm text-gray-700 dark:text-gray-300 bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
+                                    <p class="whitespace-pre-wrap" x-text="selectedCertificate?.release_notes || 'N/A'"></p>
+                                </div>
                             </div>
                         </div>
 
