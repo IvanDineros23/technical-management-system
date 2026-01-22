@@ -102,7 +102,7 @@
                                         {{ $calibration->performedBy->name }}
                                     </td>
                                     <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
-                                        {{ $calibration->calibration_date->format('M d, Y') }}
+                                        {{ $calibration->calibration_date->setTimezone('Asia/Manila')->format('M d, Y') }}
                                     </td>
                                     <td class="py-3">
                                         <span class="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">

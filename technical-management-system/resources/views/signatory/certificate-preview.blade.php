@@ -49,8 +49,8 @@
                     </div>
                     <div>
                         <p class="font-semibold text-gray-600 mb-1">CALIBRATION DATE:</p>
-                        <p class="font-bold">{{ optional($certificate->calibration->calibration_date)->format('F d, Y') }}</p>
-                        <p class="text-xs text-gray-600 mt-2">Certificate Date: {{ optional($certificate->signed_at)->format('F d, Y') }}</p>
+                        <p class="font-bold">{{ optional($certificate->calibration->calibration_date)->setTimezone('Asia/Manila')->format('F d, Y') }}</p>
+                        <p class="text-xs text-gray-600 mt-2">Certificate Date: {{ optional($certificate->signed_at)->setTimezone('Asia/Manila')->format('F d, Y') }}</p>
                     </div>
                 </div>
 
@@ -113,13 +113,13 @@
                         <p class="font-semibold text-gray-600 mb-8">Technician</p>
                         <div class="border-b-2 border-gray-400" style="height: 40px;"></div>
                         <p class="text-xs text-gray-600 mt-2">{{ $certificate->calibration->performedBy->name }}</p>
-                        <p class="text-xs text-gray-600">{{ optional($certificate->calibration->calibration_date)->format('F d, Y') }}</p>
+                        <p class="text-xs text-gray-600">{{ optional($certificate->calibration->calibration_date)->setTimezone('Asia/Manila')->format('F d, Y') }}</p>
                     </div>
                     <div>
                         <p class="font-semibold text-gray-600 mb-8">Signatory</p>
                         <div class="border-b-2 border-gray-400" style="height: 40px;"></div>
                         <p class="text-xs text-gray-600 mt-2">{{ $certificate->signedBy->name }}</p>
-                        <p class="text-xs text-gray-600">Digital Signature - {{ optional($certificate->signed_at)->format('F d, Y') }}</p>
+                        <p class="text-xs text-gray-600">Digital Signature - {{ optional($certificate->signed_at)->setTimezone('Asia/Manila')->format('F d, Y') }}</p>
                     </div>
                 </div>
 
@@ -145,7 +145,7 @@
                 </div>
                 <div>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Signed Date</p>
-                    <p class="font-semibold text-gray-900 dark:text-white">{{ optional($certificate->signed_at)->format('M d, Y H:i') }}</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">{{ optional($certificate->signed_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</p>
                 </div>
                 <div>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>

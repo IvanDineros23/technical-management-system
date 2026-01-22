@@ -235,9 +235,9 @@
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h3 class="text-lg font-bold text-slate-900 dark:text-white">This Week</h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ $weekStart->format('M d') }} - {{ $weekEnd->format('M d, Y') }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ $weekStart->setTimezone('Asia/Manila')->format('M d') }} - {{ $weekEnd->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                 </div>
-                <span class="text-sm px-4 py-2 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 font-semibold">Today: {{ $today->format('M d') }}</span>
+                <span class="text-sm px-4 py-2 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 font-semibold">Today: {{ $today->setTimezone('Asia/Manila')->format('M d') }}</span>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -245,8 +245,8 @@
                     <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-5 bg-gradient-to-br from-gray-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 hover:shadow-lg transition-shadow">
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <p class="text-base font-bold text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($date)->format('l') }}</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ \Carbon\Carbon::parse($date)->format('M d, Y') }}</p>
+                                <p class="text-base font-bold text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($date)->setTimezone('Asia/Manila')->format('l') }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ \Carbon\Carbon::parse($date)->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                             </div>
                             <span class="text-xs px-3 py-1.5 rounded-full {{ $items->count() > 0 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }} font-semibold">{{ $items->count() }} {{ $items->count() == 1 ? 'job' : 'jobs' }}</span>
                         </div>
@@ -262,8 +262,8 @@
                                         'wo_number' => $assignment->jobOrder->job_order_number ?? 'N/A',
                                         'customer' => $assignment->jobOrder->customer->name ?? 'N/A',
                                         'technician' => $assignment->assignedTo->name ?? 'Unassigned',
-                                        'scheduled_date' => optional($assignment->scheduled_date)->format('M d, Y'),
-                                        'scheduled_time' => optional($assignment->scheduled_time)->format('h:i A') ?? '—',
+                                        'scheduled_date' => optional($assignment->scheduled_date)->setTimezone('Asia/Manila')->format('M d, Y'),
+                                        'scheduled_time' => $assignment->scheduled_time ? \Carbon\Carbon::createFromFormat('H:i:s', $assignment->scheduled_time)->setTimezone('Asia/Manila')->format('h:i A') : null,
                                         'status' => $assignment->status ?? 'pending',
                                         'service_type' => $assignment->jobOrder->service_type ?? 'N/A',
                                         'priority' => $assignment->priority ?? 'normal'
@@ -309,7 +309,7 @@
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                                 </svg>
-                                                <span>{{ optional($assignment->scheduled_time)->format('h:i A') ?? '—' }}</span>
+                                                <span>{{ $assignment->scheduled_time ? \Carbon\Carbon::createFromFormat('H:i:s', $assignment->scheduled_time)->setTimezone('Asia/Manila')->format('h:i A') : '—' }}</span>
                                             </div>
                                             <div class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -364,8 +364,8 @@
                                                 <button 
                                                     @click.stop="openMoveModal({{ $assignment->id }}, {{ json_encode([
                                                         'wo_number' => $assignment->jobOrder->job_order_number ?? 'N/A',
-                                                        'current_date' => optional($assignment->scheduled_date)->format('Y-m-d'),
-                                                        'current_time' => optional($assignment->scheduled_time)->format('H:i')
+                                                        'current_date' => $assignment->scheduled_date ? $assignment->scheduled_date->format('Y-m-d') : null,
+                                                        'current_time' => $assignment->scheduled_time ? \Carbon\Carbon::createFromFormat('H:i:s', $assignment->scheduled_time)->format('H:i') : null
                                                     ]) }}); showMenu = false" 
                                                     class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 last:rounded-b-lg"
                                                 >
@@ -422,7 +422,7 @@
                                 
                                 <div class="text-xs text-gray-600 dark:text-gray-400 mb-3">
                                     <p><span class="font-semibold">Service:</span> {{ $job->service_type ?? 'N/A' }}</p>
-                                    <p><span class="font-semibold">Created:</span> {{ optional($job->created_at)->format('M d, Y') }}</p>
+                                    <p><span class="font-semibold">Created:</span> {{ optional($job->created_at)->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                                 </div>
                                 
                                 <button 

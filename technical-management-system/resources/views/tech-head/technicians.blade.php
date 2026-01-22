@@ -149,7 +149,7 @@
                                     'active' => $active,
                                     'completed' => $completed,
                                     'total' => $total,
-                                    'created_at' => $tech->created_at->format('M d, Y h:i A')
+                                    'created_at' => $tech->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')
                                 ]) }})"
                                 class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                             >

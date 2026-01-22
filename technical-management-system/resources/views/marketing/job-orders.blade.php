@@ -148,7 +148,7 @@
                                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ $jobOrder->customer->email ?? '' }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->service_type ?? 'N/A' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->created_at->format('M d, Y') }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($jobOrder->status === 'pending')
                                     <span class="px-3 py-1 text-xs font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full">Pending</span>

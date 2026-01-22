@@ -249,7 +249,7 @@
                             <p class="text-xs font-medium text-rose-800 dark:text-rose-200">{{ $job->job_order_number }}</p>
                             <p class="text-xs text-rose-700 dark:text-rose-300">{{ $job->customer->name ?? 'N/A' }}</p>
                             @if($job->required_date)
-                                <p class="text-xs text-rose-600 dark:text-rose-400">Due: {{ $job->required_date->format('M d, Y') }}</p>
+                                <p class="text-xs text-rose-600 dark:text-rose-400">Due: {{ $job->required_date->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                             @endif
                         </div>
                     @empty
@@ -285,7 +285,7 @@
                             <p class="text-xs font-medium text-blue-800 dark:text-blue-200">{{ $job->job_order_number }}</p>
                             <p class="text-xs text-blue-700 dark:text-blue-300">{{ $job->customer->name ?? 'N/A' }}</p>
                             @php
-                                $days = now()->diffInDays($job->request_date);
+                                $days = now()->setTimezone('Asia/Manila')->diffInDays($job->request_date);
                             @endphp
                             <p class="text-xs text-blue-600 dark:text-blue-400">Pending {{ $days }} days</p>
                         </div>
@@ -395,7 +395,7 @@
                                             {{ ucfirst($job->priority ?? 'Normal') }}
                                         </span>
                                     </td>
-                                    <td class="py-2 text-gray-600 dark:text-gray-400">{{ ($job->required_date ?? $job->expected_completion_date)?->format('M d') ?? '—' }}</td>
+                                    <td class="py-2 text-gray-600 dark:text-gray-400">{{ (($job->required_date ?? $job->expected_completion_date)?->setTimezone('Asia/Manila')->format('M d')) ?? '—' }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -489,7 +489,7 @@
                             <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200 font-semibold">{{ $items->count() }}</span>
                         </div>
                         @forelse($items->take(2) as $assignment)
-                            <p class="text-xs text-gray-700 dark:text-gray-300 mb-1">{{ $assignment->jobOrder?->job_order_number ?? 'N/A' }} • {{ optional($assignment->scheduled_time)->format('h:i A') ?? '--' }}</p>
+                            <p class="text-xs text-gray-700 dark:text-gray-300 mb-1">{{ $assignment->jobOrder?->job_order_number ?? 'N/A' }} • {{ $assignment->scheduled_time ? \Carbon\Carbon::createFromFormat('H:i:s', $assignment->scheduled_time)->setTimezone('Asia/Manila')->format('h:i A') : '--' }}</p>
                         @empty
                             <p class="text-xs text-gray-500 dark:text-gray-400">No jobs scheduled</p>
                         @endforelse
@@ -679,7 +679,7 @@
                                     </div>
                                     <div class="text-right">
                                         <span class="text-[11px] px-2 py-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200">{{ ucfirst($job->status) }}</span>
-                                        <p class="text-[11px] text-rose-700 dark:text-rose-300 font-medium mt-1">Due {{ optional($job->required_date ?? $job->expected_completion_date)->format('M d') ?? 'N/A' }}</p>
+                                        <p class="text-[11px] text-rose-700 dark:text-rose-300 font-medium mt-1">Due {{ (optional($job->required_date ?? $job->expected_completion_date)->setTimezone('Asia/Manila')->format('M d')) ?? 'N/A' }}</p>
                                     </div>
                                 </div>
                             @empty
@@ -710,7 +710,7 @@
                                 @forelse($agingPendingApprovals as $job)
                                     <div class="flex items-center justify-between text-sm bg-white dark:bg-gray-700/50 rounded-lg p-2 border border-blue-200 dark:border-blue-800/50">
                                         <p class="font-semibold text-gray-900 dark:text-white">{{ $job->job_order_number }}</p>
-                                        <p class="text-xs text-gray-600 dark:text-gray-300">{{ optional($job->request_date)->format('M d') ?? 'N/A' }}</p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-300">{{ optional($job->request_date)->setTimezone('Asia/Manila')->format('M d') ?? 'N/A' }}</p>
                                     </div>
                                 @empty
                                     <p class="text-sm text-gray-600 dark:text-gray-300">No pending approvals</p>
@@ -816,7 +816,7 @@
                                 <td class="py-3">
                                     <span class="text-[11px] px-2 py-1 rounded-full font-semibold {{ $priorityColors[$priority] ?? $priorityColors['normal'] }}">{{ ucfirst($priority) }}</span>
                                 </td>
-                                <td class="py-3 text-right text-sm font-medium text-slate-800 dark:text-slate-200">{{ $dueDate ? $dueDate->format('M d') : '—' }}</td>
+                                <td class="py-3 text-right text-sm font-medium text-slate-800 dark:text-slate-200">{{ $dueDate ? $dueDate->setTimezone('Asia/Manila')->format('M d') : '—' }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -889,7 +889,7 @@
                                             <p class="font-semibold text-gray-900 dark:text-gray-100">{{ $assignment->jobOrder?->job_order_number ?? 'Work Order' }}</p>
                                             <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ $assignment->jobOrder?->customer?->name ?? 'N/A' }} • {{ $assignment->location ?? 'On-site' }}</p>
                                         </div>
-                                        <p class="text-xs text-gray-700 dark:text-gray-300 font-semibold">{{ $assignment->scheduled_time ? \Carbon\Carbon::parse($assignment->scheduled_time)->format('h:i A') : '--' }}</p>
+                                        <p class="text-xs text-gray-700 dark:text-gray-300 font-semibold">{{ $assignment->scheduled_time ? \Carbon\Carbon::parse($assignment->scheduled_time)->setTimezone('Asia/Manila')->format('h:i A') : '--' }}</p>
                                     </div>
                                 @empty
                                     <p class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">No jobs scheduled</p>

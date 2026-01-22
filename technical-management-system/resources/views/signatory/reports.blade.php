@@ -98,7 +98,7 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900 dark:text-gray-100">{{ $report->created_at->format('M d, Y') }}</div>
+                                    <div class="text-sm text-gray-900 dark:text-gray-100">{{ $report->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</div>
                                     <div class="text-xs text-gray-500 dark:text-gray-400">{{ $report->created_at->diffForHumans() }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">

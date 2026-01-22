@@ -177,6 +177,7 @@
                                 <div class="flex items-center gap-3 mb-2">
                                     <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $job->job_order_number }}</h3>
                                     <span class="px-3 py-1 text-xs font-medium rounded-full
+                                        {{ $job->status === 'pending' ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300' : '' }}
                                         {{ $job->status === 'assigned' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : '' }}
                                         {{ $job->status === 'in_progress' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' : '' }}
                                         {{ $job->status === 'on_hold' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' : '' }}
@@ -203,7 +204,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                   d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                         </svg>
-                                        {{ $job->created_at->format('M d, Y') }}
+                                        {{ $job->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}
                                     </span>
                                 </div>
                             </div>

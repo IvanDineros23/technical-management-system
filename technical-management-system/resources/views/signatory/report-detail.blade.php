@@ -52,7 +52,7 @@
             </div>
             <div>
                 <p class="text-sm text-gray-600 dark:text-gray-400">Submitted Date</p>
-                <p class="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-1">{{ $report->created_at->format('M d, Y H:i') }}</p>
+                <p class="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-1">{{ $report->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</p>
             </div>
             <div>
                 <p class="text-sm text-gray-600 dark:text-gray-400">Service Type</p>
@@ -137,7 +137,7 @@
                     <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">Review Information</h3>
                     <div class="space-y-2 text-sm text-blue-800 dark:text-blue-200">
                         <p><strong>Reviewed by:</strong> {{ $report->reviewedBy?->name ?? 'N/A' }}</p>
-                        <p><strong>Reviewed at:</strong> {{ $report->reviewed_at->format('M d, Y H:i') }}</p>
+                        <p><strong>Reviewed at:</strong> {{ $report->reviewed_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</p>
                         @if($report->review_notes)
                             <p><strong>Review Notes:</strong></p>
                             <div class="mt-2 bg-white dark:bg-gray-800 rounded p-3">
@@ -189,11 +189,11 @@
                     </div>
                     <div class="mb-4">
                         <p class="text-sm text-gray-600 dark:text-gray-400">Created Date</p>
-                        <p class="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-1">{{ $jobOrder->created_at->format('M d, Y') }}</p>
+                        <p class="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-1">{{ $jobOrder->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                     </div>
                     <div class="mb-4">
                         <p class="text-sm text-gray-600 dark:text-gray-400">Expected Completion</p>
-                        <p class="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-1">{{ $jobOrder->expected_completion_date?->format('M d, Y') ?? 'N/A' }}</p>
+                        <p class="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-1">{{ $jobOrder->expected_completion_date?->setTimezone('Asia/Manila')->format('M d, Y') ?? 'N/A' }}</p>
                     </div>
                 </div>
             </div>

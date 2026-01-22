@@ -11,6 +11,7 @@
             return {
                 showJobDetails: false,
                 selectedJob: null,
+                isLoading: false,
                 init() {
                     window.addEventListener('keydown', (e) => {
                         if (e.key === 'Escape' && this.showJobDetails) {
@@ -19,13 +20,18 @@
                     });
                 },
                 openJobDetails(job) {
-                    this.selectedJob = job;
+                    this.isLoading = true;
                     this.showJobDetails = true;
                     document.body.style.overflow = 'hidden';
+                    setTimeout(() => {
+                        this.selectedJob = job;
+                        this.isLoading = false;
+                    }, 400);
                 },
                 closeJobDetails() {
                     this.showJobDetails = false;
                     this.selectedJob = null;
+                    this.isLoading = false;
                     document.body.style.overflow = 'auto';
                 },
                 formatDate(d) {
@@ -244,6 +250,7 @@
                                     </td>
                                     <td class="py-3">
                                         <span :class="{
+                                            'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300': '{{ $job->status }}' === 'pending',
                                             'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300': '{{ $job->status }}' === 'assigned',
                                             'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300': '{{ $job->status }}' === 'in_progress',
                                             'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': '{{ $job->status }}' === 'completed',
@@ -253,13 +260,26 @@
                                         </span>
                                     </td>
                                     <td class="py-3">
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $job->created_at->format('M d, Y') }}</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $job->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                                     </td>
                                     <td class="py-3">
-                                        <a href="{{ route('technician.job-details', $job->id) }}" 
+                                        <button @click="openJobDetails({{ json_encode([
+                                            'id' => $job->id,
+                                            'job_order_number' => $job->job_order_number ?? 'N/A',
+                                            'customer' => $job->customer->name ?? 'N/A',
+                                            'service_type' => $job->service_type ?? 'N/A',
+                                            'service_description' => $job->service_description ?? 'No description',
+                                            'service_address' => $job->service_address ?? 'N/A',
+                                            'priority' => $job->priority ?? 'normal',
+                                            'status' => $job->status,
+                                            'scheduled_date' => $job->expected_start_date ? $job->expected_start_date->setTimezone('Asia/Manila')->format('M d, Y') : 'Not scheduled',
+                                            'scheduled_time' => '--',
+                                            'notes' => $job->notes ?? 'No notes',
+                                            'created_at' => $job->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')
+                                        ]) }})" 
                                            class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
                                             View Details
-                                        </a>
+                                        </button>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -317,6 +337,134 @@
                 </svg>
                 <p class="text-sm font-semibold text-purple-900 dark:text-purple-100">View Schedule</p>
             </a>
+        </div>
+    </div>
+
+    <!-- Job Details Modal -->
+    <div 
+        x-show="showJobDetails" 
+        x-cloak
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-50 overflow-y-auto" 
+    >
+        <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="closeJobDetails()"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div 
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform scale-95"
+                x-transition:enter-end="opacity-100 transform scale-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform scale-100"
+                x-transition:leave-end="opacity-0 transform scale-95"
+                class="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+            >
+                <div class="p-6">
+                    <!-- Modal Header -->
+                    <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Job Order Details</h3>
+                        <button @click="closeJobDetails()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <!-- Modal Content -->
+                    <div class="space-y-6 min-h-[400px]">
+                        <!-- Loading Spinner -->
+                        <div x-show="isLoading" class="flex items-center justify-center h-96">
+                            <div class="relative w-12 h-12">
+                                <div class="absolute inset-0 rounded-full border-4 border-gray-300 dark:border-gray-600"></div>
+                                <div class="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 dark:border-t-blue-400 animate-spin"></div>
+                            </div>
+                        </div>
+
+                        <!-- Details Content -->
+                        <div x-show="!isLoading" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="space-y-6">
+                        <!-- Job Order Info -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Job Order Number</p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedJob?.job_order_number"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>
+                                <span x-text="selectedJob?.status" :class="{
+                                    'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300': selectedJob?.status === 'pending',
+                                    'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300': selectedJob?.status === 'assigned',
+                                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300': selectedJob?.status === 'in_progress',
+                                    'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': selectedJob?.status === 'completed',
+                                    'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300': selectedJob?.status === 'on_hold'
+                                }" class="inline-block px-2 py-1 text-xs font-medium rounded-full capitalize"></span>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Customer</p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedJob?.customer"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Priority</p>
+                                <span x-text="selectedJob?.priority" :class="{
+                                    'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300': selectedJob?.priority === 'urgent',
+                                    'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300': selectedJob?.priority === 'high',
+                                    'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300': selectedJob?.priority === 'normal',
+                                    'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300': selectedJob?.priority === 'low'
+                                }" class="inline-block px-2 py-1 text-xs font-medium rounded-full capitalize"></span>
+                            </div>
+                        </div>
+
+                        <!-- Service Details -->
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Service Type</p>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedJob?.service_type"></p>
+                        </div>
+
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Service Description</p>
+                            <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedJob?.service_description"></p>
+                        </div>
+
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Service Address</p>
+                            <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedJob?.service_address"></p>
+                        </div>
+
+                        <!-- Schedule Info -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Scheduled Date</p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedJob?.scheduled_date"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Scheduled Time</p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedJob?.scheduled_time"></p>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Notes</p>
+                            <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedJob?.notes || 'No notes'"></p>
+                        </div>
+
+                        <!-- Created At -->
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Created At</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400" x-text="selectedJob?.created_at"></p>
+                        </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal Footer -->
+                    <div class="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
+                        <button @click="closeJobDetails()" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Close</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

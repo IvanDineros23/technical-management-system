@@ -172,6 +172,7 @@
                                 </td>
                                 <td class="py-3">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full
+                                        {{ $order->status === 'pending' ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300' : '' }}
                                         {{ $order->status === 'assigned' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : '' }}
                                         {{ $order->status === 'in_progress' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' : '' }}
                                         {{ $order->status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : '' }}">
@@ -179,7 +180,7 @@
                                     </span>
                                 </td>
                                 <td class="py-3">
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $order->created_at->format('M d, Y') }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $order->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                                 </td>
                                 <td class="py-3">
                                     <a href="{{ route('technician.job-details', $order->id) }}" 

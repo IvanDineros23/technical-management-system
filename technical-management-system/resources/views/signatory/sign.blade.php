@@ -62,7 +62,7 @@
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">Calibration Date</p>
                         <p class="text-sm font-semibold text-gray-900 dark:text-white">
-                            {{ $calibration->calibration_date->format('M d, Y') }}
+                            {{ $calibration->calibration_date->setTimezone('Asia/Manila')->format('M d, Y') }}
                         </p>
                     </div>
                 </div>

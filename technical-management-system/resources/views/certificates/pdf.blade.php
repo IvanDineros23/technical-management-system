@@ -201,11 +201,11 @@
         <div class="info-grid">
             <div class="info-row">
                 <div class="info-label">Issue Date:</div>
-                <div class="info-value">{{ optional($certificate->issue_date)->format('F d, Y') ?? 'N/A' }}</div>
+                <div class="info-value">{{ optional($certificate->issue_date)->setTimezone('Asia/Manila')->format('F d, Y') ?? 'N/A' }}</div>
             </div>
             <div class="info-row">
                 <div class="info-label">Valid Until:</div>
-                <div class="info-value">{{ optional($certificate->valid_until)->format('F d, Y') ?? 'N/A' }}</div>
+                <div class="info-value">{{ optional($certificate->valid_until)->setTimezone('Asia/Manila')->format('F d, Y') ?? 'N/A' }}</div>
             </div>
             <div class="info-row">
                 <div class="info-label">Certificate Version:</div>
@@ -253,7 +253,7 @@
     </div>
     
     <div class="validity-notice">
-        <strong>⚠ Notice:</strong> This certificate is valid until {{ optional($certificate->valid_until)->format('F d, Y') ?? 'N/A' }}. 
+        <strong>⚠ Notice:</strong> This certificate is valid until {{ optional($certificate->valid_until)->setTimezone('Asia/Manila')->format('F d, Y') ?? 'N/A' }}. 
         Recalibration is recommended before this date to ensure continued accuracy and compliance.
     </div>
     
@@ -264,21 +264,21 @@
             <div class="signature-line"></div>
             <p class="name">{{ $certificate->issuedBy->name ?? 'N/A' }}</p>
             <p>Issued By</p>
-            <p>{{ optional($certificate->generated_at)->format('F d, Y') ?? 'N/A' }}</p>
+            <p>{{ optional($certificate->generated_at)->setTimezone('Asia/Manila')->format('F d, Y') ?? 'N/A' }}</p>
         </div>
         
         <div class="signature-box">
             <div class="signature-line"></div>
             <p class="name">{{ $certificate->approvedBy->name ?? 'N/A' }}</p>
             <p>Approved By</p>
-            <p>{{ optional($certificate->jobOrder?->approved_at ?? $certificate->generated_at)->format('F d, Y') ?? 'N/A' }}</p>
+            <p>{{ optional($certificate->jobOrder?->approved_at ?? $certificate->generated_at)->setTimezone('Asia/Manila')->format('F d, Y') ?? 'N/A' }}</p>
         </div>
     </div>
     
     <div class="footer">
         <p>This certificate is computer-generated and is valid without signature.</p>
         <p>For verification, please visit our website or scan the QR code.</p>
-        <p>Generated on {{ now()->format('F d, Y h:i A') }}</p>
+        <p>Generated on {{ now()->setTimezone('Asia/Manila')->format('F d, Y h:i A') }}</p>
     </div>
 </body>
 </html>

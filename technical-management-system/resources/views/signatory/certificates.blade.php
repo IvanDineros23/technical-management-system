@@ -71,7 +71,7 @@
                                         {{ optional($certificate->signedBy)->name ?? 'N/A' }}
                                     </td>
                                     <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
-                                        {{ $certificate->signed_at ? $certificate->signed_at->format('M d, Y H:i') : 'Not Signed' }}
+                                        {{ $certificate->signed_at ? $certificate->signed_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') : 'Not Signed' }}
                                     </td>
                                     <td class="py-3">
                                         <span class="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">

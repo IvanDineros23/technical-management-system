@@ -160,7 +160,7 @@
                         </div>
                         <div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Date Created</p>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $job->created_at->format('M d, Y h:i A') }}</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $job->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</p>
                         </div>
                     </div>
                     <div class="mt-4">
@@ -212,7 +212,7 @@
                                 <div>
                                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Calibration Date *</label>
                                     <input type="date" name="calibration_date" required 
-                                        value="{{ old('calibration_date', now()->format('Y-m-d')) }}"
+                                        value="{{ old('calibration_date', now()->setTimezone('Asia/Manila')->format('Y-m-d')) }}"
                                         class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                                 </div>
 

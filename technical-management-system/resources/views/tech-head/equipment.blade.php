@@ -80,7 +80,7 @@
                                 </td>
                                 <td class="py-3"><p class="text-sm text-gray-700 dark:text-gray-300">{{ $item->category ?? 'N/A' }}</p></td>
                                 <td class="py-3"><p class="text-sm text-gray-700 dark:text-gray-300">{{ $item->location ?? '-' }}</p></td>
-                                <td class="py-3"><p class="text-sm text-gray-700 dark:text-gray-300">{{ optional($item->updated_at)->format('M d, Y') }}</p></td>
+                                <td class="py-3"><p class="text-sm text-gray-700 dark:text-gray-300">{{ optional($item->updated_at)->setTimezone('Asia/Manila')->format('M d, Y') }}</p></td>
                                 <td class="py-3">
                                     <div class="flex gap-2 justify-end">
                                         <button @click="selectedId={{ $item->id }}; showEdit=true;" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">Edit</button>

@@ -265,11 +265,11 @@
                                     'service_description' => $order->service_description ?? '',
                                     'priority' => $order->priority ?? 'normal',
                                     'status' => $order->status,
-                                    'required_date' => optional($order->required_date)->format('M d, Y'),
+                                    'required_date' => optional($order->required_date)->setTimezone('Asia/Manila')->format('M d, Y'),
                                     'service_address' => $order->service_address ?? '',
                                     'city' => $order->city ?? '',
                                     'notes' => $order->notes ?? '',
-                                    'created_at' => $order->created_at->format('M d, Y h:i A')
+                                    'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')
                                 ]) }})"
                                 class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                             >
@@ -301,7 +301,7 @@
                                     </span>
                                 </td>
                                 <td class="py-3 text-center">
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ optional($order->required_date)->format('M d, Y') ?? $order->created_at->format('M d, Y') }}</p>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ optional($order->required_date)->setTimezone('Asia/Manila')->format('M d, Y') ?? $order->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                                 </td>
                                 <td class="py-3 text-center" @click.stop>
                                     <div class="flex gap-2 justify-center flex-wrap">
@@ -336,7 +336,7 @@
                                             </button>
                                         @endif
                                         
-                                        <button @click="openEdit({{ json_encode(['id' => $order->id, 'wo_number' => $order->job_order_number, 'customer' => $order->customer->name ?? 'N/A', 'service_type' => $order->service_type ?? 'N/A', 'service_description' => $order->service_description ?? '', 'priority' => $order->priority ?? 'normal', 'status' => $order->status, 'required_date' => optional($order->required_date)->format('Y-m-d'), 'service_address' => $order->service_address ?? '', 'city' => $order->city ?? '', 'notes' => $order->notes ?? '', 'created_at' => $order->created_at->format('M d, Y h:i A')]) }})" class="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/50 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm">
+                                        <button @click="openEdit({{ json_encode(['id' => $order->id, 'wo_number' => $order->job_order_number, 'customer' => $order->customer->name ?? 'N/A', 'service_type' => $order->service_type ?? 'N/A', 'service_description' => $order->service_description ?? '', 'priority' => $order->priority ?? 'normal', 'status' => $order->status, 'required_date' => optional($order->required_date)->setTimezone('Asia/Manila')->format('Y-m-d'), 'service_address' => $order->service_address ?? '', 'city' => $order->city ?? '', 'notes' => $order->notes ?? '', 'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')]) }})" class="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/50 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm">
                                             <span class="flex items-center gap-1">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -671,9 +671,11 @@
                             
                             <div>
                                 <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Select Technician</label>
-                                <select name="technician_id" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <select name="assigned_to" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">Choose a technician...</option>
-                                    {{-- Add technician options here --}}
+                                    @foreach($technicians as $technician)
+                                        <option value="{{ $technician->id }}">{{ $technician->name }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             

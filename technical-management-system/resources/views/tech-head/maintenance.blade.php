@@ -115,7 +115,7 @@
                             @endif
                             @if($item->next_maintenance)
                             <p class="text-xs text-gray-600 dark:text-gray-400">
-                                <span class="font-semibold">Next Due:</span> {{ optional($item->next_maintenance)->format('M d, Y') }}
+                                <span class="font-semibold">Next Due:</span> {{ optional($item->next_maintenance)->setTimezone('Asia/Manila')->format('M d, Y') }}
                             </p>
                             @endif
                         </div>
@@ -126,7 +126,7 @@
                                 <div class="space-y-1">
                                     @foreach($item->maintenanceRecords->take(2) as $record)
                                         <div class="text-xs text-gray-700 dark:text-gray-300">
-                                            <span class="font-medium">{{ optional($record->performed_at)->format('M d, Y') }}</span>
+                                            <span class="font-medium">{{ optional($record->performed_at)->setTimezone('Asia/Manila')->format('M d, Y') }}</span>
                                             <span class="text-gray-500">•</span>
                                             <span>{{ ucfirst($record->maintenance_type ?? 'general') }}</span>
                                         </div>

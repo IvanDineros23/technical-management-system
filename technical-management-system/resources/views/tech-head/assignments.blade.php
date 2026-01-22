@@ -189,11 +189,11 @@
                                     'customer' => $assignment->jobOrder->customer->name ?? 'N/A',
                                     'technician' => $assignment->assignedTo->name ?? 'Unassigned',
                                     'status' => $assignment->status,
-                                    'scheduled_date' => optional($assignment->scheduled_date)->format('M d, Y'),
-                                    'scheduled_time' => optional($assignment->scheduled_time)->format('h:i A'),
+                                    'scheduled_date' => $assignment->scheduled_date ? $assignment->scheduled_date->setTimezone('Asia/Manila')->format('M d, Y') : null,
+                                    'scheduled_time' => $assignment->scheduled_time ? \Carbon\Carbon::createFromFormat('H:i:s', $assignment->scheduled_time)->setTimezone('Asia/Manila')->format('h:i A') : null,
                                     'priority' => $assignment->priority ?? 'normal',
                                     'notes' => $assignment->notes ?? '',
-                                    'created_at' => $assignment->created_at->format('M d, Y h:i A')
+                                    'created_at' => $assignment->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')
                                 ]) }})"
                                 class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                             >
@@ -216,10 +216,10 @@
                                     </span>
                                 </td>
                                 <td class="py-3 text-center">
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ optional($assignment->scheduled_date)->format('M d, Y') ?? '—' }}</p>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ $assignment->scheduled_date ? $assignment->scheduled_date->setTimezone('Asia/Manila')->format('M d, Y') : '—' }}</p>
                                 </td>
                                 <td class="py-3 text-center">
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ optional($assignment->scheduled_time)->format('h:i A') ?? '—' }}</p>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ $assignment->scheduled_time ? \Carbon\Carbon::createFromFormat('H:i:s', $assignment->scheduled_time)->setTimezone('Asia/Manila')->format('h:i A') : '—' }}</p>
                                 </td>
                                 <td class="py-3 text-center" @click.stop>
                                     <div class="flex gap-3 justify-center">

@@ -70,9 +70,19 @@ class JobOrder extends Model
         return $this->hasManyThrough(Calibration::class, Assignment::class);
     }
 
+    public function certificate()
+    {
+        return $this->hasOne(Certificate::class, 'job_order_id');
+    }
+
     public function certificates()
     {
         return $this->hasMany(Certificate::class, 'job_order_id');
+    }
+
+    public function payment()
+    {
+        return $this->hasOne(Payment::class);
     }
 
     public function items()

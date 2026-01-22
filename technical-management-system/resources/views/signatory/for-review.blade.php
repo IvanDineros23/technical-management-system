@@ -73,7 +73,7 @@
                                         {{ $calibration->performedBy->name }}
                                     </td>
                                     <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
-                                        {{ $calibration->calibration_date->format('M d, Y') }}
+                                        {{ $calibration->calibration_date->setTimezone('Asia/Manila')->format('M d, Y') }}
                                     </td>
                                     <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
                                         {{ $calibration->measurementPoints->count() }}

@@ -715,6 +715,9 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         
         $query = JobOrder::with(['customer'])->withCount('certificates');
         
+        // Exclude work orders that already have assignments (they should appear in Assignments page only)
+        $query->whereDoesntHave('assignments');
+        
         // Search filter
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -743,7 +746,13 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             'priority' => $priority
         ]);
         
-        return view('tech-head.work-orders', compact('workOrders', 'search'));
+        // Get all active technicians for assignment
+        $technicianRoleId = \App\Models\Role::where('slug', 'tech_personnel')->value('id');
+        $technicians = \App\Models\User::where('role_id', $technicianRoleId)
+            ->orderBy('name')
+            ->get();
+        
+        return view('tech-head.work-orders', compact('workOrders', 'search', 'technicians'));
     })->name('work-orders');
 
     // Work Orders CRUD & Management
@@ -1461,11 +1470,29 @@ Route::middleware(['auth', 'verified', 'role:signatory'])->prefix('signatory')->
 
 // Accounting Routes
 Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')->name('accounting.')->group(function () {
-    Route::get('/dashboard', function () {
-        return 'Accounting Dashboard - Coming Soon';
-    })->name('dashboard');
+    // Dashboard
+    Route::get('/dashboard', [\App\Http\Controllers\AccountingController::class, 'dashboard'])->name('dashboard');
     
-    Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
+    // Payment Verification
+    Route::get('/payments', [\App\Http\Controllers\AccountingController::class, 'payments'])->name('payments');
+    Route::patch('/payments/{jobOrder}/verify', [\App\Http\Controllers\AccountingController::class, 'verifyPayment'])->name('payments.verify');
+    Route::post('/payments/{jobOrder}/mark-paid', [\App\Http\Controllers\AccountingController::class, 'markAsPaid'])->name('payments.mark-paid');
+    
+    // Certificates For Release
+    Route::get('/certificates/for-release', [\App\Http\Controllers\AccountingController::class, 'certificatesForRelease'])->name('certificates.for-release');
+    Route::patch('/certificates/{certificate}/release', [\App\Http\Controllers\AccountingController::class, 'releaseCertificate'])->name('certificates.release');
+    Route::patch('/certificates/{certificate}/hold', [\App\Http\Controllers\AccountingController::class, 'holdCertificate'])->name('certificates.hold');
+    
+    // Released Certificates (History)
+    Route::get('/certificates/released', [\App\Http\Controllers\AccountingController::class, 'releasedCertificates'])->name('certificates.released');
+    
+    // Timeline (Read-only)
+    Route::get('/timelines', [\App\Http\Controllers\AccountingController::class, 'allTimelines'])->name('timelines');
+    Route::get('/timeline/{jobOrder}', [\App\Http\Controllers\AccountingController::class, 'timeline'])->name('timeline');
+    
+    // Reports Export
+    Route::get('/reports', [\App\Http\Controllers\AccountingController::class, 'reports'])->name('reports');
+    Route::get('/reports/export', [\App\Http\Controllers\AccountingController::class, 'exportReports'])->name('reports.export');
 });
 
 // Admin Routes

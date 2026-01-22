@@ -93,7 +93,7 @@
                                 <span class="font-semibold">Technician:</span> {{ $report->submittedBy->name ?? 'N/A' }}
                             </p>
                             <p class="text-xs text-gray-600 dark:text-gray-400">
-                                <span class="font-semibold">Submitted:</span> {{ optional($report->created_at)->format('M d, Y h:i A') }}
+                                <span class="font-semibold">Submitted:</span> {{ optional($report->created_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}
                             </p>
                         </div>
                         @if($report->work_summary)
@@ -135,7 +135,7 @@
                                 <span class="font-semibold">Technician:</span> {{ $calibration->performedBy->name ?? 'N/A' }}
                             </p>
                             <p class="text-xs text-gray-600 dark:text-gray-400">
-                                <span class="font-semibold">Calibration Date:</span> {{ optional($calibration->calibration_date)->format('M d, Y') ?? 'N/A' }}
+                                <span class="font-semibold">Calibration Date:</span> {{ optional($calibration->calibration_date)->setTimezone('Asia/Manila')->format('M d, Y') ?? 'N/A' }}
                             </p>
                         </div>
                         <button @click="open=!open" class="text-xs text-blue-600 dark:text-blue-400 hover:underline mb-2">{{ __('View measurement points') }}</button>
@@ -237,13 +237,13 @@
                                     <p class="text-sm text-gray-700 dark:text-gray-300">{{ $report->submittedBy->name ?? 'N/A' }}</p>
                                 </td>
                                 <td class="py-3">
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ optional($report->created_at)->format('M d, Y') }}</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ optional($report->created_at)->format('h:i A') }}</p>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ optional($report->created_at)->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ optional($report->created_at)->setTimezone('Asia/Manila')->format('h:i A') }}</p>
                                 </td>
                                 <td class="py-3">
                                     <p class="text-sm text-gray-700 dark:text-gray-300">{{ $report->reviewedBy->name ?? '-' }}</p>
                                     @if($report->reviewed_at)
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ optional($report->reviewed_at)->format('M d, Y') }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ optional($report->reviewed_at)->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                                     @endif
                                 </td>
                                 <td class="py-3 text-right">
