@@ -45,29 +45,40 @@
             </div>
 
             <!-- CTA Buttons -->
-            <div class="flex justify-center gap-4 flex-wrap mb-16">
-                @if (Route::has('login'))
-                    <a href="{{ route('login') }}" 
-                       class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-blue-600 bg-white rounded-xl shadow-2xl hover:shadow-blue-200/50 hover:scale-105 transition-all duration-300">
-                        <span class="relative z-10 flex items-center gap-2">
-                            Login
-                            <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                            </svg>
-                        </span>
-                    </a>
-                @endif
-                @if (Route::has('register'))
-                    <a href="{{ route('register') }}" 
-                       class="group inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white border-2 border-white rounded-xl hover:bg-white hover:text-blue-600 transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105">
-                        <span class="flex items-center gap-2">
-                            Register
-                            <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-                            </svg>
-                        </span>
-                    </a>
-                @endif
+            <div class="flex flex-col items-center gap-4 mb-16">
+                <div class="flex justify-center gap-4 flex-wrap">
+                    @if (Route::has('login'))
+                        <a href="{{ route('login') }}" 
+                           class="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-blue-600 bg-white rounded-xl shadow-2xl hover:shadow-blue-200/50 hover:scale-105 transition-all duration-300">
+                            <span class="relative z-10 flex items-center gap-2">
+                                Login
+                                <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                </svg>
+                            </span>
+                        </a>
+                    @endif
+                    @if (Route::has('register'))
+                        <a href="{{ route('register') }}" 
+                           class="group inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white border-2 border-white rounded-xl hover:bg-white hover:text-blue-600 transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105">
+                            <span class="flex items-center gap-2">
+                                Register
+                                <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                                </svg>
+                            </span>
+                        </a>
+                    @endif
+                </div>
+                <a href="{{ route('verification.verify') }}" 
+                   class="group inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-blue-600 bg-white/90 border-2 border-white rounded-xl hover:bg-white hover:text-blue-700 transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105">
+                    <span class="flex items-center gap-2">
+                        Verify Certificate
+                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </span>
+                </a>
             </div>
     </section>
 </body>

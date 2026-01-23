@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{ApprovalController, CalibrationController, ProfileController, SignatoryController, TimelineController};
+use App\Http\Controllers\{ApprovalController, CalibrationController, ProfileController, SignatoryController, TimelineController, VerificationController};
 use App\Models\{Assignment, Calibration, Certificate, Customer, Equipment, JobOrder, Report, Role, User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -8,6 +8,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+// Public Certificate Verification
+Route::prefix('verify')->name('verification.')->group(function () {
+    // Search page (public)
+    Route::get('/', [VerificationController::class, 'verify'])->name('verify');
+    // Show certificate verification details
+    Route::get('/certificate/{certificateNumber}', [VerificationController::class, 'show'])->name('show');
+    // Lightweight status endpoint (JSON)
+    Route::get('/status/{certificateNumber}', [VerificationController::class, 'getStatus'])->name('status');
 });
 
 Route::get('/dashboard', function () {
@@ -1454,6 +1464,9 @@ Route::middleware(['auth', 'verified', 'role:signatory'])->prefix('signatory')->
     // Signed Certificates
     Route::get('/certificates', [SignatoryController::class, 'certificates'])->name('certificates');
     Route::get('/certificates/{certificate}/preview', [SignatoryController::class, 'previewCertificate'])->name('certificate.preview');
+
+    // Calibration Report PDF (for review and archival)
+    Route::get('/calibration/{calibration}/report-pdf', [CalibrationController::class, 'reportPdf'])->name('calibration.report-pdf');
     
     // Reports - View uploaded reports
     Route::get('/reports', [SignatoryController::class, 'reports'])->name('reports');

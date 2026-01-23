@@ -20,9 +20,14 @@
                     Calibration ID: {{ $calibration->calibration_number }}
                 </p>
             </div>
-            <a href="{{ route('signatory.for-review') }}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">
-                ← Back to list
-            </a>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('signatory.calibration.report-pdf', $calibration) }}" class="inline-block px-3 py-1 bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-slate-200 dark:hover:bg-gray-600 transition-colors">
+                    📥 Download Report PDF
+                </a>
+                <a href="{{ route('signatory.for-review') }}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">
+                    ← Back to list
+                </a>
+            </div>
         </div>
 
         <!-- Status Overview -->
