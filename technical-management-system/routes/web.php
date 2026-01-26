@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{ApprovalController, CalibrationController, ProfileController, SignatoryController, TimelineController, VerificationController};
+use App\Http\Controllers\{AdminController, ApprovalController, CalibrationController, ProfileController, SignatoryController, TimelineController, VerificationController};
 use App\Models\{Assignment, Calibration, Certificate, Customer, Equipment, JobOrder, Report, Role, User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1510,11 +1510,39 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
 
 // Admin Routes
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        return 'Admin Dashboard - Coming Soon';
-    })->name('dashboard');
+    // SYSTEM ADMINISTRATION SECTION (Admin-only pages)
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
     
-    Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
+    Route::get('/users', function () {
+        return view('admin.users');
+    })->name('users.index');
+    
+    Route::get('/roles', function () {
+        return view('admin.roles');
+    })->name('roles.index');
+    
+    Route::get('/equipment', function () {
+        return view('admin.equipment');
+    })->name('equipment.index');
+    
+    Route::get('/inventory', function () {
+        return view('admin.inventory');
+    })->name('inventory.index');
+    
+    Route::get('/accounting', function () {
+        return view('admin.accounting');
+    })->name('accounting.index');
+    
+    Route::get('/settings', function () {
+        return view('admin.settings');
+    })->name('settings.index');
+    
+    Route::get('/audit-logs', function () {
+        return view('admin.audit-logs');
+    })->name('audit-logs.index');
+    
+    // Workflow Tracking
+    Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline.index');
 });
 
 Route::middleware('auth')->group(function () {
