@@ -11,6 +11,13 @@
 
 @section('content')
 <div class="space-y-6">
+    <!-- Current Date & Time Display -->
+    <div class="text-right mb-4">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+            <span id="current-datetime"></span>
+        </p>
+    </div>
+
     <!-- Key Metrics -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <!-- Total Users -->
@@ -173,7 +180,7 @@
                                     {{ $user->is_active ? 'Active' : 'Inactive' }}
                                 </span>
                             </td>
-                            <td class="py-3 text-gray-600 dark:text-gray-400 text-xs">{{ $user->last_login?->format('M d, Y H:i') ?? 'Never' }}</td>
+                            <td class="py-3 text-gray-600 dark:text-gray-400 text-xs">{{ $user->last_login }}</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -189,7 +196,7 @@
     <!-- Audit Activity -->
     <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <div class="flex items-center justify-between mb-6">
-            <h3 class="text-base font-bold text-slate-900 dark:text-white">📋 Audit Activity</h3>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">📋 Audit Logs</h3>
             <a href="{{ route('admin.audit-logs.index') }}" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">View all →</a>
         </div>
 
@@ -237,4 +244,30 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+    // Display current date and time in Asia/Manila timezone
+    function updateDateTime() {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Manila',
+            year: 'numeric',
+            month: 'long',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+        
+        const datetimeStr = formatter.format(now);
+        document.getElementById('current-datetime').textContent = datetimeStr;
+    }
+    
+    // Update on page load and every second
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+</script>
 @endsection

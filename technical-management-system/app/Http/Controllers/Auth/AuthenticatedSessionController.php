@@ -26,6 +26,19 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        // Update last_login_at to now (Asia/Manila)
+        $user = Auth::user();
+        if ($user) {
+            $user->last_login_at = now('Asia/Manila');
+            $user->save();
+            \App\Helpers\AuditLogHelper::log(
+                'login',
+                'User',
+                $user->id,
+                'User logged in'
+            );
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard', absolute: false));
@@ -36,6 +49,16 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+        if ($user) {
+            \App\Helpers\AuditLogHelper::log(
+                'logout',
+                'User',
+                $user->id,
+                'User logged out'
+            );
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

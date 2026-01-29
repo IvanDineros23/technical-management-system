@@ -3,13 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
     public function dashboard()
     {
-        // Admin System Stats
+        // Admin System Stats - Real data from database
         $stats = [
             'total_users' => User::count(),
             'active_users' => User::where('is_active', true)->count(),
@@ -28,66 +30,49 @@ class AdminController extends Controller
             })->count(),
         ];
 
-        // Recent User Activity (mock data for admin focus)
+        // Recent User Activity - Real data from database
         $recentUserActivity = User::latest('updated_at')
             ->limit(8)
             ->get()
             ->map(function ($user) {
+                $lastLogin = $user->last_login_at ?? $user->updated_at;
+                $lastLoginFormatted = 'Never';
+                if ($lastLogin) {
+                    try {
+                        if (!($lastLogin instanceof \Carbon\Carbon)) {
+                            $lastLogin = \Carbon\Carbon::parse($lastLogin);
+                        }
+                        $lastLoginFormatted = $lastLogin->timezone('Asia/Manila')->format('M d, Y h:i A');
+                    } catch (\Exception $e) {
+                        $lastLoginFormatted = 'Invalid date';
+                    }
+                }
                 return (object) [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role?->name ?? 'N/A',
-                    'last_login' => $user->last_login_at ?? $user->updated_at,
+                    'last_login' => $lastLoginFormatted,
                     'is_active' => $user->is_active ?? true,
                 ];
             });
 
-        // Recent Audit Activity (mock data - would be from audit_logs table)
-        $auditActivity = collect([
-            (object) [
-                'id' => 1,
-                'action' => 'User Created',
-                'model' => 'User',
-                'ref_id' => 'USR-2025-042',
-                'user_name' => 'Admin System',
-                'created_at' => now()->subHours(2),
-            ],
-            (object) [
-                'id' => 2,
-                'action' => 'Role Updated',
-                'model' => 'Role',
-                'ref_id' => 'TECHNICIAN',
-                'user_name' => 'John Admin',
-                'created_at' => now()->subHours(4),
-            ],
-            (object) [
-                'id' => 3,
-                'action' => 'Settings Changed',
-                'model' => 'Settings',
-                'ref_id' => 'SYSTEM_CONFIG',
-                'user_name' => 'Admin Master',
-                'created_at' => now()->subHours(6),
-            ],
-            (object) [
-                'id' => 4,
-                'action' => 'User Deactivated',
-                'model' => 'User',
-                'ref_id' => 'USR-2025-041',
-                'user_name' => 'Admin System',
-                'created_at' => now()->subHours(8),
-            ],
-            (object) [
-                'id' => 5,
-                'action' => 'Permission Added',
-                'model' => 'Permission',
-                'ref_id' => 'EDIT_EQUIPMENT',
-                'user_name' => 'John Admin',
-                'created_at' => now()->subHours(10),
-            ],
-        ]);
+        // Recent Audit Activity - Real data from database
+        $auditActivity = AuditLog::latest('created_at')
+            ->limit(5)
+            ->get()
+            ->map(function ($log) {
+                return (object) [
+                    'id' => $log->id,
+                    'action' => $log->action ?? 'Unknown Action',
+                    'model' => $log->model ?? 'System',
+                    'ref_id' => $log->ref_id ?? 'N/A',
+                    'user_name' => $log->user?->name ?? 'System',
+                    'created_at' => $log->created_at,
+                ];
+            });
 
-        // System Configuration Status (mock data)
+        // System Configuration Status
         $systemStatus = [
             [
                 'name' => 'Database',
