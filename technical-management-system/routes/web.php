@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{AdminController, ApprovalController, AuditLogController, CalibrationController, EquipmentController, ProfileController, RoleController, SignatoryController, TimelineController, VerificationController};
+use App\Http\Controllers\{AdminController, ApprovalController, AuditLogController, CalibrationController, EquipmentController, InventoryController, ProfileController, RoleController, SignatoryController, TimelineController, VerificationController};
 use App\Models\{Assignment, Calibration, Certificate, Customer, Equipment, JobOrder, Report, Role, User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -381,9 +381,8 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         return view('technician.equipment', compact('equipment', 'equipmentStats'));
     })->name('equipment');
     
-    Route::get('/inventory', function () {
-        return view('technician.inventory');
-    })->name('inventory');
+    Route::get('/inventory', [InventoryController::class, 'technicianIndex'])->name('inventory');
+    Route::post('/inventory/request', [InventoryController::class, 'requestItem'])->name('inventory.request');
     
     Route::get('/reports', function () {
         $user = auth()->user();
@@ -1319,6 +1318,11 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         return view('tech-head.equipment', compact('equipment', 'equipmentStats'));
     })->name('equipment');
 
+    Route::get('/inventory', [InventoryController::class, 'techHeadIndex'])->name('inventory');
+    Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
+    Route::put('/inventory/{inventoryItem}', [InventoryController::class, 'update'])->name('inventory.update');
+    Route::delete('/inventory/{inventoryItem}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+
     // Equipment CRUD
     Route::post('/equipment', function (\Illuminate\Http\Request $request) {
         $data = $request->validate([
@@ -1559,9 +1563,10 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('/equipment/{equipment}/calibrate', [EquipmentController::class, 'calibrate'])->name('equipment.calibrate');
     Route::delete('/equipment/{equipment}', [EquipmentController::class, 'destroy'])->name('equipment.destroy');
     
-    Route::get('/inventory', function () {
-        return view('admin.inventory');
-    })->name('inventory.index');
+    Route::get('/inventory', [InventoryController::class, 'adminIndex'])->name('inventory.index');
+    Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
+    Route::put('/inventory/{inventoryItem}', [InventoryController::class, 'update'])->name('inventory.update');
+    Route::delete('/inventory/{inventoryItem}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
     
     Route::get('/accounting', function () {
         return view('admin.accounting');
