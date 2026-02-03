@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Assignment, Calibration, JobOrder, JobOrderItem, MeasurementPoint, UncertaintyCalculation};
+use App\Helpers\AuditLogHelper;
 use Illuminate\Http\Request;
 
 class CalibrationController extends Controller
@@ -121,6 +122,13 @@ class CalibrationController extends Controller
             ]);
         }
 
+        AuditLogHelper::log(
+            action: 'UPDATE',
+            modelType: 'Calibration',
+            modelId: $calibration->id,
+            description: "Saved measurement points for calibration: {$calibration->calibration_number}"
+        );
+
         return redirect()->route('technician.calibration.show', $calibration->assignment_id)
             ->with('status', 'Measurement points saved successfully!');
     }
@@ -151,6 +159,13 @@ class CalibrationController extends Controller
             'pass_fail' => $validated['pass_fail'],
             'remarks' => $validated['remarks'] ?? null,
         ]);
+
+        AuditLogHelper::log(
+            action: 'SUBMIT',
+            modelType: 'Calibration',
+            modelId: $calibration->id,
+            description: "Submitted calibration {$calibration->calibration_number} for review (Result: {$validated['pass_fail']})"
+        );
 
         return redirect()->route('technician.dashboard')
             ->with('status', 'Calibration data submitted for technical review!');

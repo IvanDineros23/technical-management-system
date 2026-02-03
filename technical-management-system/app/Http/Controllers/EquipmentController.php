@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Equipment;
+use App\Helpers\AuditLogHelper;
 use Illuminate\Http\Request;
 
 class EquipmentController extends Controller
@@ -61,20 +62,46 @@ class EquipmentController extends Controller
 
         $data['calibration_required'] = (bool) ($data['calibration_required'] ?? false);
 
-        Equipment::create($data);
+        $equipment = Equipment::create($data);
+
+        AuditLogHelper::log(
+            action: 'CREATE',
+            modelType: 'Equipment',
+            modelId: $equipment->id,
+            description: "Registered equipment: {$data['name']} (Code: {$data['equipment_code']})",
+            newValues: $data
+        );
 
         return redirect()->route('admin.equipment.index')->with('status', 'Equipment registered');
     }
 
     public function destroy(Equipment $equipment)
     {
+        $equipmentData = $equipment->toArray();
+        $equipmentId = $equipment->id;
+        $equipmentName = $equipment->name;
+        
         $equipment->delete();
+
+        AuditLogHelper::log(
+            action: 'DELETE',
+            modelType: 'Equipment',
+            modelId: $equipmentId,
+            description: "Deleted equipment: {$equipmentName}",
+            oldValues: $equipmentData
+        );
 
         return redirect()->route('admin.equipment.index')->with('status', 'Equipment deleted');
     }
 
     public function calibrate(Request $request, Equipment $equipment)
     {
+        $oldValues = [
+            'last_maintenance' => $equipment->last_maintenance,
+            'next_maintenance' => $equipment->next_maintenance,
+            'status' => $equipment->status,
+        ];
+
         $data = $request->validate([
             'last_maintenance' => 'required|date',
             'next_maintenance' => 'nullable|date',
@@ -88,6 +115,15 @@ class EquipmentController extends Controller
             'status' => $data['status'] ?? $equipment->status,
             'notes' => $data['notes'] ?? $equipment->notes,
         ]);
+
+        AuditLogHelper::log(
+            action: 'CALIBRATE',
+            modelType: 'Equipment',
+            modelId: $equipment->id,
+            description: "Updated calibration for: {$equipment->name}",
+            oldValues: $oldValues,
+            newValues: $data
+        );
 
         return redirect()->route('admin.equipment.index')->with('status', 'Calibration updated');
     }

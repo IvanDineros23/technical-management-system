@@ -12,10 +12,12 @@ class AuditLogHelper
      * Log an audit event.
      *
      * @param string $action
-     * @param string $model
-     * @param string|null $refId
+     * @param string $modelType
+     * @param int|string|null $modelId
      * @param string|null $description
-     * @param array|null $changes
+     * @param array|null $oldValues
+     * @param array|null $newValues
+     * @param array|null $changedFields
      * @return void
      */
     public static function log($action, $modelType, $modelId = null, $description = null, $oldValues = null, $newValues = null, $changedFields = null)
@@ -23,9 +25,9 @@ class AuditLogHelper
         $user = Auth::user();
         AuditLog::create([
             'user_id' => $user ? $user->id : null,
-            'action' => $action,
+            'action' => strtoupper($action),
             'model_type' => $modelType,
-            'model_id' => $modelId,
+            'model_id' => $modelId ?? 0,
             'old_values' => $oldValues,
             'new_values' => $newValues,
             'changed_fields' => $changedFields,

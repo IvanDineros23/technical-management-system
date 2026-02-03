@@ -1543,6 +1543,12 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
     // Reports Export
     Route::get('/reports', [\App\Http\Controllers\AccountingController::class, 'reports'])->name('reports');
     Route::get('/reports/export', [\App\Http\Controllers\AccountingController::class, 'exportReports'])->name('reports.export');
+    
+    // Invoices (unified with admin)
+    Route::get('/invoices', [\App\Http\Controllers\InvoiceController::class, 'index'])->name('invoices');
+    Route::post('/invoices', [\App\Http\Controllers\InvoiceController::class, 'store'])->name('invoices.store');
+    Route::patch('/invoices/{invoice}/pay', [\App\Http\Controllers\InvoiceController::class, 'markAsPaid'])->name('invoices.pay');
+    Route::delete('/invoices/{invoice}', [\App\Http\Controllers\InvoiceController::class, 'destroy'])->name('invoices.destroy');
 });
 
 // Admin Routes
@@ -1568,9 +1574,10 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::put('/inventory/{inventoryItem}', [InventoryController::class, 'update'])->name('inventory.update');
     Route::delete('/inventory/{inventoryItem}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
     
-    Route::get('/accounting', function () {
-        return view('admin.accounting');
-    })->name('accounting.index');
+    Route::get('/accounting', [\App\Http\Controllers\InvoiceController::class, 'index'])->name('accounting.index');
+    Route::post('/accounting/invoices', [\App\Http\Controllers\InvoiceController::class, 'store'])->name('invoices.store');
+    Route::patch('/accounting/invoices/{invoice}/pay', [\App\Http\Controllers\InvoiceController::class, 'markAsPaid'])->name('invoices.pay');
+    Route::delete('/accounting/invoices/{invoice}', [\App\Http\Controllers\InvoiceController::class, 'destroy'])->name('invoices.destroy');
     
     Route::get('/settings', function () {
         return view('admin.settings');

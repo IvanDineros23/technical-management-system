@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\InventoryItem;
 use App\Models\InventoryRequest;
+use App\Helpers\AuditLogHelper;
 use Illuminate\Http\Request;
 
 class InventoryController extends Controller
@@ -28,17 +29,35 @@ class InventoryController extends Controller
         $data = $this->validateItem($request, null);
         $data['status'] = $this->computeStatus($data['quantity'], $data['min_level']);
 
-        InventoryItem::create($data);
+        $item = InventoryItem::create($data);
+
+        AuditLogHelper::log(
+            action: 'CREATE',
+            modelType: 'Inventory',
+            modelId: $item->id,
+            description: "Added inventory item: {$data['name']} (SKU: {$data['sku']})",
+            newValues: $data
+        );
 
         return redirect()->back()->with('status', 'Inventory item added');
     }
 
     public function update(Request $request, InventoryItem $inventoryItem)
     {
+        $oldValues = $inventoryItem->toArray();
         $data = $this->validateItem($request, $inventoryItem->id);
         $data['status'] = $this->computeStatus($data['quantity'], $data['min_level']);
 
         $inventoryItem->update($data);
+
+        AuditLogHelper::log(
+            action: 'UPDATE',
+            modelType: 'Inventory',
+            modelId: $inventoryItem->id,
+            description: "Updated inventory item: {$data['name']} (SKU: {$data['sku']})",
+            oldValues: $oldValues,
+            newValues: $data
+        );
 
         return redirect()->back()->with('status', 'Inventory item updated');
     }
@@ -113,7 +132,20 @@ class InventoryController extends Controller
 
     public function destroy(InventoryItem $inventoryItem)
     {
+        $itemData = $inventoryItem->toArray();
+        $itemId = $inventoryItem->id;
+        $itemName = $inventoryItem->name;
+        
         $inventoryItem->delete();
+
+        AuditLogHelper::log(
+            action: 'DELETE',
+            modelType: 'Inventory',
+            modelId: $itemId,
+            description: "Deleted inventory item: {$itemName}",
+            oldValues: $itemData
+        );
+
         return redirect()->back()->with('status', 'Inventory item deleted successfully');
     }
 
@@ -125,13 +157,22 @@ class InventoryController extends Controller
             'purpose' => 'required|string|max:500',
         ]);
 
-        InventoryRequest::create([
+        $item = InventoryItem::find($validated['inventory_item_id']);
+
+        $inventoryRequest = InventoryRequest::create([
             'inventory_item_id' => $validated['inventory_item_id'],
             'requested_by' => auth()->id(),
             'quantity' => $validated['quantity'],
             'purpose' => $validated['purpose'],
             'status' => 'pending',
         ]);
+
+        AuditLogHelper::log(
+            action: 'CREATE',
+            modelType: 'InventoryRequest',
+            modelId: $inventoryRequest->id,
+            description: "Requested {$validated['quantity']} {$item->name} for: {$validated['purpose']}"
+        );
 
         return redirect()->back()->with('status', 'Request submitted successfully! Waiting for approval.');
     }

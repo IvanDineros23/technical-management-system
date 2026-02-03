@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Helpers\AuditLogHelper;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -59,13 +60,34 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $oldValues = [
+            'name' => $user->name,
+            'email' => $user->email,
+        ];
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $user->fill($request->validated());
+
+        $changedFields = [];
+        if ($user->isDirty('name')) $changedFields[] = 'name';
+        if ($user->isDirty('email')) {
+            $changedFields[] = 'email';
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
+
+        if (!empty($changedFields)) {
+            AuditLogHelper::log(
+                action: 'UPDATE',
+                modelType: 'Profile',
+                modelId: $user->id,
+                description: "Updated profile information",
+                oldValues: $oldValues,
+                newValues: $request->validated(),
+                changedFields: $changedFields
+            );
+        }
 
         return Redirect::route('profile.show')->with('status', 'profile-updated');
     }
