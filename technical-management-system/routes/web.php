@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{AdminController, ApprovalController, AuditLogController, CalibrationController, EquipmentController, InventoryController, ProfileController, RoleController, SignatoryController, TimelineController, VerificationController};
+use App\Http\Controllers\{AdminController, ApprovalController, AuditLogController, CalibrationController, EquipmentController, InventoryController, ProfileController, RoleController, SettingsController, SignatoryController, TimelineController, VerificationController};
 use App\Models\{Assignment, Calibration, Certificate, Customer, Equipment, JobOrder, Report, Role, User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1579,9 +1579,17 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::patch('/accounting/invoices/{invoice}/pay', [\App\Http\Controllers\InvoiceController::class, 'markAsPaid'])->name('invoices.pay');
     Route::delete('/accounting/invoices/{invoice}', [\App\Http\Controllers\InvoiceController::class, 'destroy'])->name('invoices.destroy');
     
-    Route::get('/settings', function () {
-        return view('admin.settings');
-    })->name('settings.index');
+    Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings/general', [\App\Http\Controllers\SettingsController::class, 'updateGeneral'])->name('settings.general.update');
+    Route::post('/settings/backup/create', [\App\Http\Controllers\SettingsController::class, 'createBackup'])->name('settings.backup.create');
+    Route::get('/settings/backup/download/{filename}', [\App\Http\Controllers\SettingsController::class, 'downloadBackup'])->name('settings.backup.download');
+    Route::delete('/settings/backup/delete/{filename}', [\App\Http\Controllers\SettingsController::class, 'deleteBackup'])->name('settings.backup.delete');
+    Route::post('/settings/backup/restore', [\App\Http\Controllers\SettingsController::class, 'restoreBackup'])->name('settings.backup.restore');
+    Route::post('/settings/security', [\App\Http\Controllers\SettingsController::class, 'updateSecurity'])->name('settings.security.update');
+    Route::post('/settings/cache/clear', [\App\Http\Controllers\SettingsController::class, 'clearCache'])->name('settings.cache.clear');
+    Route::post('/settings/database/optimize', [\App\Http\Controllers\SettingsController::class, 'optimizeDatabase'])->name('settings.database.optimize');
+    Route::post('/settings/logs/clear', [\App\Http\Controllers\SettingsController::class, 'clearLogs'])->name('settings.logs.clear');
+    Route::post('/settings/sessions/terminate', [\App\Http\Controllers\SettingsController::class, 'terminateAllSessions'])->name('settings.sessions.terminate');
     
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     
