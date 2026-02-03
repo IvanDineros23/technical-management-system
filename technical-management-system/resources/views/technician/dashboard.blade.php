@@ -209,8 +209,54 @@
                     </svg>
                     Alerts
                 </h3>
-                <div class="text-center py-4 flex-1 flex items-center justify-center">
-                    <p class="text-gray-500 dark:text-gray-400 text-sm">No alerts at the moment</p>
+                <div class="space-y-3 flex-1">
+                    @if($overdueAssignments->count() > 0)
+                        <div>
+                            <p class="text-xs font-semibold text-red-600 dark:text-red-400 mb-2">Overdue</p>
+                            <div class="space-y-2">
+                                @foreach($overdueAssignments as $assignment)
+                                    <div class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40">
+                                        <p class="text-sm font-semibold text-red-900 dark:text-red-100">
+                                            {{ $assignment->jobOrder->job_order_number ?? 'Job Order' }}
+                                        </p>
+                                        <p class="text-xs text-red-700 dark:text-red-300">
+                                            {{ $assignment->jobOrder->customer->name ?? 'N/A' }}
+                                        </p>
+                                        @if($assignment->scheduled_date)
+                                            <p class="text-xs text-red-600 dark:text-red-300">Due: {{ \Carbon\Carbon::parse($assignment->scheduled_date)->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($dueTodayAssignments->count() > 0)
+                        <div>
+                            <p class="text-xs font-semibold text-yellow-600 dark:text-yellow-400 mb-2">Due Today</p>
+                            <div class="space-y-2">
+                                @foreach($dueTodayAssignments as $assignment)
+                                    <div class="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/40">
+                                        <p class="text-sm font-semibold text-yellow-900 dark:text-yellow-100">
+                                            {{ $assignment->jobOrder->job_order_number ?? 'Job Order' }}
+                                        </p>
+                                        <p class="text-xs text-yellow-700 dark:text-yellow-300">
+                                            {{ $assignment->jobOrder->customer->name ?? 'N/A' }}
+                                        </p>
+                                        @if($assignment->scheduled_time)
+                                            <p class="text-xs text-yellow-600 dark:text-yellow-300">Time: {{ \Carbon\Carbon::parse($assignment->scheduled_time)->format('h:i A') }}</p>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($overdueAssignments->count() === 0 && $dueTodayAssignments->count() === 0)
+                        <div class="text-center py-4 flex items-center justify-center">
+                            <p class="text-gray-500 dark:text-gray-400 text-sm">No alerts at the moment</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

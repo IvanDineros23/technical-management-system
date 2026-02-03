@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{AdminController, ApprovalController, CalibrationController, ProfileController, SignatoryController, TimelineController, VerificationController};
+use App\Http\Controllers\{AdminController, ApprovalController, AuditLogController, CalibrationController, EquipmentController, ProfileController, RoleController, SignatoryController, TimelineController, VerificationController};
 use App\Models\{Assignment, Calibration, Certificate, Customer, Equipment, JobOrder, Report, Role, User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,7 +41,13 @@ Route::get('/dashboard', function () {
         }
     }
     
-    return view('dashboard');
+    $stats = [
+        'jobOrders' => JobOrder::count(),
+        'customers' => Customer::count(),
+        'users' => User::count(),
+    ];
+
+    return view('dashboard', compact('stats'));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // Marketing Routes
@@ -301,6 +307,7 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
 Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technician')->name('technician.')->group(function () {
     Route::get('/dashboard', function () {
         // Temporarily show all job orders until technician assignment is implemented
+        $user = auth()->user();
         $todayAssignments = \App\Models\JobOrder::whereDate('created_at', today())->count();
         $pendingJobs = \App\Models\JobOrder::where('status', 'pending')->count();
         $inProgressJobs = \App\Models\JobOrder::where('status', 'in_progress')->count();
@@ -309,13 +316,32 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             ->latest()
             ->take(5)
             ->get();
+
+        $overdueAssignments = \App\Models\Assignment::with(['jobOrder.customer'])
+            ->where('assigned_to', $user->id)
+            ->whereIn('status', ['assigned', 'in_progress'])
+            ->whereNotNull('scheduled_date')
+            ->whereDate('scheduled_date', '<', today())
+            ->orderBy('scheduled_date')
+            ->take(3)
+            ->get();
+
+        $dueTodayAssignments = \App\Models\Assignment::with(['jobOrder.customer'])
+            ->where('assigned_to', $user->id)
+            ->whereIn('status', ['assigned', 'in_progress'])
+            ->whereDate('scheduled_date', today())
+            ->orderBy('scheduled_time')
+            ->take(3)
+            ->get();
         
         return view('technician.dashboard', compact(
             'todayAssignments',
             'pendingJobs',
             'inProgressJobs',
             'completedJobs',
-            'recentAssignments'
+            'recentAssignments',
+            'overdueAssignments',
+            'dueTodayAssignments'
         ));
     })->name('dashboard');
     
@@ -345,7 +371,14 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     })->name('maintenance');
     
     Route::get('/equipment', function () {
-        return view('technician.equipment');
+        $equipment = Equipment::latest()->paginate(20);
+        $equipmentStats = [
+            'total' => Equipment::count(),
+            'available' => Equipment::where('status', 'available')->count(),
+            'in_use' => Equipment::where('status', 'in_use')->count(),
+            'maintenance' => Equipment::where('status', 'maintenance')->count(),
+        ];
+        return view('technician.equipment', compact('equipment', 'equipmentStats'));
     })->name('equipment');
     
     Route::get('/inventory', function () {
@@ -1513,17 +1546,18 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     // SYSTEM ADMINISTRATION SECTION (Admin-only pages)
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
     
-    Route::get('/users', function () {
-        return view('admin.users');
-    })->name('users.index');
+    Route::get('/users', [AdminController::class, 'users'])->name('users.index');
+    Route::post('/users', [AdminController::class, 'storeUser'])->name('users.store');
+    Route::put('/users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
+    Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('users.delete');
+    Route::post('/users/{user}/deactivate', [AdminController::class, 'deactivateUser'])->name('users.deactivate');
     
-    Route::get('/roles', function () {
-        return view('admin.roles');
-    })->name('roles.index');
+    Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     
-    Route::get('/equipment', function () {
-        return view('admin.equipment');
-    })->name('equipment.index');
+    Route::get('/equipment', [EquipmentController::class, 'index'])->name('equipment.index');
+    Route::post('/equipment', [EquipmentController::class, 'store'])->name('equipment.store');
+    Route::post('/equipment/{equipment}/calibrate', [EquipmentController::class, 'calibrate'])->name('equipment.calibrate');
+    Route::delete('/equipment/{equipment}', [EquipmentController::class, 'destroy'])->name('equipment.destroy');
     
     Route::get('/inventory', function () {
         return view('admin.inventory');
@@ -1537,9 +1571,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         return view('admin.settings');
     })->name('settings.index');
     
-    Route::get('/audit-logs', function () {
-        return view('admin.audit-logs');
-    })->name('audit-logs.index');
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     
     // Workflow Tracking
     Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline.index');

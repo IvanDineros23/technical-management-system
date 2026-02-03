@@ -78,26 +78,45 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    @forelse($auditLogs as $log)
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">Jan 15, 2024 2:35 PM</td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">Admin User</td>
-                        <td class="px-6 py-4">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">Created</span>
+                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                            {{ $log->created_at?->timezone('Asia/Manila')->format('M d, Y h:i A') ?? 'N/A' }}
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">Job Orders</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">Created job order JO-2024-045</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">192.168.1.100</td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">Jan 15, 2024 1:20 PM</td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">Admin User</td>
-                        <td class="px-6 py-4">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Login</span>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                            {{ $log->user?->name ?? 'System' }}
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">System</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">User logged in</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">192.168.1.100</td>
+                        <td class="px-6 py-4">
+                            @php
+                                $actionClasses = [
+                                    'CREATE' => 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
+                                    'UPDATE' => 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200',
+                                    'DELETE' => 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
+                                    'LOGIN' => 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200',
+                                ];
+                                $classes = $actionClasses[$log->action] ?? 'bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200';
+                            @endphp
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium {{ $classes }}">
+                                {{ ucfirst(strtolower($log->action)) }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                            {{ $log->model_type ?? 'System' }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                            {{ $log->description ?? 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                            {{ $log->ip_address ?? 'N/A' }}
+                        </td>
                     </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                            No audit logs found
+                        </td>
+                    </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

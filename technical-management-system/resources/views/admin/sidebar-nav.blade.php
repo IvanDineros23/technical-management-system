@@ -14,7 +14,7 @@
 <a href="{{ route('admin.users.index') }}"
    class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->routeIs('admin.users.*') ? 'bg-blue-600 text-white shadow-md dark:bg-blue-700' : 'text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700' }} transition-colors">
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21.11V16a4.002 4.002 0 00-3-3.874M15 21.11a4.002 4.002 0 01-6 0m6 0a4.002 4.002 0 01-6 0m6 0V16a4.002 4.002 0 00-3-3.874M9 21.11V16a4.002 4.002 0 013-3.874M9 21.11a4.002 4.002 0 01-6 0m6 0V16a4.002 4.002 0 013-3.874m-6 0a4 4 0 110-5.292m6 5.292a4 4 0 110-5.292"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M7 20H2v-2a3 3 0 015.856-1.487M12 14a4 4 0 100-8 4 4 0 000 8z"/>
     </svg>
     Users
 </a>

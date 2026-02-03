@@ -1,7 +1,7 @@
 @extends('layouts.dashboard')
 @section('title', 'Equipment')
 @section('page-title', 'My Equipment & Tools')
-@section('page-subtitle', 'Tools and equipment checkout management')
+@section('page-subtitle', 'Tools and equipment overview')
 
 @section('sidebar-nav')
     <a href="{{ route('technician.dashboard') }}"
@@ -95,7 +95,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600 dark:text-gray-400">Checked Out</p>
-                    <h3 class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">8</h3>
+                    <h3 class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{{ $equipmentStats['in_use'] ?? 0 }}</h3>
                 </div>
                 <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -109,7 +109,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600 dark:text-gray-400">Available</p>
-                    <h3 class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">45</h3>
+                    <h3 class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{{ $equipmentStats['available'] ?? 0 }}</h3>
                 </div>
                 <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,7 +123,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600 dark:text-gray-400">In Use (Others)</p>
-                    <h3 class="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">12</h3>
+                    <h3 class="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">{{ ($equipmentStats['total'] ?? 0) - ($equipmentStats['available'] ?? 0) - ($equipmentStats['maintenance'] ?? 0) }}</h3>
                 </div>
                 <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,7 +137,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600 dark:text-gray-400">Under Repair</p>
-                    <h3 class="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">3</h3>
+                    <h3 class="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{{ $equipmentStats['maintenance'] ?? 0 }}</h3>
                 </div>
                 <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,7 +182,7 @@
                 <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 15, 2026</span>
                     <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        Return
+                        View
                     </button>
                 </div>
             </div>
@@ -208,7 +208,7 @@
                 <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 15, 2026</span>
                     <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        Return
+                        View
                     </button>
                 </div>
             </div>
@@ -234,7 +234,7 @@
                 <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 14, 2026</span>
                     <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        Return
+                        View
                     </button>
                 </div>
             </div>
@@ -260,7 +260,7 @@
                 <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 13, 2026</span>
                     <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        Return
+                        View
                     </button>
                 </div>
             </div>
@@ -286,7 +286,7 @@
                 <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 15, 2026</span>
                     <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        Return
+                        View
                     </button>
                 </div>
             </div>
@@ -312,7 +312,7 @@
                 <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 14, 2026</span>
                     <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        Return
+                        View
                     </button>
                 </div>
             </div>
@@ -338,7 +338,7 @@
                 <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 15, 2026</span>
                     <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        Return
+                        View
                     </button>
                 </div>
             </div>
@@ -364,19 +364,19 @@
                 <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 13, 2026</span>
                     <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        Return
+                        View
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Available Tools for Checkout -->
+    <!-- Available Tools -->
     <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">Available Tools</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Tools ready for checkout</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Tools available for viewing</p>
             </div>
             <div class="flex gap-3">
                 <input type="text" placeholder="Search tools..." 
@@ -426,7 +426,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-colors">
-                                Checkout
+                                View
                             </button>
                         </td>
                     </tr>
@@ -452,7 +452,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-colors">
-                                Checkout
+                                View
                             </button>
                         </td>
                     </tr>
@@ -478,7 +478,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-colors">
-                                Checkout
+                                View
                             </button>
                         </td>
                     </tr>
@@ -507,8 +507,8 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <button class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-lg font-semibold text-sm cursor-not-allowed" disabled>
-                                Unavailable
+                            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-colors">
+                                View
                             </button>
                         </td>
                     </tr>

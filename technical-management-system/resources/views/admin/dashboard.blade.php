@@ -25,7 +25,7 @@
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                     <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21.11V16a4.002 4.002 0 00-3-3.874M15 21.11a4.002 4.002 0 01-6 0m6 0a4.002 4.002 0 01-6 0m6 0V16a4.002 4.002 0 00-3-3.874M9 21.11V16a4.002 4.002 0 013-3.874M9 21.11a4.002 4.002 0 01-6 0m6 0V16a4.002 4.002 0 013-3.874m-6 0a4 4 0 110-5.292m6 5.292a4 4 0 110-5.292"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M7 20H2v-2a3 3 0 015.856-1.487M12 14a4 4 0 100-8 4 4 0 000 8z"/>
                     </svg>
                 </div>
                 <div>
@@ -205,12 +205,19 @@
                 @foreach($auditActivity as $audit)
                 <div class="pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0 last:pb-0">
                     <div class="flex items-start gap-3">
-                        <div class="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 mt-1.5 flex-shrink-0"></div>
+                        <div class="w-2 h-2 rounded-full 
+                            @if($audit->action === 'CREATE') bg-green-600 dark:bg-green-400
+                            @elseif($audit->action === 'UPDATE') bg-blue-600 dark:bg-blue-400
+                            @elseif($audit->action === 'DELETE') bg-red-600 dark:bg-red-400
+                            @else bg-gray-600 dark:bg-gray-400
+                            @endif mt-1.5 flex-shrink-0"></div>
                         <div class="flex-1">
-                            <p class="text-sm text-gray-900 dark:text-white font-semibold">{{ $audit->action }}</p>
+                            <p class="text-sm text-gray-900 dark:text-white font-semibold">
+                                {{ $audit->description ?? $audit->user_name . ' has ' . strtolower($audit->action) }}
+                            </p>
                             <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ $audit->model }} • {{ $audit->ref_id }}</p>
                             <div class="flex items-center justify-between mt-2">
-                                <span class="text-xs text-gray-500 dark:text-gray-500">{{ $audit->user_name }}</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-500">{{ $audit->created_at?->timezone('Asia/Manila')->format('M d, Y h:i A') ?? 'N/A' }}</span>
                                 <span class="text-xs text-gray-500 dark:text-gray-500">{{ $audit->created_at?->diffForHumans() ?? 'N/A' }}</span>
                             </div>
                         </div>
