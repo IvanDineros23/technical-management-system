@@ -93,9 +93,17 @@
                         <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                             <div>
                                 <p class="text-sm font-medium text-gray-900 dark:text-white">Last Backup</p>
-                                <p class="text-xs text-gray-600 dark:text-gray-400">Feb 02, 2026 at 11:45 PM</p>
+                                @if($backups && count($backups) > 0)
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">{{ $backups[0]['date'] }}</p>
+                                @else
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">No backups yet</p>
+                                @endif
                             </div>
-                            <span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">Success</span>
+                            @if($backups && count($backups) > 0)
+                                <span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">Success</span>
+                            @else
+                                <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 text-xs rounded-full">None</span>
+                            @endif
                         </div>
                         <div class="flex gap-3">
                             <form action="{{ route('admin.settings.backup.create') }}" method="POST" class="flex-1">

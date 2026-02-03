@@ -32,6 +32,11 @@ class InventoryRequest extends Model
         return $this->belongsTo(User::class, 'requested_by');
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'requested_by');
+    }
+
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');

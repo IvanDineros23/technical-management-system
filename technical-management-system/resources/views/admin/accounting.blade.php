@@ -30,23 +30,23 @@
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
             <p class="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">₱285,400</p>
-            <p class="text-xs text-green-600 dark:text-green-400 mt-1">↑ 12% this month</p>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ '₱' . number_format($stats['totalRevenue'] ?? 0, 2) }}</p>
+            <p class="text-xs text-green-600 dark:text-green-400 mt-1">{{ isset($stats['totalRevenue']) && $stats['totalRevenue'] > 0 ? '↑ All paid invoices' : 'No revenue yet' }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
             <p class="text-sm text-gray-600 dark:text-gray-400">Pending Invoices</p>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">₱45,200</p>
-            <p class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">8 invoices outstanding</p>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ '₱' . number_format($stats['pendingAmount'] ?? 0, 2) }}</p>
+            <p class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">{{ ($stats['pendingCount'] ?? 0) . ' invoice' . (($stats['pendingCount'] ?? 0) != 1 ? 's' : '') . ' outstanding' }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
             <p class="text-sm text-gray-600 dark:text-gray-400">Paid This Month</p>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">₱152,000</p>
-            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">12 payments received</p>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ '₱' . number_format($stats['paidThisMonth'] ?? 0, 2) }}</p>
+            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ ($stats['paidCount'] ?? 0) . ' payment' . (($stats['paidCount'] ?? 0) != 1 ? 's' : '') . ' received' }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
             <p class="text-sm text-gray-600 dark:text-gray-400">Overdue Payments</p>
-            <p class="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">₱28,500</p>
-            <p class="text-xs text-red-600 dark:text-red-400 mt-1">3 invoices overdue</p>
+            <p class="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{{ '₱' . number_format($stats['overdueAmount'] ?? 0, 2) }}</p>
+            <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ ($stats['overdueCount'] ?? 0) . ' invoice' . (($stats['overdueCount'] ?? 0) != 1 ? 's' : '') . ' overdue' }}</p>
         </div>
     </div>
 
@@ -75,20 +75,32 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">INV-2024-001</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">ABC Corporation</td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">₱12,500</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">Jan 5, 2024</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">Jan 20, 2024</td>
-                        <td class="px-6 py-4">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Paid</span>
-                        </td>
-                        <td class="px-6 py-4 text-sm">
-                            <button class="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 mr-3">View</button>
-                            <button class="text-gray-600 hover:text-gray-900 dark:hover:text-white">Download</button>
+                    @if($invoices && $invoices->count() > 0)
+                        @foreach($invoices as $invoice)
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ $invoice->invoice_number }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $invoice->customer->name ?? 'N/A' }}</td>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ '₱' . number_format($invoice->total ?? 0, 2) }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $invoice->issue_date?->format('M d, Y') ?? 'N/A' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $invoice->due_date?->format('M d, Y') ?? 'N/A' }}</td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium @if($invoice->payment_status == 'paid') bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 @elseif($invoice->payment_status == 'overdue') bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 @else bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 @endif">
+                                    {{ ucfirst($invoice->payment_status) }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm">
+                                <button class="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 mr-3">View</button>
+                                <button class="text-gray-600 hover:text-gray-900 dark:hover:text-white">Download</button>
+                            </td>
+                        </tr>
+                        @endforeach
+                    @else
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center">
+                            <p class="text-gray-600 dark:text-gray-400">No invoices found</p>
                         </td>
                     </tr>
+                    @endif
                 </tbody>
             </table>
         </div>

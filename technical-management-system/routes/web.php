@@ -333,6 +333,35 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             ->orderBy('scheduled_time')
             ->take(3)
             ->get();
+
+        $inventoryRequests = \App\Models\InventoryRequest::with(['inventoryItem'])
+            ->where('requested_by', $user->id)
+            ->latest('updated_at')
+            ->take(5)
+            ->get();
+
+        $newAssignments = \App\Models\Assignment::with(['jobOrder.customer'])
+            ->where('assigned_to', $user->id)
+            ->where('status', 'assigned')
+            ->whereDate('assigned_at', '>=', now()->subDays(7))
+            ->orderByDesc('assigned_at')
+            ->take(3)
+            ->get();
+
+        $onHoldAssignments = \App\Models\Assignment::with(['jobOrder.customer'])
+            ->where('assigned_to', $user->id)
+            ->where('status', 'on_hold')
+            ->orderByDesc('updated_at')
+            ->take(3)
+            ->get();
+
+        $highPriorityAssignments = \App\Models\Assignment::with(['jobOrder.customer'])
+            ->where('assigned_to', $user->id)
+            ->whereIn('priority', ['high', 'urgent'])
+            ->whereIn('status', ['assigned', 'in_progress'])
+            ->orderByDesc('assigned_at')
+            ->take(3)
+            ->get();
         
         return view('technician.dashboard', compact(
             'todayAssignments',
@@ -341,7 +370,11 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             'completedJobs',
             'recentAssignments',
             'overdueAssignments',
-            'dueTodayAssignments'
+            'dueTodayAssignments',
+            'inventoryRequests',
+            'newAssignments',
+            'onHoldAssignments',
+            'highPriorityAssignments'
         ));
     })->name('dashboard');
     
@@ -367,7 +400,22 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     })->name('job-details');
     
     Route::get('/maintenance', function () {
-        return view('technician.maintenance');
+        $maintenanceTasks = \App\Models\EquipmentMaintenance::with('equipment')
+            ->latest('next_maintenance_date')
+            ->paginate(20);
+        
+        // Calculate stats
+        $today = now();
+        $stats = [
+            'scheduled_today' => \App\Models\EquipmentMaintenance::whereDate('next_maintenance_date', $today)->count(),
+            'overdue' => \App\Models\EquipmentMaintenance::where('next_maintenance_date', '<', $today)
+                ->where('status', '!=', 'completed')
+                ->count(),
+            'this_week' => \App\Models\EquipmentMaintenance::whereBetween('next_maintenance_date', [$today->startOfWeek(), $today->endOfWeek()])->count(),
+            'completed' => \App\Models\EquipmentMaintenance::where('status', 'completed')->count(),
+        ];
+        
+        return view('technician.maintenance', compact('maintenanceTasks', 'stats'));
     })->name('maintenance');
     
     Route::get('/equipment', function () {
@@ -1322,6 +1370,7 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
     Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
     Route::put('/inventory/{inventoryItem}', [InventoryController::class, 'update'])->name('inventory.update');
     Route::delete('/inventory/{inventoryItem}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+    Route::patch('/inventory/requests/{inventoryRequest}', [InventoryController::class, 'updateRequestStatus'])->name('inventory.requests.update');
 
     // Equipment CRUD
     Route::post('/equipment', function (\Illuminate\Http\Request $request) {
@@ -1573,6 +1622,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
     Route::put('/inventory/{inventoryItem}', [InventoryController::class, 'update'])->name('inventory.update');
     Route::delete('/inventory/{inventoryItem}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+    Route::patch('/inventory/requests/{inventoryRequest}', [InventoryController::class, 'updateRequestStatus'])->name('inventory.requests.update');
     
     Route::get('/accounting', [\App\Http\Controllers\InvoiceController::class, 'index'])->name('accounting.index');
     Route::post('/accounting/invoices', [\App\Http\Controllers\InvoiceController::class, 'store'])->name('invoices.store');

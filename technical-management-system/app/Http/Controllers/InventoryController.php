@@ -95,8 +95,15 @@ class InventoryController extends Controller
             ->distinct()
             ->orderBy('category')
             ->pluck('category');
+        $requests = null;
+        if (in_array($view, ['admin.inventory', 'tech-head.inventory'], true)) {
+            $requests = InventoryRequest::with(['inventoryItem', 'user'])
+                ->latest('created_at')
+                ->paginate(10, ['*'], 'requests_page')
+                ->withQueryString();
+        }
 
-        return view($view, compact('items', 'stats', 'categories'));
+        return view($view, compact('items', 'stats', 'categories', 'requests'));
     }
 
     private function validateItem(Request $request, ?int $ignoreId): array
@@ -175,5 +182,47 @@ class InventoryController extends Controller
         );
 
         return redirect()->back()->with('status', 'Request submitted successfully! Waiting for approval.');
+    }
+
+    public function viewRequests(Request $request, string $view)
+    {
+        $query = InventoryRequest::with(['inventoryItem', 'user'])
+            ->latest('created_at');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->get('status'));
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->whereHas('inventoryItem', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
+            })->orWhereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
+            });
+        }
+
+        $requests = $query->paginate(20);
+
+        return view($view, compact('requests'));
+    }
+
+    public function updateRequestStatus(Request $request, InventoryRequest $inventoryRequest)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:pending,approved,rejected,fulfilled',
+        ]);
+
+        $oldStatus = $inventoryRequest->status;
+        $inventoryRequest->update(['status' => $validated['status']]);
+
+        AuditLogHelper::log(
+            action: 'UPDATE',
+            modelType: 'InventoryRequest',
+            modelId: $inventoryRequest->id,
+            description: "Changed request status from {$oldStatus} to {$validated['status']}"
+        );
+
+        return redirect()->back()->with('status', 'Request status updated successfully!');
     }
 }

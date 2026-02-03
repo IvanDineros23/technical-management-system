@@ -84,7 +84,6 @@
                         <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Action</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Module</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Details</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">IP Address</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -122,13 +121,10 @@
                         <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                             {{ $log->description ?? 'N/A' }}
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                            {{ $log->ip_address ?? 'N/A' }}
-                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                             No audit logs found
                         </td>
                     </tr>

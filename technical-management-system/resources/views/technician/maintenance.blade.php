@@ -95,7 +95,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600 dark:text-gray-400">Scheduled Today</p>
-                    <h3 class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">5</h3>
+                    <h3 class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{{ $stats['scheduled_today'] ?? 0 }}</h3>
                 </div>
                 <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -109,7 +109,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600 dark:text-gray-400">Overdue</p>
-                    <h3 class="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">2</h3>
+                    <h3 class="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{{ $stats['overdue'] ?? 0 }}</h3>
                 </div>
                 <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,7 +123,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600 dark:text-gray-400">This Week</p>
-                    <h3 class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">12</h3>
+                    <h3 class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{{ $stats['this_week'] ?? 0 }}</h3>
                 </div>
                 <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,7 +137,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600 dark:text-gray-400">Completed</p>
-                    <h3 class="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-2">48</h3>
+                    <h3 class="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-2">{{ $stats['completed'] ?? 0 }}</h3>
                 </div>
                 <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,232 +179,79 @@
 
     <!-- Maintenance Tasks List -->
     <div class="space-y-4">
-        <!-- Overdue Task -->
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border-l-4 border-red-500 dark:border-red-400 p-6">
-            <div class="flex items-start justify-between">
-                <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-semibold rounded-full">
-                            Overdue
-                        </span>
-                        <span class="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-semibold rounded-full">
-                            Preventive
-                        </span>
+        @if($maintenanceTasks && $maintenanceTasks->count() > 0)
+            @foreach($maintenanceTasks as $task)
+            <!-- Maintenance Task -->
+            <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border-l-4 @if($task->next_maintenance_date < now() && $task->status != 'completed') border-red-500 dark:border-red-400 @elseif($task->next_maintenance_date->isToday()) border-blue-500 dark:border-blue-400 @else border-green-500 dark:border-green-400 @endif p-6">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            @if($task->next_maintenance_date < now() && $task->status != 'completed')
+                            <span class="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-semibold rounded-full">
+                                Overdue
+                            </span>
+                            @elseif($task->next_maintenance_date->isToday())
+                            <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-full">
+                                Today
+                            </span>
+                            @else
+                            <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
+                                Scheduled
+                            </span>
+                            @endif
+                            <span class="px-3 py-1 @if($task->maintenance_type == 'preventive') bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 @elseif($task->maintenance_type == 'corrective') bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 @else bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 @endif text-xs font-semibold rounded-full">
+                                {{ ucfirst($task->maintenance_type) }}
+                            </span>
+                        </div>
+                        <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                            {{ $task->maintenance_type == 'preventive' ? 'Routine Inspection' : 'Maintenance Task' }} - {{ $task->equipment->name ?? 'Equipment' }}
+                        </h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            {{ $task->description ?? 'Maintenance task for ' . ($task->equipment->name ?? 'equipment') }}
+                        </p>
+                        <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <span>Due: {{ $task->next_maintenance_date?->format('M d, Y') ?? 'TBD' }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Est. {{ $task->downtime_hours ?? 2 }} hours</span>
+                            </div>
+                            @if($task->equipment->location)
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                <span>{{ $task->equipment->location }}</span>
+                            </div>
+                            @endif
+                        </div>
                     </div>
-                    <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                        Generator Routine Inspection - GenSet-01
-                    </h4>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                        Perform routine inspection including oil level check, coolant check, battery inspection, and test run.
-                    </p>
-                    <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                            <span>Due: Jan 13, 2026</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span>Est. 2 hours</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            <span>Main Building</span>
-                        </div>
-                    </div>
+                    <button class="ml-4 @if($task->status == 'completed') px-4 py-2 bg-gray-400 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-semibold @elseif($task->next_maintenance_date < now()) px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold @else px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold @endif transition-colors">
+                        {{ $task->status == 'completed' ? 'Completed' : 'Start Now' }}
+                    </button>
                 </div>
-                <button class="ml-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors">
-                    Start Now
-                </button>
             </div>
+            @endforeach
+        @else
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-8 text-center">
+            <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <p class="text-gray-600 dark:text-gray-400 text-lg">No maintenance tasks scheduled</p>
+            <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">All maintenance tasks are up to date</p>
         </div>
-
-        <!-- Today's Task -->
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border-l-4 border-blue-500 dark:border-blue-400 p-6">
-            <div class="flex items-start justify-between">
-                <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-full">
-                            Today
-                        </span>
-                        <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
-                            Corrective
-                        </span>
-                    </div>
-                    <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                        HVAC Filter Replacement - AC-Unit-03
-                    </h4>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                        Replace air filters and clean condenser coils. Check refrigerant levels and test thermostat.
-                    </p>
-                    <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                            <span>Due: Jan 15, 2026</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span>Est. 1.5 hours</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            <span>3rd Floor Office</span>
-                        </div>
-                    </div>
-                </div>
-                <button class="ml-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
-                    Start Task
-                </button>
-            </div>
-        </div>
-
-        <!-- Scheduled Task -->
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border-l-4 border-green-500 dark:border-green-400 p-6">
-            <div class="flex items-start justify-between">
-                <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
-                            Scheduled
-                        </span>
-                        <span class="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-semibold rounded-full">
-                            Predictive
-                        </span>
-                    </div>
-                    <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                        Elevator Safety Inspection - ELV-A1
-                    </h4>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                        Complete safety inspection including brake test, cable inspection, door mechanism check, and emergency systems test.
-                    </p>
-                    <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                            <span>Due: Jan 17, 2026</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span>Est. 3 hours</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            <span>Tower A</span>
-                        </div>
-                    </div>
-                </div>
-                <button class="ml-4 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors">
-                    View Details
-                </button>
-            </div>
-        </div>
-
-        <!-- Another Scheduled Task -->
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border-l-4 border-green-500 dark:border-green-400 p-6">
-            <div class="flex items-start justify-between">
-                <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
-                            Scheduled
-                        </span>
-                        <span class="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-semibold rounded-full">
-                            Preventive
-                        </span>
-                    </div>
-                    <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                        Fire Alarm System Test - FAS-Main
-                    </h4>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                        Test all fire alarm panels, smoke detectors, pull stations, and emergency notification systems.
-                    </p>
-                    <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                            <span>Due: Jan 18, 2026</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span>Est. 4 hours</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            <span>All Floors</span>
-                        </div>
-                    </div>
-                </div>
-                <button class="ml-4 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors">
-                    View Details
-                </button>
-            </div>
-        </div>
-
-        <!-- Completed Task -->
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border-l-4 border-gray-300 dark:border-gray-600 p-6 opacity-75">
-            <div class="flex items-start justify-between">
-                <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-semibold rounded-full">
-                            Completed
-                        </span>
-                        <span class="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-semibold rounded-full">
-                            Preventive
-                        </span>
-                    </div>
-                    <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                        Water Pump Maintenance - WP-02
-                    </h4>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                        Lubrication of bearings, seal inspection, pressure test, and motor check.
-                    </p>
-                    <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span>Completed: Jan 14, 2026</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span>Duration: 2.5 hours</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                            </svg>
-                            <span>By: Juan Dela Cruz</span>
-                        </div>
-                    </div>
-                </div>
-                <button class="ml-4 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold">
-                    View Report
-                </button>
+        @endif
+    </div>
+</div>
+@endsection
             </div>
         </div>
     </div>

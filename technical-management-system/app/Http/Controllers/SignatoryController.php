@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AuditLogHelper;
 use App\Models\{Calibration, Certificate, JobOrder, Report, Timeline, User};
 use Illuminate\Http\Request;
 
@@ -119,6 +120,14 @@ class SignatoryController extends Controller
             'created_by' => auth()->id(),
         ]);
 
+        // Audit logging
+        AuditLogHelper::log(
+            'APPROVE',
+            'Calibration',
+            $calibration->id,
+            "Approved calibration {$calibration->id} for signing"
+        );
+
         return redirect()->route('signatory.sign', $calibration)
             ->with('status', 'Calibration approved. Now sign the certificate.');
     }
@@ -182,6 +191,14 @@ class SignatoryController extends Controller
 
         // Update job order status
         $calibration->assignment->jobOrder->update(['status' => 'completed']);
+
+        // Audit logging
+        AuditLogHelper::log(
+            'SIGN',
+            'Certificate',
+            $certificate->id,
+            "Signed certificate {$certificate->certificate_number} for calibration {$calibration->id}"
+        );
 
         return redirect()->route('signatory.certificates')
             ->with('status', 'Certificate signed successfully! Certificate #' . $certificate->certificate_number);

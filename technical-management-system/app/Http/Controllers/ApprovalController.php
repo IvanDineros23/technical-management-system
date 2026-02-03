@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AuditLogHelper;
 use App\Models\{Calibration, TechnicalReview};
 use Illuminate\Http\Request;
 
@@ -110,6 +111,14 @@ class ApprovalController extends Controller
             'conditional' => 'Conditional approval sent. Awaiting corrections.',
             default => 'Review saved.'
         };
+
+        // Audit logging
+        AuditLogHelper::log(
+            strtoupper($validated['result']),
+            'Calibration',
+            $calibration->id,
+            "Technical review completed: {$validated['result']}. Findings: {$validated['findings']}"
+        );
 
         return redirect()->route('tech-head.reports')
             ->with('status', $message);

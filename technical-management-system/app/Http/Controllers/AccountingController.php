@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AuditLogHelper;
 use App\Models\{Certificate, JobOrder, Payment, CertificateRelease};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -256,6 +257,14 @@ class AccountingController extends Controller
 
             DB::commit();
 
+            // Audit logging
+            AuditLogHelper::log(
+                'RELEASE',
+                'Certificate',
+                $certificate->id,
+                "Released certificate {$certificate->certificate_number} to {$validated['released_to']} via {$validated['delivery_method']}"
+            );
+
             return redirect()->route('accounting.certificates.for-release')
                 ->with('status', 'Certificate ' . $certificate->certificate_number . ' released successfully!');
         } catch (\Exception $e) {
@@ -286,6 +295,16 @@ class AccountingController extends Controller
         $message = $isHolding 
             ? 'Certificate placed on hold' 
             : 'Certificate hold removed';
+
+        // Audit logging
+        AuditLogHelper::log(
+            $isHolding ? 'HOLD' : 'UNHOLD',
+            'Certificate',
+            $certificate->id,
+            $isHolding 
+                ? "Placed hold on certificate {$certificate->certificate_number}: {$validated['hold_reason']}" 
+                : "Removed hold from certificate {$certificate->certificate_number}"
+        );
 
         return redirect()->route('accounting.certificates.for-release')
             ->with('status', $message);

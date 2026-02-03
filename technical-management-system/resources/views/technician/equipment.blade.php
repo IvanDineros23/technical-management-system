@@ -152,199 +152,70 @@
     <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">My Checked Out Tools</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Tools currently assigned to you</p>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">My Equipment</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Equipment assigned to you</p>
             </div>
             <span class="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg font-semibold">
-                8 Items
+                {{ count($equipment) }} Items
             </span>
         </div>
 
+        @if($equipment && count($equipment) > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Tool Card 1 -->
+            @foreach($equipment as $item)
+            <!-- Equipment Card -->
             <div class="border border-gray-200 dark:border-gray-600 rounded-xl p-4 hover:shadow-md transition-shadow">
                 <div class="flex items-start justify-between mb-3">
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-900 dark:text-white">Power Drill</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Tool ID: DRL-008</p>
-                        </div>
-                    </div>
-                    <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded">
-                        In Use
-                    </span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 15, 2026</span>
-                    <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        View
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tool Card 2 -->
-            <div class="border border-gray-200 dark:border-gray-600 rounded-xl p-4 hover:shadow-md transition-shadow">
-                <div class="flex items-start justify-between mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
                             </svg>
                         </div>
                         <div>
-                            <p class="font-semibold text-gray-900 dark:text-white">Digital Multimeter</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Tool ID: MTR-015</p>
+                            <p class="font-semibold text-gray-900 dark:text-white">{{ $item->name }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">ID: {{ $item->equipment_code }}</p>
                         </div>
                     </div>
-                    <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded">
-                        In Use
+                    <span class="px-2 py-1 @if($item->status == 'in_use') bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 @elseif($item->status == 'available') bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 @elseif($item->status == 'maintenance') bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 @endif text-xs font-semibold rounded">
+                        {{ ucfirst(str_replace('_', ' ', $item->status)) }}
                     </span>
                 </div>
+                <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    @if($item->category)
+                    <p>Category: {{ $item->category }}</p>
+                    @endif
+                    @if($item->serial_number)
+                    <p>Serial: {{ $item->serial_number }}</p>
+                    @endif
+                    @if($item->location)
+                    <p>Location: {{ $item->location }}</p>
+                    @endif
+                </div>
                 <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 15, 2026</span>
+                    @if($item->last_maintenance)
+                    <span class="text-gray-600 dark:text-gray-400">Last Maintained: {{ $item->last_maintenance->format('M d, Y') }}</span>
+                    @else
+                    <span class="text-gray-600 dark:text-gray-400">No maintenance record</span>
+                    @endif
                     <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
                         View
                     </button>
                 </div>
             </div>
+            @endforeach
+        </div>
+        @else
+        <div class="text-center py-8">
+            <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+            </svg>
+            <p class="text-gray-600 dark:text-gray-400">No equipment assigned to you</p>
+        </div>
+        @endif
+    </div>
 
-            <!-- Tool Card 3 -->
-            <div class="border border-gray-200 dark:border-gray-600 rounded-xl p-4 hover:shadow-md transition-shadow">
-                <div class="flex items-start justify-between mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-900 dark:text-white">Hammer Drill</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Tool ID: DRL-012</p>
-                        </div>
-                    </div>
-                    <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded">
-                        In Use
-                    </span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 14, 2026</span>
-                    <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        View
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tool Card 4 -->
-            <div class="border border-gray-200 dark:border-gray-600 rounded-xl p-4 hover:shadow-md transition-shadow">
-                <div class="flex items-start justify-between mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-900 dark:text-white">Safety Helmet</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Tool ID: SFT-025</p>
-                        </div>
-                    </div>
-                    <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded">
-                        In Use
-                    </span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 13, 2026</span>
-                    <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        View
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tool Card 5 -->
-            <div class="border border-gray-200 dark:border-gray-600 rounded-xl p-4 hover:shadow-md transition-shadow">
-                <div class="flex items-start justify-between mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-900 dark:text-white">Voltage Tester</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Tool ID: TST-007</p>
-                        </div>
-                    </div>
-                    <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded">
-                        In Use
-                    </span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 15, 2026</span>
-                    <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        View
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tool Card 6 -->
-            <div class="border border-gray-200 dark:border-gray-600 rounded-xl p-4 hover:shadow-md transition-shadow">
-                <div class="flex items-start justify-between mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-900 dark:text-white">Adjustable Wrench Set</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Tool ID: WRN-018</p>
-                        </div>
-                    </div>
-                    <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded">
-                        In Use
-                    </span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 14, 2026</span>
-                    <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        View
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tool Card 7 -->
-            <div class="border border-gray-200 dark:border-gray-600 rounded-xl p-4 hover:shadow-md transition-shadow">
-                <div class="flex items-start justify-between mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-pink-100 dark:bg-pink-900/30 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-pink-600 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-900 dark:text-white">Laser Distance Meter</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Tool ID: LSR-003</p>
-                        </div>
-                    </div>
-                    <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded">
-                        In Use
-                    </span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 15, 2026</span>
-                    <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        View
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tool Card 8 -->
-            <div class="border border-gray-200 dark:border-gray-600 rounded-xl p-4 hover:shadow-md transition-shadow">
+    <!-- Removed static equipment cards -->
                 <div class="flex items-start justify-between mb-3">
                     <div class="flex items-center gap-3">
                         <div class="w-12 h-12 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg flex items-center justify-center">
@@ -362,216 +233,11 @@
                     </span>
                 </div>
                 <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Checked out: Jan 13, 2026</span>
+                    <span class="text-gray-600 dark:text-gray-400">Last Used: Feb 2, 2026</span>
                     <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
                         View
                     </button>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Available Tools -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-        <div class="flex items-center justify-between mb-6">
-            <div>
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Available Tools</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Tools available for viewing</p>
-            </div>
-            <div class="flex gap-3">
-                <input type="text" placeholder="Search tools..." 
-                       class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                <select class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                    <option>All Categories</option>
-                    <option>Hand Tools</option>
-                    <option>Power Tools</option>
-                    <option>Testing Equipment</option>
-                    <option>Safety Equipment</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Tool ID</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Name</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Category</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Condition</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    <!-- Available Tools -->
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="font-mono text-sm font-semibold text-gray-900 dark:text-white">DRL-009</span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <p class="font-semibold text-gray-900 dark:text-white">Impact Driver</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Makita XDT16</p>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">Power Tools</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
-                                Good
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
-                                Available
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-colors">
-                                View
-                            </button>
-                        </td>
-                    </tr>
-
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="font-mono text-sm font-semibold text-gray-900 dark:text-white">MTR-016</span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <p class="font-semibold text-gray-900 dark:text-white">Clamp Meter</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Fluke 376</p>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">Testing Equipment</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
-                                Good
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
-                                Available
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-colors">
-                                View
-                            </button>
-                        </td>
-                    </tr>
-
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="font-mono text-sm font-semibold text-gray-900 dark:text-white">HND-022</span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <p class="font-semibold text-gray-900 dark:text-white">Screwdriver Set</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Wiha 32-piece</p>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">Hand Tools</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
-                                Good
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
-                                Available
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-colors">
-                                View
-                            </button>
-                        </td>
-                    </tr>
-
-                    <!-- Tools In Use by Others -->
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="font-mono text-sm font-semibold text-gray-900 dark:text-white">DRL-010</span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <p class="font-semibold text-gray-900 dark:text-white">Angle Grinder</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Bosch GWS 2000</p>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">Power Tools</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
-                                Good
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div>
-                                <span class="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 text-xs font-semibold rounded-full">
-                                    In Use
-                                </span>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">By: Maria Santos</p>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-colors">
-                                View
-                            </button>
-                        </td>
-                    </tr>
-
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="font-mono text-sm font-semibold text-gray-900 dark:text-white">TST-009</span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <p class="font-semibold text-gray-900 dark:text-white">Thermal Camera</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">FLIR E8-XT</p>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">Testing Equipment</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 text-xs font-semibold rounded-full">
-                                Fair
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div>
-                                <span class="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 text-xs font-semibold rounded-full">
-                                    In Use
-                                </span>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">By: Pedro Reyes</p>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <button class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-lg font-semibold text-sm cursor-not-allowed" disabled>
-                                Unavailable
-                            </button>
-                        </td>
-                    </tr>
-
-                    <!-- Under Repair -->
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors opacity-60">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="font-mono text-sm font-semibold text-gray-900 dark:text-white">DRL-013</span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <p class="font-semibold text-gray-900 dark:text-white">Circular Saw</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">DeWalt DWE575</p>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">Power Tools</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-semibold rounded-full">
-                                Damaged
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-semibold rounded-full">
-                                Under Repair
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <button class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-lg font-semibold text-sm cursor-not-allowed" disabled>
-                                Unavailable
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-@endsection
-
+        @endif

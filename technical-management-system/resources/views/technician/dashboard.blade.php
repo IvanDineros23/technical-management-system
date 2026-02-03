@@ -252,7 +252,83 @@
                         </div>
                     @endif
 
-                    @if($overdueAssignments->count() === 0 && $dueTodayAssignments->count() === 0)
+                    @if(($inventoryRequests ?? collect())->count() > 0)
+                        <div>
+                            <p class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-2">Inventory Requests</p>
+                            <div class="space-y-2">
+                                @foreach($inventoryRequests as $request)
+                                    <div class="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/40">
+                                        <p class="text-sm font-semibold text-indigo-900 dark:text-indigo-100">
+                                            {{ $request->inventoryItem->name ?? 'Item Request' }}
+                                        </p>
+                                        <p class="text-xs text-indigo-700 dark:text-indigo-300">
+                                            Status: {{ ucfirst($request->status) }} • Qty: {{ $request->quantity }}
+                                        </p>
+                                        <p class="text-xs text-indigo-600 dark:text-indigo-300">Updated: {{ $request->updated_at?->format('M d, Y') }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if(($newAssignments ?? collect())->count() > 0)
+                        <div>
+                            <p class="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2">New Assignments</p>
+                            <div class="space-y-2">
+                                @foreach($newAssignments as $assignment)
+                                    <div class="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40">
+                                        <p class="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                                            {{ $assignment->jobOrder->job_order_number ?? 'Job Order' }}
+                                        </p>
+                                        <p class="text-xs text-blue-700 dark:text-blue-300">
+                                            {{ $assignment->jobOrder->customer->name ?? 'N/A' }}
+                                        </p>
+                                        <p class="text-xs text-blue-600 dark:text-blue-300">Assigned: {{ \Carbon\Carbon::parse($assignment->assigned_at)->format('M d, Y') }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if(($onHoldAssignments ?? collect())->count() > 0)
+                        <div>
+                            <p class="text-xs font-semibold text-orange-600 dark:text-orange-400 mb-2">On Hold</p>
+                            <div class="space-y-2">
+                                @foreach($onHoldAssignments as $assignment)
+                                    <div class="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/40">
+                                        <p class="text-sm font-semibold text-orange-900 dark:text-orange-100">
+                                            {{ $assignment->jobOrder->job_order_number ?? 'Job Order' }}
+                                        </p>
+                                        <p class="text-xs text-orange-700 dark:text-orange-300">
+                                            {{ $assignment->jobOrder->customer->name ?? 'N/A' }}
+                                        </p>
+                                        <p class="text-xs text-orange-600 dark:text-orange-300">Status: On Hold</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if(($highPriorityAssignments ?? collect())->count() > 0)
+                        <div>
+                            <p class="text-xs font-semibold text-red-600 dark:text-red-400 mb-2">High Priority</p>
+                            <div class="space-y-2">
+                                @foreach($highPriorityAssignments as $assignment)
+                                    <div class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40">
+                                        <p class="text-sm font-semibold text-red-900 dark:text-red-100">
+                                            {{ $assignment->jobOrder->job_order_number ?? 'Job Order' }}
+                                        </p>
+                                        <p class="text-xs text-red-700 dark:text-red-300">
+                                            {{ $assignment->jobOrder->customer->name ?? 'N/A' }}
+                                        </p>
+                                        <p class="text-xs text-red-600 dark:text-red-300">Priority: {{ ucfirst($assignment->priority) }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($overdueAssignments->count() === 0 && $dueTodayAssignments->count() === 0 && ($inventoryRequests ?? collect())->count() === 0 && ($newAssignments ?? collect())->count() === 0 && ($onHoldAssignments ?? collect())->count() === 0 && ($highPriorityAssignments ?? collect())->count() === 0)
                         <div class="text-center py-4 flex items-center justify-center">
                             <p class="text-gray-500 dark:text-gray-400 text-sm">No alerts at the moment</p>
                         </div>
