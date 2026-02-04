@@ -1642,6 +1642,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('/settings/sessions/terminate', [\App\Http\Controllers\SettingsController::class, 'terminateAllSessions'])->name('settings.sessions.terminate');
     
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('/audit-logs/export', [AuditLogController::class, 'export'])->name('audit-logs.export');
     
     // Workflow Tracking
     Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline.index');
