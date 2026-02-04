@@ -320,16 +320,54 @@
                 <!-- Attachments -->
                 <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Attachments</h3>
-                    <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                        </svg>
-                        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Upload photos or documents</p>
-                        <button class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
-                            Choose Files
-                        </button>
+                    
+                    <!-- Upload Form -->
+                    <form action="{{ route('technician.job.attachments.upload', $job->id) }}" method="POST" enctype="multipart/form-data" class="mb-6">
+                        @csrf
+                        <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Upload photos or documents (max 10MB per file)</p>
+                            <input type="file" name="files[]" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" 
+                                   class="hidden" id="fileInput" onchange="this.form.querySelector('.file-name').textContent = Array.from(this.files).map(f => f.name).join(', ')">
+                            <button type="button" onclick="document.getElementById('fileInput').click()"
+                                    class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+                                Choose Files
+                            </button>
+                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 file-name"></p>
+                            <button type="submit" class="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
+                                Upload Files
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Existing Attachments -->
+                    @if($job->attachments && $job->attachments->count() > 0)
+                    <div class="space-y-2">
+                        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Uploaded Files</h4>
+                        @foreach($job->attachments as $attachment)
+                        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                                </svg>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $attachment->file_name }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ number_format($attachment->file_size / 1024, 2) }} KB • {{ $attachment->created_at->format('M d, Y H:i') }}</p>
+                                </div>
+                            </div>
+                            <a href="{{ Storage::url($attachment->file_path) }}" target="_blank" 
+                               class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
+                                Download
+                            </a>
+                        </div>
+                        @endforeach
                     </div>
+                    @else
+                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No attachments uploaded yet.</p>
+                    @endif
                 </div>
             </div>
 

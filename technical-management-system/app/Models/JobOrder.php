@@ -104,4 +104,9 @@ class JobOrder extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+
+    public function attachments()
+    {
+        return $this->hasMany(JobOrderAttachment::class);
+    }
 }

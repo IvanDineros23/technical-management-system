@@ -214,30 +214,4 @@
         </div>
         @endif
     </div>
-
-    <!-- Removed static equipment cards -->
-                <div class="flex items-start justify-between mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-900 dark:text-white">Tool Box</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Tool ID: BOX-011</p>
-                        </div>
-                    </div>
-                    <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded">
-                        In Use
-                    </span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Last Used: Feb 2, 2026</span>
-                    <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold">
-                        View
-                    </button>
-                </div>
-            </div>
-        </div>
-        @endif
+@endsection

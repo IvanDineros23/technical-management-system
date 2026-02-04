@@ -379,25 +379,161 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     })->name('dashboard');
     
     Route::get('/assignments', function () {
-        // Temporarily show all job orders
-        $assignments = \App\Models\JobOrder::with('customer')
+        // Show only job orders assigned to the current technician
+        $currentUser = auth()->user();
+        $assignments = \App\Models\Assignment::with(['jobOrder.customer', 'jobOrder'])
+            ->where('assigned_to', $currentUser->id)
+            ->whereHas('jobOrder', function($query) {
+                $query->whereIn('status', ['assigned', 'in_progress', 'on_hold', 'completed']);
+            })
             ->latest()
-            ->paginate(20);
+            ->paginate(20)
+            ->through(function($assignment) {
+                // Return the job order with assignment info
+                $job = $assignment->jobOrder;
+                $job->assignment_id = $assignment->id;
+                $job->assigned_at = $assignment->created_at;
+                return $job;
+            });
         return view('technician.assignments', compact('assignments'));
     })->name('assignments');
     
     Route::get('/work-orders', function () {
-        // Temporarily show all job orders
+        // Show all work orders (broader view for reference)
         $workOrders = \App\Models\JobOrder::with('customer')
+            ->whereIn('status', ['pending', 'assigned', 'in_progress', 'on_hold', 'completed'])
             ->latest()
             ->paginate(20);
         return view('technician.work-orders', compact('workOrders'));
     })->name('work-orders');
     
     Route::get('/job-details/{id}', function ($id) {
-        $job = \App\Models\JobOrder::with('customer')->findOrFail($id);
+        $job = \App\Models\JobOrder::with(['customer', 'assignments.calibrations.measurementPoints', 'attachments'])->findOrFail($id);
         return view('technician.job-details', compact('job'));
     })->name('job-details');
+    
+    // Calibration data storage routes
+    Route::post('/calibration/store/{assignmentId}', function ($assignmentId, \Illuminate\Http\Request $request) {
+        $assignment = \App\Models\Assignment::findOrFail($assignmentId);
+        
+        // Create calibration record
+        $calibration = $assignment->calibrations()->create([
+            'calibration_date' => $request->calibration_date,
+            'location' => $request->location,
+            'start_time' => $request->start_time,
+            'end_time' => $request->end_time,
+            'procedure_reference' => $request->procedure_reference,
+            'technician_id' => auth()->id(),
+            'status' => 'pending_review'
+        ]);
+        
+        // Store measurement points
+        if ($request->has('measurement_points')) {
+            foreach ($request->measurement_points as $point) {
+                $calibration->measurementPoints()->create([
+                    'point_number' => $point['point_number'],
+                    'reference_value' => $point['reference_value'],
+                    'uut_reading' => $point['uut_reading'],
+                    'uncertainty' => $point['uncertainty'],
+                    'acceptance_criteria' => $point['acceptance_criteria'] ?? null,
+                ]);
+            }
+        }
+        
+        \App\Helpers\AuditLogHelper::log(
+            'CREATE',
+            'Calibration',
+            $calibration->id,
+            auth()->id(),
+            "Technician submitted calibration data for Job Order {$assignment->jobOrder->job_order_number}",
+            null,
+            $calibration->toArray()
+        );
+        
+        return redirect()->back()->with('success', 'Calibration data saved successfully and submitted for review.');
+    })->name('calibration.store-points');
+    
+    // Attachments upload route
+    Route::post('/job/{jobId}/attachments', function ($jobId, \Illuminate\Http\Request $request) {
+        $request->validate([
+            'files.*' => 'required|file|max:10240', // 10MB max
+        ]);
+        
+        $job = \App\Models\JobOrder::findOrFail($jobId);
+        
+        if ($request->hasFile('files')) {
+            foreach ($request->file('files') as $file) {
+                $path = $file->store('job-attachments/' . $jobId, 'public');
+                
+                $job->attachments()->create([
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_path' => $path,
+                    'file_type' => $file->getClientMimeType(),
+                    'file_size' => $file->getSize(),
+                    'uploaded_by' => auth()->id(),
+                ]);
+            }
+            
+            \App\Helpers\AuditLogHelper::log(
+                'CREATE',
+                'JobAttachment',
+                $jobId,
+                auth()->id(),
+                "Technician uploaded " . count($request->file('files')) . " attachment(s) for Job Order {$job->job_order_number}",
+                null,
+                null
+            );
+            
+            return redirect()->back()->with('success', 'Files uploaded successfully.');
+        }
+        
+        return redirect()->back()->with('error', 'No files were uploaded.');
+    })->name('job.attachments.upload');
+    
+    // Job status update routes
+    Route::post('/job/{jobId}/start', function ($jobId) {
+        $job = \App\Models\JobOrder::findOrFail($jobId);
+        
+        // Update job status to in_progress
+        $job->update([
+            'status' => 'in_progress',
+            'started_at' => now()
+        ]);
+        
+        \App\Helpers\AuditLogHelper::log(
+            'UPDATE',
+            'JobOrder',
+            $jobId,
+            auth()->id(),
+            "Technician started work on Job Order {$job->job_order_number}",
+            ['status' => 'assigned'],
+            ['status' => 'in_progress']
+        );
+        
+        return response()->json(['success' => true, 'message' => 'Job started successfully']);
+    })->name('job.start');
+    
+    Route::post('/job/{jobId}/pause', function ($jobId) {
+        $job = \App\Models\JobOrder::findOrFail($jobId);
+        
+        // Update job status to on_hold
+        $job->update([
+            'status' => 'on_hold',
+            'paused_at' => now()
+        ]);
+        
+        \App\Helpers\AuditLogHelper::log(
+            'UPDATE',
+            'JobOrder',
+            $jobId,
+            auth()->id(),
+            "Technician paused Job Order {$job->job_order_number}",
+            ['status' => $job->getOriginal('status')],
+            ['status' => 'on_hold']
+        );
+        
+        return response()->json(['success' => true, 'message' => 'Job paused successfully']);
+    })->name('job.pause');
     
     Route::get('/maintenance', function () {
         $maintenanceTasks = \App\Models\EquipmentMaintenance::with('equipment')
@@ -924,6 +1060,12 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         $jobOrder->update(['status' => 'assigned']);
         return redirect()->route('tech-head.work-orders')->with('status', 'Technician assigned');
     })->name('work-orders.assign');
+    
+    // View job order calibration data and attachments
+    Route::get('/work-orders/{jobOrder}/calibration-data', function (JobOrder $jobOrder) {
+        $jobOrder->load(['assignments.calibrations.measurementPoints', 'attachments', 'customer']);
+        return view('tech-head.calibration-data', compact('jobOrder'));
+    })->name('work-orders.calibration-data');
     
     // Approval & Signature Route
     Route::patch('/work-orders/{jobOrder}/approve', function (\Illuminate\Http\Request $request, JobOrder $jobOrder) {
