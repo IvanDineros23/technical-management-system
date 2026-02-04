@@ -24,14 +24,14 @@ class AdminController extends Controller
             'admin_users' => User::whereHas('role', function ($query) {
                 $query->where('slug', 'admin');
             })->count(),
-            'technician_users' => User::whereHas('role', function ($query) {
-                $query->where('slug', 'technician');
+            'tech_personnel_users' => User::whereHas('role', function ($query) {
+                $query->where('slug', 'tech_personnel');
             })->count(),
-            'operator_users' => User::whereHas('role', function ($query) {
-                $query->where('slug', 'operator');
+            'tech_head_users' => User::whereHas('role', function ($query) {
+                $query->where('slug', 'tech_head');
             })->count(),
-            'customer_users' => User::whereHas('role', function ($query) {
-                $query->where('slug', 'customer');
+            'marketing_users' => User::whereHas('role', function ($query) {
+                $query->where('slug', 'marketing');
             })->count(),
         ];
 
@@ -89,7 +89,6 @@ class AdminController extends Controller
         $activeUsersCount = User::where('is_active', true)->count();
         $totalUsersCount = User::count();
         $recentAuditCount = AuditLog::where('created_at', '>=', now()->subDay())->count();
-        $recentJobOrders = JobOrder::where('created_at', '>=', now()->subDays(7))->count();
 
         $systemStatus = [
             [
@@ -106,11 +105,6 @@ class AdminController extends Controller
                 'name' => 'Audit Trail',
                 'status' => $recentAuditCount > 0 ? 'healthy' : 'unhealthy',
                 'message' => $recentAuditCount . ' events (24h)',
-            ],
-            [
-                'name' => 'Job Orders',
-                'status' => $recentJobOrders > 0 ? 'healthy' : 'unhealthy',
-                'message' => $recentJobOrders . ' new (7d)',
             ],
         ];
 
