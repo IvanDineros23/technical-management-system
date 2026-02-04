@@ -214,13 +214,29 @@ class InventoryController extends Controller
         ]);
 
         $oldStatus = $inventoryRequest->status;
+        $itemName = $inventoryRequest->inventoryItem?->name ?? 'Unknown Item';
+        $userName = $inventoryRequest->user?->name ?? 'Unknown User';
+        $quantity = $inventoryRequest->quantity;
+        $unit = $inventoryRequest->inventoryItem?->unit ?? 'pcs';
+
         $inventoryRequest->update(['status' => $validated['status']]);
+
+        // Create detailed audit log
+        $statusLabel = match($validated['status']) {
+            'approved' => 'Approved',
+            'rejected' => 'Rejected',
+            'fulfilled' => 'Fulfilled',
+            default => 'Pending'
+        };
 
         AuditLogHelper::log(
             action: 'UPDATE',
             modelType: 'InventoryRequest',
             modelId: $inventoryRequest->id,
-            description: "Changed request status from {$oldStatus} to {$validated['status']}"
+            description: "Admin {$statusLabel} inventory request from {$userName}: {$quantity} {$unit} of {$itemName}",
+            oldValues: ['status' => $oldStatus],
+            newValues: ['status' => $validated['status']],
+            changedFields: ['status']
         );
 
         return redirect()->back()->with('status', 'Request status updated successfully!');
