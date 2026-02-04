@@ -70,9 +70,10 @@ class AdminController extends Controller
                 return (object) [
                     'id' => $log->id,
                     'action' => $log->action ?? 'Unknown Action',
-                    'model' => $log->model ?? 'System',
-                    'ref_id' => $log->ref_id ?? 'N/A',
+                    'model' => $log->model_type ?? 'System',
+                    'ref_id' => $log->model_id ?? 'N/A',
                     'user_name' => $log->user?->name ?? 'System',
+                    'description' => $log->description,
                     'created_at' => $log->created_at,
                 ];
             });

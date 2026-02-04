@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\AuditLogHelper;
 use App\Models\AuditLog;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -68,6 +69,23 @@ class AuditLogController extends Controller
 
         // Get all filtered logs (no pagination for export)
         $auditLogs = $query->get();
+
+        // Log the export action for security tracking
+        $filters = [];
+        if ($request->filled('user_id')) $filters['user_id'] = $request->user_id;
+        if ($request->filled('action')) $filters['action'] = $request->action;
+        if ($request->filled('model_type')) $filters['model_type'] = $request->model_type;
+        if ($request->filled('date_from')) $filters['date_from'] = $request->date_from;
+        if ($request->filled('date_to')) $filters['date_to'] = $request->date_to;
+        
+        AuditLogHelper::log(
+            action: 'EXPORT',
+            modelType: 'AuditLog',
+            modelId: null,
+            description: 'Admin exported audit logs (' . $auditLogs->count() . ' records)',
+            newValues: ['filters' => $filters, 'record_count' => $auditLogs->count()],
+            changedFields: ['export']
+        );
 
         // Generate PDF
         $pdf = Pdf::loadView('admin.audit-logs-export', compact('auditLogs'))

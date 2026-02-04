@@ -213,7 +213,7 @@
                             @endif mt-1.5 flex-shrink-0"></div>
                         <div class="flex-1">
                             <p class="text-sm text-gray-900 dark:text-white font-semibold">
-                                {{ $audit->description ?? $audit->user_name . ' has ' . strtolower($audit->action) }}
+                                {{ $audit->description ?? ($audit->user_name . ' has ' . strtolower($audit->action)) }}
                             </p>
                             <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ $audit->model }} • {{ $audit->ref_id }}</p>
                             <div class="flex items-center justify-between mt-2">
