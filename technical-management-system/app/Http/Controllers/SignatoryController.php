@@ -269,6 +269,7 @@ class SignatoryController extends Controller
             'calibration.performedBy',
             'calibration.measurementPoints',
             'signedBy',
+            'issuedBy',
         ]);
 
         return view('signatory.certificate-preview', compact('certificate'));

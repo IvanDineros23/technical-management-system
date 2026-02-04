@@ -64,9 +64,6 @@
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                 <td class="py-3">
                                     <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $item->name ?? 'N/A' }}</p>
-                                    @if($item->calibration_required)
-                                        <p class="text-xs text-blue-600 dark:text-blue-400">\ud83d\udd0d Cal. Required</p>
-                                    @endif
                                 </td>
                                 <td class="py-3"><p class="text-sm text-gray-700 dark:text-gray-300">{{ $item->equipment_code ?? 'N/A' }}</p></td>
                                 <td class="py-3">

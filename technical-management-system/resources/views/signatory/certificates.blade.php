@@ -1,8 +1,8 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Signed Certificates')
-@section('page-title', 'Signed Certificates')
-@section('page-subtitle', 'Certificates approved and signed for release')
+@section('title', 'Certificates for Approval')
+@section('page-title', 'Certificates for Approval')
+@section('page-subtitle', 'Review and approve certificates for release')
 
 @section('sidebar-nav')
     @include('signatory.partials.sidebar')
@@ -36,7 +36,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">
-                    📄 Signed Certificates
+                    ✍️ Certificates for Approval
                     <span class="text-xs font-normal text-gray-500 dark:text-gray-400">({{ $certificates->total() }} total)</span>
                 </h3>
             </div>
@@ -62,26 +62,46 @@
                                         {{ $certificate->certificate_number }}
                                     </td>
                                     <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
-                                        {{ optional($certificate->jobOrder)->job_order_number ?? optional(optional($certificate->calibration)->assignment->jobOrder)->job_order_number ?? 'N/A' }}
+                                        {{ $certificate->jobOrder?->job_order_number ?? $certificate->calibration?->assignment?->jobOrder?->job_order_number ?? 'N/A' }}
                                     </td>
                                     <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
-                                        {{ optional(optional($certificate->jobOrder)->customer)->name ?? optional(optional(optional($certificate->calibration)->assignment->jobOrder)->customer)->name ?? 'N/A' }}
+                                        {{ $certificate->jobOrder?->customer?->name ?? $certificate->calibration?->assignment?->jobOrder?->customer?->name ?? 'N/A' }}
                                     </td>
                                     <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
-                                        {{ optional($certificate->signedBy)->name ?? 'N/A' }}
+                                        {{ $certificate->signedBy?->name ?? 'N/A' }}
                                     </td>
                                     <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
                                         {{ $certificate->signed_at ? $certificate->signed_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') : 'Not Signed' }}
                                     </td>
                                     <td class="py-3">
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
-                                            ✓ Approved
-                                        </span>
+                                        @if($certificate->signed_by)
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
+                                                ✓ Approved
+                                            </span>
+                                        @else
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                                                ⏳ Pending Approval
+                                            </span>
+                                        @endif
                                     </td>
                                     <td class="py-3 text-right">
-                                        <a href="{{ route('signatory.certificate.preview', $certificate) }}" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">
-                                            Preview →
-                                        </a>
+                                        @if($certificate->signed_by)
+                                            <a href="{{ route('signatory.certificate.preview', $certificate) }}" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">
+                                                Preview →
+                                            </a>
+                                        @else
+                                            <div class="flex gap-2 justify-end">
+                                                <a href="{{ route('signatory.certificate.preview', $certificate) }}" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">
+                                                    Review
+                                                </a>
+                                                <button onclick="approveConfirm('{{ $certificate->id }}', '{{ $certificate->certificate_number }}')" class="text-emerald-600 dark:text-emerald-400 hover:underline text-xs font-medium">
+                                                    ✓ Approve
+                                                </button>
+                                                <button onclick="rejectConfirm('{{ $certificate->id }}', '{{ $certificate->certificate_number }}')" class="text-rose-600 dark:text-rose-400 hover:underline text-xs font-medium">
+                                                    ✗ Reject
+                                                </button>
+                                            </div>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -97,10 +117,63 @@
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No certificates signed</h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Signed certificates will appear here</p>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No certificates for approval</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">All certificates have been reviewed</p>
                 </div>
             @endif
         </div>
     </div>
+
+    <script>
+        function approveConfirm(certId, certNumber) {
+            if (confirm(`Approve certificate ${certNumber}?\n\nThis will sign and release the certificate for customer delivery.`)) {
+                fetch(`/signatory/certificates/${certId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'Failed to approve certificate');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while approving the certificate');
+                });
+            }
+        }
+
+        function rejectConfirm(certId, certNumber) {
+            const reason = prompt(`Reject certificate ${certNumber}?\n\nPlease provide a reason for rejection:`);
+            if (reason !== null && reason.trim() !== '') {
+                fetch(`/signatory/certificates/${certId}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ reason: reason })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'Failed to reject certificate');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while rejecting the certificate');
+                });
+            }
+        }
+    </script>
 @endsection
