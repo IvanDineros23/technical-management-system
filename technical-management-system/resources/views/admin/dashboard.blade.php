@@ -154,9 +154,17 @@
                             @endif mt-1.5 flex-shrink-0"></div>
                         <div class="flex-1">
                             <p class="text-sm text-gray-900 dark:text-white font-semibold">
-                                {{ $audit->description ?? ($audit->user_name . ' has ' . strtolower($audit->action)) }}
+                                @php
+                                    $desc = $audit->description;
+                                    // Replace generic patterns with user-specific descriptions
+                                    if (str_contains(strtolower($desc), 'user logged in')) {
+                                        $desc = $audit->user_name . ' has logged in';
+                                    } elseif (str_contains(strtolower($desc), 'user logged out')) {
+                                        $desc = $audit->user_name . ' has logged out';
+                                    }
+                                @endphp
+                                {{ $desc }}
                             </p>
-                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ $audit->model }} • {{ $audit->ref_id }}</p>
                             <div class="flex items-center justify-between mt-2">
                                 <span class="text-xs text-gray-500 dark:text-gray-500">{{ $audit->created_at?->timezone('Asia/Manila')->format('M d, Y h:i A') ?? 'N/A' }}</span>
                                 <span class="text-xs text-gray-500 dark:text-gray-500">{{ $audit->created_at?->diffForHumans() ?? 'N/A' }}</span>
