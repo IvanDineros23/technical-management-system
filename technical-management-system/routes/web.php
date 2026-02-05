@@ -1721,11 +1721,13 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
     
     // Certificates For Release
     Route::get('/certificates/for-release', [\App\Http\Controllers\AccountingController::class, 'certificatesForRelease'])->name('certificates.for-release');
+    Route::get('/certificates/{certificate}/preview', [\App\Http\Controllers\AccountingController::class, 'previewCertificate'])->name('certificates.preview');
     Route::patch('/certificates/{certificate}/release', [\App\Http\Controllers\AccountingController::class, 'releaseCertificate'])->name('certificates.release');
     Route::patch('/certificates/{certificate}/hold', [\App\Http\Controllers\AccountingController::class, 'holdCertificate'])->name('certificates.hold');
     
     // Released Certificates (History)
     Route::get('/certificates/released', [\App\Http\Controllers\AccountingController::class, 'releasedCertificates'])->name('certificates.released');
+    Route::get('/certificates/{certificate}/download', [\App\Http\Controllers\AccountingController::class, 'downloadCertificate'])->name('certificates.download');
     
     // Timeline (Read-only)
     Route::get('/timelines', [\App\Http\Controllers\AccountingController::class, 'allTimelines'])->name('timelines');

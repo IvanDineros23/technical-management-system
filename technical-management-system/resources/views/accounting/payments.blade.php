@@ -61,14 +61,38 @@
 @section('content')
 <div x-data="{
     showVerifyModal: false,
+    showDetailsModal: false,
     selectedJobOrder: null,
+    detailsJobOrder: null,
     paymentCode: '',
     amountPaid: '',
+    init() {
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeVerifyModal();
+                this.closeDetailsModal();
+            }
+        });
+    },
     openVerifyModal(jobOrder) {
         this.selectedJobOrder = jobOrder;
-        this.paymentCode = '';
-        this.amountPaid = '';
+        this.paymentCode = jobOrder.payment_code || '';
+        this.amountPaid = jobOrder.amount || '';
         this.showVerifyModal = true;
+        document.body.style.overflow = 'hidden';
+    },
+    openDetailsModal(jobOrder) {
+        this.detailsJobOrder = jobOrder;
+        this.showDetailsModal = true;
+        document.body.style.overflow = 'hidden';
+    },
+    closeVerifyModal() {
+        this.showVerifyModal = false;
+        document.body.style.overflow = 'auto';
+    },
+    closeDetailsModal() {
+        this.showDetailsModal = false;
+        document.body.style.overflow = 'auto';
     }
 }">
 <!-- Filters -->
@@ -131,7 +155,26 @@
                     </thead>
                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         @forelse($jobOrders as $jobOrder)
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors" 
+                                @click="openDetailsModal({{ json_encode([
+                                    'id' => $jobOrder->id,
+                                    'job_order_number' => $jobOrder->job_order_number,
+                                    'customer' => $jobOrder->customer->name,
+                                    'customer_email' => $jobOrder->customer->email,
+                                    'customer_phone' => $jobOrder->customer->phone,
+                                    'customer_address' => $jobOrder->customer->address,
+                                    'description' => $jobOrder->description,
+                                    'status' => $jobOrder->status,
+                                    'priority' => $jobOrder->priority,
+                                    'request_date' => $jobOrder->request_date ? $jobOrder->request_date->format('M d, Y') : null,
+                                    'required_date' => $jobOrder->required_date ? $jobOrder->required_date->format('M d, Y') : null,
+                                    'payment_code' => $jobOrder->payment->payment_code ?? null,
+                                    'amount' => $jobOrder->payment->amount_paid ?? null,
+                                    'payment_status' => $jobOrder->payment ? $jobOrder->payment->status : 'unpaid',
+                                    'paid_at' => $jobOrder->payment && $jobOrder->payment->paid_at ? $jobOrder->payment->paid_at->format('M d, Y h:i A') : null,
+                                    'verified_at' => $jobOrder->payment && $jobOrder->payment->verified_at ? $jobOrder->payment->verified_at->format('M d, Y h:i A') : null,
+                                    'verified_by_name' => $jobOrder->payment && $jobOrder->payment->verifiedBy ? $jobOrder->payment->verifiedBy->name : null,
+                                ]) }})">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                     {{ $jobOrder->job_order_number }}
                                 </td>
@@ -159,15 +202,16 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" @click.stop>
                                     @if(!$jobOrder->payment || $jobOrder->payment->status !== 'verified')
                                         <button @click="openVerifyModal({{ json_encode([
                                             'id' => $jobOrder->id,
                                             'job_order_number' => $jobOrder->job_order_number,
                                             'customer' => $jobOrder->customer->name,
+                                            'payment_code' => $jobOrder->payment->payment_code ?? '',
                                             'amount' => $jobOrder->payment->amount_paid ?? 0
                                         ]) }})"
-                                                class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                                                class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
                                             Verify Payment
                                         </button>
                                     @else
@@ -191,7 +235,6 @@
                 {{ $jobOrders->links() }}
             </div>
         </div>
-    </div>
 
     <!-- Verify Payment Modal -->
     <div x-show="showVerifyModal" 
@@ -210,7 +253,7 @@
                  x-transition:leave-end="opacity-0"
                  class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
                  aria-hidden="true"
-                 @click="showVerifyModal = false"></div>
+                 @click="closeVerifyModal()"></div>
 
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
@@ -286,12 +329,169 @@
                             Verify Payment
                         </button>
                         <button type="button" 
-                                @click="showVerifyModal = false" 
+                                @click="closeVerifyModal()" 
                                 class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                             Cancel
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Order Details Modal -->
+    <div x-show="showDetailsModal" 
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         aria-labelledby="details-modal-title" 
+         role="dialog" 
+         aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="showDetailsModal" 
+                 x-transition:enter="ease-out duration-300" 
+                 x-transition:enter-start="opacity-0" 
+                 x-transition:enter-end="opacity-100" 
+                 x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100" 
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+                 aria-hidden="true"
+                 @click="closeDetailsModal()"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div x-show="showDetailsModal" 
+                 x-transition:enter="ease-out duration-300" 
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <h3 class="text-lg leading-6 font-bold text-gray-900 dark:text-white" id="details-modal-title">
+                            Job Order Details
+                        </h3>
+                        <button @click="closeDetailsModal()" class="text-gray-400 hover:text-gray-500">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- Job Order Info -->
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Job Order Information</h4>
+                            <dl class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Job Order #</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white" x-text="detailsJobOrder?.job_order_number"></dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Status</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white capitalize" x-text="detailsJobOrder?.status"></dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Priority</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white capitalize" x-text="detailsJobOrder?.priority"></dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Request Date</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white" x-text="detailsJobOrder?.request_date || '—'"></dd>
+                                </div>
+                                <div class="col-span-2">
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Description</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white" x-text="detailsJobOrder?.description || '—'"></dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                        <!-- Customer Info -->
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Customer Information</h4>
+                            <dl class="space-y-2">
+                                <div>
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Name</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white" x-text="detailsJobOrder?.customer"></dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Email</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white" x-text="detailsJobOrder?.customer_email || '—'"></dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Phone</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white" x-text="detailsJobOrder?.customer_phone || '—'"></dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Address</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white" x-text="detailsJobOrder?.customer_address || '—'"></dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                        <!-- Payment Info -->
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Payment Information</h4>
+                            <dl class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Payment Code</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white" x-text="detailsJobOrder?.payment_code || '—'"></dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Amount</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white" x-text="detailsJobOrder?.amount ? '₱' + parseFloat(detailsJobOrder.amount).toLocaleString('en-PH', {minimumFractionDigits: 2}) : '—'"></dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Payment Status</dt>
+                                    <dd>
+                                        <span x-show="detailsJobOrder?.payment_status === 'verified'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                            Verified
+                                        </span>
+                                        <span x-show="detailsJobOrder?.payment_status === 'paid'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                            Paid
+                                        </span>
+                                        <span x-show="detailsJobOrder?.payment_status === 'unpaid'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                            Unpaid
+                                        </span>
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Paid At</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white" x-text="detailsJobOrder?.paid_at || '—'"></dd>
+                                </div>
+                                <div x-show="detailsJobOrder?.payment_status === 'verified'" class="col-span-2">
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Verified By</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white" x-text="detailsJobOrder?.verified_by_name || '—'"></dd>
+                                </div>
+                                <div x-show="detailsJobOrder?.payment_status === 'verified'" class="col-span-2">
+                                    <dt class="text-xs text-gray-500 dark:text-gray-400">Verified At</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white" x-text="detailsJobOrder?.verified_at || '—'"></dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <template x-if="detailsJobOrder?.payment_status !== 'verified'">
+                        <button @click="closeDetailsModal(); openVerifyModal({
+                            id: detailsJobOrder?.id,
+                            job_order_number: detailsJobOrder?.job_order_number,
+                            customer: detailsJobOrder?.customer,
+                            payment_code: detailsJobOrder?.payment_code || '',
+                            amount: detailsJobOrder?.amount || 0
+                        })"
+                                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Verify Payment
+                        </button>
+                    </template>
+                    <button type="button" 
+                            @click="closeDetailsModal()" 
+                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm">
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
     </div>

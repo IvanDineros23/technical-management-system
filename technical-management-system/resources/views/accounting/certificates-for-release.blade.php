@@ -62,11 +62,22 @@
 <div x-data="{
     showReleaseModal: false,
     showHoldModal: false,
+    showViewModal: false,
     selectedCertificate: null,
+    viewCertificate: null,
     releasedTo: '',
     deliveryMethod: 'pickup',
     releaseNotes: '',
     holdReason: '',
+    init() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.showReleaseModal = false;
+                this.showHoldModal = false;
+                this.showViewModal = false;
+            }
+        });
+    },
     openReleaseModal(certificate) {
         this.selectedCertificate = certificate;
         this.releasedTo = '';
@@ -78,8 +89,12 @@
         this.selectedCertificate = certificate;
         this.holdReason = '';
         this.showHoldModal = true;
+    },
+    openViewModal(certificate) {
+        this.viewCertificate = certificate;
+        this.showViewModal = true;
     }
-}\">
+}">
     <!-- Filters -->
     <div class="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
         <form method="GET" action="{{ route('accounting.certificates.for-release') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -202,15 +217,30 @@
                                         </span>
                                     @endif
                                     
-                                    <a href="{{ route('certificates.download', $certificate) }}" 
-                                       target="_blank"
-                                       class="inline-flex items-center px-3 py-1 border border-blue-300 dark:border-blue-600 text-xs font-medium rounded-md text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900 hover:bg-blue-100 dark:hover:bg-blue-800">
+                                    <button @click="openViewModal({{ json_encode([
+                                        'id' => $certificate->id,
+                                        'certificate_number' => $certificate->certificate_number,
+                                        'job_order_number' => $certificate->jobOrder->job_order_number,
+                                        'customer' => $certificate->jobOrder->customer->name,
+                                        'customer_address' => $certificate->jobOrder->customer->address ?? 'N/A',
+                                        'generated_at' => $certificate->generated_at->setTimezone('Asia/Manila')->format('F d, Y'),
+                                        'signed_at' => $certificate->signed_at ? \Carbon\Carbon::parse($certificate->signed_at)->setTimezone('Asia/Manila')->format('F d, Y') : null,
+                                        'signed_by' => $certificate->signedBy?->name,
+                                        'issued_by' => $certificate->issuedBy?->name ?? 'System',
+                                        'valid_until' => $certificate->valid_until ? \Carbon\Carbon::parse($certificate->valid_until)->setTimezone('Asia/Manila')->format('F d, Y') : null,
+                                        'status' => $certificate->status,
+                                        'payment_status' => $isPaymentVerified ? 'verified' : 'unverified',
+                                        'payment_amount' => $certificate->jobOrder->payment?->amount,
+                                        'payment_method' => $certificate->jobOrder->payment?->payment_method,
+                                        'payment_reference' => $certificate->jobOrder->payment?->reference_number
+                                    ]) }})"
+                                            class="inline-flex items-center px-3 py-1 border border-blue-300 dark:border-blue-600 text-xs font-medium rounded-md text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900 hover:bg-blue-100 dark:hover:bg-blue-800">
                                         <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                         </svg>
                                         View
-                                    </a>
+                                    </button>
                                 </td>
                             </tr>
                         @empty
@@ -227,6 +257,158 @@
             <!-- Pagination -->
             <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
                 {{ $certificates->links() }}
+            </div>
+        </div>
+
+    <!-- View Certificate Modal -->
+    <div x-show="showViewModal" 
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         aria-labelledby="modal-title" 
+         role="dialog" 
+         aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="showViewModal" 
+                 x-transition:enter="ease-out duration-300" 
+                 x-transition:enter-start="opacity-0" 
+                 x-transition:enter-end="opacity-100" 
+                 x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100" 
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+                 aria-hidden="true"
+                 @click="showViewModal = false"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div x-show="showViewModal" 
+                 x-transition:enter="ease-out duration-300" 
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+                
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold text-white" x-text="viewCertificate?.certificate_number"></h3>
+                            <p class="text-blue-100 text-sm mt-1">Certificate of Calibration</p>
+                        </div>
+                        <button @click="showViewModal = false" class="text-white hover:text-blue-200 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Modal Body -->
+                <div class="px-6 py-5 max-h-[70vh] overflow-y-auto">
+                    <!-- Certificate Preview Card -->
+                    <div class="bg-white border-2 border-gray-200 rounded-lg p-6 mb-6" style="background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%);">
+                        <!-- Certificate Header -->
+                        <div class="text-center pb-4 border-b-2 border-gray-300 mb-4">
+                            <h2 class="text-2xl font-bold text-gray-900">CERTIFICATE OF CALIBRATION</h2>
+                            <p class="text-sm text-gray-600 mt-1" x-text="viewCertificate?.certificate_number"></p>
+                        </div>
+
+                        <!-- Certificate Info Grid -->
+                        <div class="grid grid-cols-2 gap-6 text-sm">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Customer</p>
+                                <p class="font-bold text-gray-900" x-text="viewCertificate?.customer"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Job Order</p>
+                                <p class="font-bold text-gray-900" x-text="viewCertificate?.job_order_number"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Generated Date</p>
+                                <p class="text-gray-900" x-text="viewCertificate?.generated_at"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Valid Until</p>
+                                <p class="text-gray-900" x-text="viewCertificate?.valid_until || 'N/A'"></p>
+                            </div>
+                        </div>
+
+                        <!-- Signature Section -->
+                        <div class="mt-6 pt-4 border-t border-gray-200 grid grid-cols-2 gap-6">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Issued By</p>
+                                <p class="text-gray-900" x-text="viewCertificate?.issued_by || 'System'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Signed By</p>
+                                <p class="text-gray-900" x-text="viewCertificate?.signed_by || 'Not Signed'"></p>
+                                <template x-if="viewCertificate?.signed_at">
+                                    <p class="text-xs text-gray-500" x-text="'Signed on: ' + viewCertificate?.signed_at"></p>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Information -->
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                            Payment Information
+                        </h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Status</p>
+                                <template x-if="viewCertificate?.payment_status === 'verified'">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                        ✓ Verified
+                                    </span>
+                                </template>
+                                <template x-if="viewCertificate?.payment_status !== 'verified'">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                        ⏳ Unverified
+                                    </span>
+                                </template>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Amount</p>
+                                <p class="font-semibold text-gray-900 dark:text-white">
+                                    <template x-if="viewCertificate?.payment_amount">
+                                        <span x-text="'₱' + Number(viewCertificate?.payment_amount).toLocaleString('en-PH', {minimumFractionDigits: 2})"></span>
+                                    </template>
+                                    <template x-if="!viewCertificate?.payment_amount">
+                                        <span class="text-gray-400">N/A</span>
+                                    </template>
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Method</p>
+                                <p class="font-semibold text-gray-900 dark:text-white capitalize" x-text="viewCertificate?.payment_method?.replace('_', ' ') || 'N/A'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Reference</p>
+                                <p class="font-semibold text-gray-900 dark:text-white" x-text="viewCertificate?.payment_reference || 'N/A'"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="bg-gray-50 dark:bg-gray-700 px-6 py-4 flex justify-end gap-3">
+                    <button @click="showViewModal = false" 
+                            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-medium rounded-lg transition-colors">
+                        Close
+                    </button>
+                    <template x-if="viewCertificate?.payment_status === 'verified'">
+                        <button @click="showViewModal = false; openReleaseModal(viewCertificate)" 
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors">
+                            Release Certificate
+                        </button>
+                    </template>
+                </div>
             </div>
         </div>
     </div>

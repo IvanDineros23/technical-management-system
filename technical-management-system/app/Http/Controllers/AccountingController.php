@@ -68,7 +68,7 @@ class AccountingController extends Controller
      */
     public function payments(Request $request)
     {
-        $query = JobOrder::with(['customer', 'payment', 'certificate']);
+        $query = JobOrder::with(['customer', 'payment.verifiedBy', 'certificate']);
 
         // Filter by search
         if ($request->filled('search')) {
@@ -219,6 +219,22 @@ class AccountingController extends Controller
     }
 
     /**
+     * Preview Certificate
+     */
+    public function previewCertificate(Certificate $certificate)
+    {
+        $certificate->load([
+            'calibration.assignment.jobOrder.customer',
+            'calibration.performedBy',
+            'calibration.measurementPoints',
+            'signedBy',
+            'issuedBy',
+        ]);
+
+        return view('accounting.certificate-preview', compact('certificate'));
+    }
+
+    /**
      * Release Certificate
      */
     public function releaseCertificate(Request $request, Certificate $certificate)
@@ -344,6 +360,20 @@ class AccountingController extends Controller
         $certificates = $query->latest('released_at')->paginate(20);
 
         return view('accounting.certificates-released', compact('certificates'));
+    }
+
+    /**
+     * Download Certificate PDF
+     */
+    public function downloadCertificate(Certificate $certificate)
+    {
+        $certificate->load(['jobOrder.customer', 'issuedBy', 'approvedBy']);
+        
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('certificates.pdf', [
+            'certificate' => $certificate
+        ]);
+        
+        return $pdf->download($certificate->certificate_number . '.pdf');
     }
 
     /**
@@ -585,7 +615,222 @@ class AccountingController extends Controller
 
     public function exportReports(Request $request)
     {
-        // Implement CSV/Excel export logic here
-        return back()->with('status', 'Export feature coming soon');
+        $reportType = $request->input('report_type', 'released_certificates');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        // Also support the Released History page filters
+        if ($request->filled('date_from')) {
+            $startDate = $request->date_from;
+        }
+        if ($request->filled('date_to')) {
+            $endDate = $request->date_to;
+        }
+
+        switch ($reportType) {
+            case 'payment_summary':
+                return $this->exportPaymentSummary($startDate, $endDate);
+            
+            case 'monthly_summary':
+                return $this->exportMonthlySummary($startDate, $endDate);
+            
+            case 'released_certificates':
+            default:
+                return $this->exportReleasedCertificates($request, $startDate, $endDate);
+        }
+    }
+
+    /**
+     * Export Released Certificates CSV
+     */
+    private function exportReleasedCertificates(Request $request, $startDate, $endDate)
+    {
+        $query = Certificate::with(['jobOrder.customer', 'releasedBy'])
+            ->where('status', 'released')
+            ->whereNotNull('released_at');
+
+        if ($startDate) {
+            $query->whereDate('released_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('released_at', '<=', $endDate);
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('certificate_number', 'like', "%{$search}%")
+                    ->orWhereHas('jobOrder', function($jo) use ($search) {
+                        $jo->where('job_order_number', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('jobOrder.customer', function($c) use ($search) {
+                        $c->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $certificates = $query->latest('released_at')->get();
+
+        $filename = 'released_certificates_' . now()->format('Y-m-d_His') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($certificates) {
+            $file = fopen('php://output', 'w');
+            
+            fputcsv($file, [
+                'Certificate #',
+                'Job Order #',
+                'Customer',
+                'Released To',
+                'Delivery Method',
+                'Released On',
+                'Released By',
+                'Issue Date',
+                'Valid Until',
+                'Notes'
+            ]);
+
+            foreach ($certificates as $cert) {
+                fputcsv($file, [
+                    $cert->certificate_number,
+                    $cert->jobOrder->job_order_number ?? 'N/A',
+                    $cert->jobOrder->customer->name ?? 'N/A',
+                    $cert->released_to ?? '-',
+                    ucfirst($cert->delivery_method ?? '-'),
+                    $cert->released_at ? \Carbon\Carbon::parse($cert->released_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') : '-',
+                    $cert->releasedBy->name ?? 'N/A',
+                    $cert->issue_date ? \Carbon\Carbon::parse($cert->issue_date)->format('M d, Y') : '-',
+                    $cert->valid_until ? \Carbon\Carbon::parse($cert->valid_until)->format('M d, Y') : '-',
+                    $cert->notes ?? ''
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export Payment Summary CSV
+     */
+    private function exportPaymentSummary($startDate, $endDate)
+    {
+        $query = Payment::with(['jobOrder.customer'])
+            ->where('status', 'verified');
+
+        if ($startDate) {
+            $query->whereDate('verified_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('verified_at', '<=', $endDate);
+        }
+
+        $payments = $query->orderByDesc('verified_at')->get();
+
+        $filename = 'payment_summary_' . now()->format('Y-m-d_His') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($payments) {
+            $file = fopen('php://output', 'w');
+            
+            fputcsv($file, [
+                'Job Order #',
+                'Customer',
+                'Payment Method',
+                'Reference Number',
+                'Amount Paid',
+                'Verified At',
+                'Verified By',
+                'Notes'
+            ]);
+
+            foreach ($payments as $payment) {
+                fputcsv($file, [
+                    $payment->jobOrder->job_order_number ?? 'N/A',
+                    $payment->jobOrder->customer->name ?? 'N/A',
+                    ucfirst($payment->payment_method ?? '-'),
+                    $payment->reference_number ?? '-',
+                    number_format($payment->amount_paid, 2),
+                    $payment->verified_at ? \Carbon\Carbon::parse($payment->verified_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') : '-',
+                    $payment->verifiedBy->name ?? 'N/A',
+                    $payment->notes ?? ''
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export Monthly Summary CSV
+     */
+    private function exportMonthlySummary($startDate, $endDate)
+    {
+        $query = Payment::selectRaw('DATE_FORMAT(verified_at, "%Y-%m") as period, COUNT(*) as total_payments, SUM(amount_paid) as total_amount')
+            ->where('status', 'verified')
+            ->whereNotNull('verified_at');
+
+        if ($startDate) {
+            $query->whereDate('verified_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('verified_at', '<=', $endDate);
+        }
+
+        $monthlySummary = $query->groupBy('period')
+            ->orderByDesc('period')
+            ->get();
+
+        $filename = 'monthly_summary_' . now()->format('Y-m-d_His') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($monthlySummary) {
+            $file = fopen('php://output', 'w');
+            
+            fputcsv($file, [
+                'Period',
+                'Total Payments',
+                'Total Amount (PHP)'
+            ]);
+
+            $grandTotalPayments = 0;
+            $grandTotalAmount = 0;
+
+            foreach ($monthlySummary as $row) {
+                fputcsv($file, [
+                    $row->period,
+                    $row->total_payments,
+                    number_format($row->total_amount ?? 0, 2)
+                ]);
+                $grandTotalPayments += $row->total_payments;
+                $grandTotalAmount += ($row->total_amount ?? 0);
+            }
+
+            // Add grand total row
+            fputcsv($file, []);
+            fputcsv($file, [
+                'GRAND TOTAL',
+                $grandTotalPayments,
+                number_format($grandTotalAmount, 2)
+            ]);
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

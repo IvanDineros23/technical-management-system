@@ -170,7 +170,7 @@
                                         </svg>
                                         Timeline
                                     </a>
-                                    <a href="{{ route('certificates.download', $certificate) }}" 
+                                    <a href="{{ route('accounting.certificates.download', $certificate) }}" 
                                        target="_blank"
                                        class="inline-flex items-center px-3 py-1 border border-blue-300 dark:border-blue-600 text-xs font-medium rounded-md text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900 hover:bg-blue-100 dark:hover:bg-blue-800">
                                         <svg class="mr-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
