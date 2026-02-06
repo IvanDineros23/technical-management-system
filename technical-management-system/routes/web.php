@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{AdminController, ApprovalController, AuditLogController, CalibrationController, EquipmentController, InventoryController, ProfileController, RoleController, SettingsController, SignatoryController, TimelineController, VerificationController};
+use App\Http\Controllers\{AdminController, ApprovalController, AuditLogController, CalibrationController, EquipmentController, InventoryController, ProfileController, ReportController, RoleController, SettingsController, SignatoryController, TimelineController, VerificationController};
 use App\Models\{Assignment, Calibration, Certificate, Customer, Equipment, JobOrder, Report, Role, User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -298,6 +298,12 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
             'revenueOverviewData'
         ));
     })->name('reports');
+    
+    // Report generation routes
+    Route::post('/reports/job-orders', [ReportController::class, 'generateJobOrdersReport'])->name('reports.job-orders');
+    Route::post('/reports/revenue', [ReportController::class, 'generateRevenueReport'])->name('reports.revenue');
+    Route::post('/reports/customer', [ReportController::class, 'generateCustomerReport'])->name('reports.customer');
+    Route::post('/reports/performance', [ReportController::class, 'generatePerformanceReport'])->name('reports.performance');
     
     // Timeline route for Marketing
     Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');

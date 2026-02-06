@@ -71,15 +71,15 @@
     <div class="mb-6 flex flex-wrap gap-3 items-center">
         <div>
             <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">From Date</label>
-            <input type="date" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
+            <input type="date" id="fromDate" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
         </div>
         <div>
             <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">To Date</label>
-            <input type="date" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
+            <input type="date" id="toDate" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
         </div>
         <div class="mt-5">
-            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                Apply Filter
+            <button onclick="resetDateFilters()" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors">
+                Reset
             </button>
         </div>
     </div>
@@ -151,7 +151,7 @@
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Generate Reports</h3>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <button class="flex flex-col items-center gap-3 p-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+            <button onclick="generateReport('job-orders')" class="flex flex-col items-center gap-3 p-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                 <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
@@ -161,7 +161,7 @@
                 </div>
             </button>
 
-            <button class="flex flex-col items-center gap-3 p-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:border-green-500 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
+            <button onclick="generateReport('revenue')" class="flex flex-col items-center gap-3 p-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:border-green-500 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
                 <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -171,7 +171,7 @@
                 </div>
             </button>
 
-            <button class="flex flex-col items-center gap-3 p-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:border-purple-500 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+            <button onclick="generateReport('customer')" class="flex flex-col items-center gap-3 p-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:border-purple-500 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
                 <svg class="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                 </svg>
@@ -181,7 +181,7 @@
                 </div>
             </button>
 
-            <button class="flex flex-col items-center gap-3 p-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:border-orange-500 dark:hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
+            <button onclick="generateReport('performance')" class="flex flex-col items-center gap-3 p-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:border-orange-500 dark:hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
                 <svg class="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                 </svg>
@@ -322,5 +322,51 @@
                 }
             });
         });
+        
+        // Report generation function
+        function generateReport(reportType) {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/marketing/reports/${reportType}`;
+            form.style.display = 'none';
+            
+            // Add CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const input1 = document.createElement('input');
+            input1.type = 'hidden';
+            input1.name = '_token';
+            input1.value = csrfToken;
+            form.appendChild(input1);
+            
+            // Add parameters
+            if (fromDate) {
+                const input2 = document.createElement('input');
+                input2.type = 'hidden';
+                input2.name = 'from_date';
+                input2.value = fromDate;
+                form.appendChild(input2);
+            }
+            
+            if (toDate) {
+                const input3 = document.createElement('input');
+                input3.type = 'hidden';
+                input3.name = 'to_date';
+                input3.value = toDate;
+                form.appendChild(input3);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+        
+        // Reset date filters
+        function resetDateFilters() {
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value = '';
+        }
     </script>
 @endsection
