@@ -7,10 +7,20 @@
         function jobOrderForm() {
             return {
                 isSubmitting: false,
+                customers: @json($customers),
+                selectedCustomer: null,
                 toast: {
                     show: false,
                     message: '',
                     type: 'success'
+                },
+                selectCustomer() {
+                    const customerId = document.querySelector('select[name="customer_id"]').value;
+                    if (customerId) {
+                        this.selectedCustomer = this.customers.find(c => c.id == customerId);
+                    } else {
+                        this.selectedCustomer = null;
+                    }
                 },
                 showToast(message, type = 'success') {
                     this.toast.message = message;
@@ -27,6 +37,13 @@
                     
                     const formData = new FormData(event.target);
                     const data = Object.fromEntries(formData.entries());
+                    
+                    // Validate customer selection
+                    if (!data.customer_id) {
+                        this.showToast('Please select a customer', 'error');
+                        this.isSubmitting = false;
+                        return;
+                    }
                     
                     fetch('{{ route('marketing.job-orders.store') }}', {
                         method: 'POST',
@@ -123,45 +140,52 @@
         </div>
 
         <form @submit.prevent="submitForm($event)">
-        <!-- Customer Information -->
+        <!-- Customer Selection -->
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6 mb-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Customer Information</h3>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Customer Selection</h3>
+                <a href="{{ route('marketing.customers') }}" 
+                   class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Add New Customer
+                </a>
+            </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Customer Name *</label>
-                          <input type="text" 
-                           name="customer_name"
-                           required
-                              placeholder="Enter customer name"
-                              value="{{ request('customer_name') }}"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Customer *</label>
+                    <select name="customer_id" 
+                            required 
+                            @change="selectCustomer()"
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">Choose a customer...</option>
+                        @foreach($customers as $customer)
+                            <option value="{{ $customer->id }}">{{ $customer->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact Person</label>
-                    <input type="text" 
-                           name="contact_person"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                           placeholder="Enter contact person">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
-                          <input type="email" 
-                           name="email"
-                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                              placeholder="customer@example.com"
-                              value="{{ request('email') }}">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number</label>
-                          <input type="tel" 
-                           name="phone"
-                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                              placeholder="+63 XXX XXX XXXX"
-                              value="{{ request('phone') }}">
+                <!-- Customer Details Display -->
+                <div x-show="selectedCustomer" 
+                     x-transition
+                     class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Customer Details</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <span class="text-gray-600 dark:text-gray-400">Email:</span>
+                            <span class="ml-2 text-gray-900 dark:text-white" x-text="selectedCustomer?.email || 'N/A'"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600 dark:text-gray-400">Phone:</span>
+                            <span class="ml-2 text-gray-900 dark:text-white" x-text="selectedCustomer?.phone || 'N/A'"></span>
+                        </div>
+                        <div class="md:col-span-2">
+                            <span class="text-gray-600 dark:text-gray-400">Address:</span>
+                            <span class="ml-2 text-gray-900 dark:text-white" x-text="selectedCustomer?.address || 'N/A'"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -192,6 +216,14 @@
                 </div>
 
                 <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact Person for this Job</label>
+                    <input type="text" 
+                           name="contact_person"
+                           placeholder="Leave blank to use customer name"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+
+                <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Service Description *</label>
                     <textarea name="service_description" required rows="4" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Describe the service requirements..."></textarea>
                 </div>
@@ -210,23 +242,23 @@
 
         <!-- Location Details -->
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6 mb-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Location Details</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Service Location</h3>
             
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Service Address *</label>
-                    <input name="service_address" required type="text" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Street address" value="{{ request('service_address') }}">
+                    <input name="service_address" required type="text" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Street address">
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">City</label>
-                        <input type="text" name="city" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="City" value="{{ request('city') }}">
+                        <input type="text" name="city" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="City">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Province</label>
-                        <input type="text" name="province" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Province" value="{{ request('province') }}">
+                        <input type="text" name="province" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Province">
                     </div>
 
                     <div>

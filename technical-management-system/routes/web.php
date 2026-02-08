@@ -97,10 +97,7 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
     Route::post('/job-orders', function (Illuminate\Http\Request $request) {
         try {
             $validated = $request->validate([
-                'customer_name' => 'required|string|max:255',
-                'contact_person' => 'nullable|string|max:255',
-                'email' => 'nullable|email|max:255',
-                'phone' => 'nullable|string|max:20',
+                'customer_id' => 'required|exists:customers,id',
                 'service_type' => 'required|string',
                 'priority_level' => 'required|string',
                 'service_description' => 'required|string',
@@ -110,22 +107,11 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
                 'city' => 'nullable|string|max:100',
                 'province' => 'nullable|string|max:100',
                 'postal_code' => 'nullable|string|max:20',
+                'contact_person' => 'nullable|string|max:255',
             ]);
 
-            // Create or find customer
-            $customer = \App\Models\Customer::where('email', $validated['email'])
-                ->orWhere('name', $validated['customer_name'])
-                ->first();
-                
-            if (!$customer) {
-                $customer = \App\Models\Customer::create([
-                    'name' => $validated['customer_name'],
-                    'email' => $validated['email'] ?? null,
-                    'phone' => $validated['phone'] ?? null,
-                    'address' => $validated['service_address'] . ', ' . ($validated['city'] ?? '') . ', ' . ($validated['province'] ?? ''),
-                    'is_active' => true,
-                ]);
-            }
+            // Get the customer
+            $customer = \App\Models\Customer::findOrFail($validated['customer_id']);
 
             // Generate job order number
             $lastJobOrder = \App\Models\JobOrder::latest('id')->first();
@@ -152,7 +138,7 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
                 'city' => $validated['city'] ?? null,
                 'province' => $validated['province'] ?? null,
                 'postal_code' => $validated['postal_code'] ?? null,
-                'requested_by' => $validated['contact_person'] ?? $validated['customer_name'],
+                'requested_by' => $validated['contact_person'] ?? $customer->name,
                 'request_date' => now(),
                 'required_date' => $validated['expected_completion_date'] ?? null,
                 'priority' => $priority,
