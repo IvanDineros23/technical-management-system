@@ -15,6 +15,7 @@
         $unassignedJobs = $unassignedJobs ?? collect([]);
         $technicians = $technicians ?? collect([]);
         $availableTechnicians = $availableTechnicians ?? 0;
+        $technicianSchedules = $technicianSchedules ?? collect([]);
         
         // Sample summary data - replace with actual backend calculations
         $summary = [
@@ -162,6 +163,80 @@
                         </svg>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Technician Schedule Overview -->
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Technician Schedules</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">All technicians with their weekly assignments</p>
+                </div>
+                <span class="text-xs px-3 py-1.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 font-semibold">
+                    {{ $technicianSchedules->count() }} Technicians
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                @forelse($technicianSchedules as $techData)
+                    @php
+                        $tech = $techData['technician'];
+                        $items = $techData['assignments'];
+                    @endphp
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gradient-to-br from-gray-50 to-white dark:from-gray-700/30 dark:to-gray-800/30">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $tech->name }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $tech->email }}</p>
+                            </div>
+                            <span class="text-xs px-2.5 py-1 rounded-full {{ $items->count() ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' }} font-semibold">
+                                {{ $items->count() }} {{ $items->count() === 1 ? 'schedule' : 'schedules' }}
+                            </span>
+                        </div>
+
+                        <div class="space-y-2">
+                            @forelse($items->take(4) as $assignment)
+                                @php
+                                    $scheduledDate = $assignment->scheduled_date
+                                        ? $assignment->scheduled_date->setTimezone('Asia/Manila')->format('M d')
+                                        : 'TBD';
+                                @endphp
+                                <div class="flex items-start justify-between rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2">
+                                    <div>
+                                        <p class="text-xs font-semibold text-gray-900 dark:text-white">
+                                            {{ $assignment->jobOrder->job_order_number ?? 'N/A' }}
+                                        </p>
+                                        <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                                            {{ $scheduledDate }}
+                                            @if($assignment->scheduled_time)
+                                                - {{ \Carbon\Carbon::createFromFormat('H:i:s', $assignment->scheduled_time)->setTimezone('Asia/Manila')->format('h:i A') }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                    <span class="text-[11px] px-2 py-0.5 rounded-full
+                                        {{ $assignment->status === 'assigned' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' : '' }}
+                                        {{ $assignment->status === 'in_progress' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200' : '' }}
+                                        {{ $assignment->status === 'completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' : '' }}">
+                                        {{ ucfirst(str_replace('_', ' ', $assignment->status ?? 'pending')) }}
+                                    </span>
+                                </div>
+                            @empty
+                                <div class="text-center py-4 text-xs text-gray-500 dark:text-gray-400">
+                                    No schedules this week
+                                </div>
+                            @endforelse
+                        </div>
+
+                        @if($items->count() > 4)
+                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">+{{ $items->count() - 4 }} more scheduled jobs</p>
+                        @endif
+                    </div>
+                @empty
+                    <div class="col-span-full text-center py-8 text-sm text-gray-500 dark:text-gray-400">
+                        No technicians found.
+                    </div>
+                @endforelse
             </div>
         </div>
 

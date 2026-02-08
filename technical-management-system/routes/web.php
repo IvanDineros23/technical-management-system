@@ -1757,8 +1757,18 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
+
+        $assignmentsByTechnician = $assignments->groupBy('assigned_to');
+        $technicianSchedules = $technicians->map(function ($technician) use ($assignmentsByTechnician) {
+            $items = $assignmentsByTechnician->get($technician->id, collect())->values();
+
+            return [
+                'technician' => $technician,
+                'assignments' => $items,
+            ];
+        });
         
-        return view('tech-head.schedule', compact('weeklySchedule', 'today', 'weekStart', 'weekEnd', 'unassignedJobs', 'technicians'));
+        return view('tech-head.schedule', compact('weeklySchedule', 'today', 'weekStart', 'weekEnd', 'unassignedJobs', 'technicians', 'technicianSchedules'));
     })->name('schedule');
     
     Route::get('/analytics', function () {
