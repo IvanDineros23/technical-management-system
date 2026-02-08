@@ -23,6 +23,7 @@ class LogPageVisit
         'tech-head.inventory.index' => 'Inventory',
         'technician.dashboard' => 'Dashboard',
         'technician.inventory' => 'Inventory',
+        'technician.certificates' => 'Certificates',
         'accounting.dashboard' => 'Dashboard',
         'accounting.invoices' => 'Invoices',
     ];

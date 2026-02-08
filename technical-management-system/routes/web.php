@@ -600,6 +600,119 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         
         return view('technician.reports', compact('pendingReports', 'submittedReports', 'pendingCount', 'todayCount', 'totalCount'));
     })->name('reports');
+
+    Route::get('/certificates', function () {
+        $userId = auth()->id();
+
+        $query = Certificate::with(['jobOrder.customer', 'issuedBy', 'releasedBy'])
+            ->whereHas('jobOrder.assignments', function ($q) use ($userId) {
+                $q->where('assigned_to', $userId);
+            });
+
+        if (request('status')) {
+            $query->where('status', request('status'));
+        }
+
+        $certificates = $query->orderBy('created_at', 'desc')->get();
+
+        $jobOrders = JobOrder::with('customer')
+            ->where('status', 'approved')
+            ->whereDoesntHave('certificates')
+            ->whereHas('assignments', function ($q) use ($userId) {
+                $q->where('assigned_to', $userId);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('technician.certificates', compact('certificates', 'jobOrders'));
+    })->name('certificates');
+
+    Route::post('/certificates', function (Request $request) {
+        $data = $request->validate([
+            'job_order_id' => 'nullable|exists:job_orders,id',
+            'customer_name' => 'required_without:job_order_id|string|max:255',
+            'equipment_description' => 'required_without:job_order_id|string|max:500',
+            'service_type' => 'required_without:job_order_id|string',
+            'issue_date' => 'required|date',
+            'valid_until' => 'required|date|after:issue_date',
+            'status' => 'required|in:pending,generated',
+            'template_used' => 'nullable|string',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        if ($data['job_order_id']) {
+            $hasAssignment = Assignment::where('assigned_to', auth()->id())
+                ->where('job_order_id', $data['job_order_id'])
+                ->exists();
+
+            abort_unless($hasAssignment, 403);
+        }
+
+        $certificateNotes = $data['notes'] ?? '';
+        if (!$data['job_order_id']) {
+            $manualDetails = "Customer: {$data['customer_name']}\n";
+            $manualDetails .= "Equipment: {$data['equipment_description']}\n";
+            $manualDetails .= "Service Type: {$data['service_type']}\n";
+            if ($certificateNotes) {
+                $manualDetails .= "\nAdditional Notes:\n{$certificateNotes}";
+            }
+            $certificateNotes = $manualDetails;
+        }
+
+        $certificate = Certificate::create([
+            'certificate_number' => Certificate::generateCertificateNumber(),
+            'job_order_id' => $data['job_order_id'] ?? null,
+            'job_order_item_id' => null,
+            'calibration_id' => null,
+            'issue_date' => $data['issue_date'],
+            'valid_until' => $data['valid_until'],
+            'status' => $data['status'],
+            'template_used' => $data['template_used'] ?? 'default',
+            'notes' => $certificateNotes,
+            'issued_by' => auth()->id(),
+            'approved_by' => auth()->id(),
+            'generated_at' => $data['status'] === 'generated' ? now() : null,
+            'version' => 1,
+            'revision_number' => 0,
+            'is_current' => true,
+        ]);
+
+        return redirect()->route('technician.certificates')->with('status', 'Certificate created successfully: ' . $certificate->certificate_number);
+    })->name('certificates.store');
+
+    Route::get('/certificates/{certificate}/download', function (Certificate $certificate) {
+        $userId = auth()->id();
+        $hasAccess = ($certificate->jobOrder && $certificate->jobOrder->assignments()->where('assigned_to', $userId)->exists())
+            || $certificate->issued_by === $userId;
+
+        abort_unless($hasAccess, 403);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('certificates.pdf', [
+            'certificate' => $certificate->load(['jobOrder.customer', 'issuedBy', 'approvedBy'])
+        ]);
+
+        return $pdf->download($certificate->certificate_number . '.pdf');
+    })->name('certificates.download');
+
+    Route::post('/certificates/{certificate}/generate', function (Certificate $certificate) {
+        $userId = auth()->id();
+        $hasAccess = ($certificate->jobOrder && $certificate->jobOrder->assignments()->where('assigned_to', $userId)->exists())
+            || $certificate->issued_by === $userId;
+
+        abort_unless($hasAccess, 403);
+
+        if ($certificate->status === 'pending') {
+            $certificate->update([
+                'status' => 'generated',
+                'generated_at' => now(),
+                'issue_date' => now(),
+            ]);
+
+            return redirect()->route('technician.certificates')->with('status', 'Certificate generated successfully');
+        }
+
+        return redirect()->route('technician.certificates')->with('error', 'Certificate has already been generated');
+    })->name('certificates.generate');
     
     // Timeline route for Technician
     Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
