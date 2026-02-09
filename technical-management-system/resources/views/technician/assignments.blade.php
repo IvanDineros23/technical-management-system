@@ -398,10 +398,10 @@
                                     Pause
                                 </button>
                                 @endif
-                                <button @click="openDetails({{ $job->id }})"
-                                        class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                <a href="{{ route('technician.job-details', ['id' => $job->id]) }}"
+                                   class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center">
                                     View Details
-                                </button>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -503,29 +503,38 @@
                     <hr class="border-gray-200 dark:border-gray-700">
 
                     <!-- Action Buttons -->
-                    <div class="flex gap-3 justify-end">
-                        <button @click="closeModal()"
-                                class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                            Close
-                        </button>
-                        <template x-if="selectedJob?.status === 'assigned'">
-                            <button @click="openConfirmStart(selectedJob.id); closeModal();"
-                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                                Start Work
+                    <div class="flex gap-3 justify-between">
+                        <a :href="`{{ route('technician.job-details', ['id' => '__ID__']) }}`.replace('__ID__', selectedJob.id)"
+                           class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors inline-flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            View Full Details
+                        </a>
+                        <div class="flex gap-3">
+                            <button @click="closeModal()"
+                                    class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                Close
                             </button>
-                        </template>
-                        <template x-if="selectedJob?.status === 'in_progress'">
-                            <button @click="openConfirmPause(selectedJob.id)"
-                                    class="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors">
-                                Pause Job
-                            </button>
-                        </template>
-                        <template x-if="selectedJob?.status === 'in_progress'">
-                            <button @click="openConfirmComplete(selectedJob.id);"
-                                    class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
-                                Complete Job
-                            </button>
-                        </template>
+                            <template x-if="selectedJob?.status === 'assigned'">
+                                <button @click="openConfirmStart(selectedJob.id); closeModal();"
+                                        class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                                    Start Work
+                                </button>
+                            </template>
+                            <template x-if="selectedJob?.status === 'in_progress'">
+                                <button @click="openConfirmPause(selectedJob.id)"
+                                        class="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors">
+                                    Pause Job
+                                </button>
+                            </template>
+                            <template x-if="selectedJob?.status === 'in_progress'">
+                                <button @click="openConfirmComplete(selectedJob.id);"
+                                        class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                                    Complete Job
+                                </button>
+                            </template>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -247,6 +247,7 @@
                         <tr>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">WO Number</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Customer</th>
+                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Assigned To</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Service Type</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Priority</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Status</th>
@@ -265,7 +266,7 @@
                                     'service_description' => $order->service_description ?? '',
                                     'priority' => $order->priority ?? 'normal',
                                     'status' => $order->status,
-                                    'required_date' => optional($order->required_date)->setTimezone('Asia/Manila')->format('M d, Y'),
+                                    'required_date' => $order->required_date ? $order->required_date->setTimezone('Asia/Manila')->format('M d, Y') : null,
                                     'service_address' => $order->service_address ?? '',
                                     'city' => $order->city ?? '',
                                     'notes' => $order->notes ?? '',
@@ -288,6 +289,13 @@
                                             'completed_by' => optional($item->completer)->name,
                                         ];
                                     })->values(),
+                                    'assignments' => $order->assignments->map(function ($assignment) {
+                                        return [
+                                            'id' => $assignment->id,
+                                            'technician' => optional($assignment->assignedTo)->name ?? 'N/A',
+                                            'status' => $assignment->status,
+                                        ];
+                                    })->values(),
                                 ]) }})"
                                 class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                             >
@@ -296,6 +304,27 @@
                                 </td>
                                 <td class="py-3 text-center">
                                     <p class="text-sm text-gray-700 dark:text-gray-300">{{ $order->customer->name ?? 'N/A' }}</p>
+                                </td>
+                                <td class="py-3 text-center">
+                                    @if($order->assignments && $order->assignments->count() > 0)
+                                        @php
+                                            $assignedNames = $order->assignments->pluck('assignedTo.name')->filter()->unique()->take(2);
+                                        @endphp
+                                        <div class="flex flex-col items-center gap-1">
+                                            @foreach($assignedNames as $name)
+                                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                                                    {{ $name }}
+                                                </span>
+                                            @endforeach
+                                            @if($order->assignments->count() > 2)
+                                                <span class="text-xs text-gray-500 dark:text-gray-400">+{{ $order->assignments->count() - 2 }} more</span>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                            Unassigned
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="py-3 text-center">
                                     <p class="text-sm text-gray-700 dark:text-gray-300">{{ $order->service_type ?? 'N/A' }}</p>
@@ -319,7 +348,7 @@
                                     </span>
                                 </td>
                                 <td class="py-3 text-center">
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ optional($order->required_date)->setTimezone('Asia/Manila')->format('M d, Y') ?? $order->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ $order->required_date ? $order->required_date->setTimezone('Asia/Manila')->format('M d, Y') : $order->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                                 </td>
                                 <td class="py-3 text-center" @click.stop>
                                     <div class="flex gap-2 justify-center flex-wrap">
@@ -354,7 +383,7 @@
                                             </button>
                                         @endif
                                         
-                                        <button @click="openEdit({{ json_encode(['id' => $order->id, 'wo_number' => $order->job_order_number, 'customer' => $order->customer->name ?? 'N/A', 'service_type' => $order->service_type ?? 'N/A', 'service_description' => $order->service_description ?? '', 'priority' => $order->priority ?? 'normal', 'status' => $order->status, 'required_date' => optional($order->required_date)->setTimezone('Asia/Manila')->format('Y-m-d'), 'service_address' => $order->service_address ?? '', 'city' => $order->city ?? '', 'notes' => $order->notes ?? '', 'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')]) }})" class="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/50 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm">
+                                        <button @click="openEdit({{ json_encode(['id' => $order->id, 'wo_number' => $order->job_order_number, 'customer' => $order->customer->name ?? 'N/A', 'service_type' => $order->service_type ?? 'N/A', 'service_description' => $order->service_description ?? '', 'priority' => $order->priority ?? 'normal', 'status' => $order->status, 'required_date' => $order->required_date ? $order->required_date->setTimezone('Asia/Manila')->format('Y-m-d') : null, 'service_address' => $order->service_address ?? '', 'city' => $order->city ?? '', 'notes' => $order->notes ?? '', 'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')]) }})" class="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/50 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm">
                                             <span class="flex items-center gap-1">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -383,7 +412,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="py-12 text-center">
+                                <td colspan="8" class="py-12 text-center">
                                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                     </svg>
@@ -489,6 +518,23 @@
                                 </div>
                             </div>
                             <div class="col-span-2">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Assigned Technicians</p>
+                                <div x-show="selectedOrder?.assignments?.length > 0" class="space-y-2">
+                                    <template x-for="assignment in selectedOrder.assignments" :key="assignment.id">
+                                        <div class="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                            <div>
+                                                <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="assignment.technician"></p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="'Status: ' + assignment.status"></p>
+                                            </div>
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200" x-text="assignment.status"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                                <p x-show="!selectedOrder?.assignments?.length" class="text-sm text-gray-500 dark:text-gray-400 p-3 bg-gray-50 dark:bg-gray-700/40 rounded-lg">
+                                    No technicians assigned yet. Click "Assign" to assign this job.
+                                </p>
+                            </div>
+                            <div class="col-span-2">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Task Checklist</p>
                                 <div class="space-y-2" x-show="selectedOrder?.checklist?.length">
                                     <template x-for="item in selectedOrder.checklist" :key="item.id">
@@ -512,10 +558,19 @@
                             </div>
                         </div>
                         
-                        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                            <button @click="showDetails=false; selectedId=selectedOrder.id; showEdit=true;" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Edit</button>
-                            <button @click="showDetails=false; selectedId=selectedOrder.id; showAssign=true;" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Assign</button>
-                            <button @click="showDetails=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">Close</button>
+                        <div class="flex justify-between gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <a :href="`{{ route('tech-head.job-details', ['id' => '__ID__']) }}`.replace('__ID__', selectedOrder.id)"
+                               class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 inline-flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                Full Details
+                            </a>
+                            <div class="flex gap-3">
+                                <button @click="showDetails=false; selectedId=selectedOrder.id; showEdit=true;" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Edit</button>
+                                <button @click="showDetails=false; selectedId=selectedOrder.id; showAssign=true;" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Assign</button>
+                                <button @click="showDetails=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">Close</button>
+                            </div>
                         </div>
                     </div>
                 </div>

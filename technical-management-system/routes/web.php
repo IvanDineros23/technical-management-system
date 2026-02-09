@@ -424,14 +424,15 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
                     'added_by' => auth()->id()
                 ]);
                 // Log the auto-addition
+                $technicianName = auth()->user()->name;
                 \App\Helpers\AuditLogHelper::log(
                     'CREATE',
                     'JobOrderCrewMember',
                     $crewMember->id,
-                    auth()->id(),
-                    'Auto-added assigned technician to crew',
+                    "Auto-added assigned technician '{$technicianName}' to crew for Job Order {$job->job_order_number}",
                     null,
-                    ['user_id' => auth()->id(), 'job_order_id' => $job->id]
+                    $crewMember->toArray(),
+                    ['user_id', 'name']
                 );
             }
             // Reload crew members to include the newly added one
@@ -479,7 +480,7 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             'name' => 'nullable|string|max:255'
         ]);
 
-        if (!$data['user_id'] && !$data['name']) {
+        if (empty($data['user_id']) && empty($data['name'])) {
             return response()->json(['success' => false, 'message' => 'Select a technician or provide a name.'], 422);
         }
 
@@ -503,15 +504,18 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
 
         $member = $job->crewMembers()->create([
             'user_id' => $data['user_id'] ?? null,
-            'name' => $data['user_id'] ? null : $data['name'],
+            'name' => !empty($data['user_id']) ? null : ($data['name'] ?? null),
             'added_by' => auth()->id()
         ]);
 
+        // Load relationships for audit log and response
+        $member->load('user', 'addedBy');
+        $memberName = $member->user ? $member->user->name : $member->name;
         \App\Helpers\AuditLogHelper::log(
             'CREATE',
             'JobOrderCrewMember',
             $member->id,
-            "Crew member added for Job Order {$job->job_order_number}",
+            "Crew member '{$memberName}' added to Job Order {$job->job_order_number}",
             null,
             $member->toArray(),
             ['user_id', 'name']
@@ -529,6 +533,9 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     })->name('job.crew-members.store');
 
     Route::delete('/crew-members/{member}', function (\App\Models\JobOrderCrewMember $member) {
+        // Load relationships needed for audit log
+        $member->load('user', 'jobOrder');
+        
         $assignment = \App\Models\Assignment::where('job_order_id', $member->job_order_id)
             ->where('assigned_to', auth()->id())
             ->first();
@@ -542,6 +549,8 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             ], 403);
         }
 
+        $memberName = $member->user ? $member->user->name : $member->name;
+        $jobOrderNumber = $member->jobOrder->job_order_number;
         $snapshot = $member->toArray();
         $member->delete();
 
@@ -549,7 +558,7 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             'DELETE',
             'JobOrderCrewMember',
             $snapshot['id'],
-            'Crew member removed',
+            "Crew member '{$memberName}' removed from Job Order {$jobOrderNumber}",
             $snapshot,
             null,
             ['user_id', 'name']
@@ -1391,11 +1400,11 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             'customer',
             'attachments',
             'checklistItems.creator',
-            'checklistItems.completer'
+            'checklistItems.completer',
+            'assignments.assignedTo'
         ])->withCount('certificates');
         
-        // Exclude work orders that already have assignments (they should appear in Assignments page only)
-        $query->whereDoesntHave('assignments');
+        // Show all work orders (assigned and unassigned)
         
         // Search filter
         if ($search) {
@@ -1730,6 +1739,53 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         return view('tech-head.technicians', compact('technicians', 'technicianStats'));
     })->name('technicians');
 
+    // Job Details
+    Route::get('/job-details/{id}', function ($id) {
+        $job = \App\Models\JobOrder::with([
+            'customer',
+            'assignments.calibrations.measurementPoints',
+            'attachments',
+            'items',
+            'checklistItems.creator',
+            'checklistItems.completer',
+            'crewMembers.user',
+            'crewMembers.addedBy'
+        ])->findOrFail($id);
+        
+        $assignment = \App\Models\Assignment::with('report')
+            ->where('job_order_id', $id)
+            ->first();
+        
+        $checklistItems = $job->checklistItems->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'description' => $item->description,
+                'is_completed' => (bool) $item->is_completed,
+                'completed_at' => optional($item->completed_at)->toDateTimeString(),
+                'created_by' => optional($item->creator)->name,
+                'completed_by' => optional($item->completer)->name,
+            ];
+        })->values();
+
+        $crewMembers = $job->crewMembers->map(function ($member) {
+            return [
+                'id' => $member->id,
+                'user_id' => $member->user_id,
+                'name' => $member->user ? $member->user->name : $member->name,
+                'added_by' => optional($member->addedBy)->name
+            ];
+        })->values();
+
+        $technicianRoleId = \App\Models\Role::where('slug', 'tech_personnel')->value('id');
+        $technicians = \App\Models\User::where('role_id', $technicianRoleId)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $customers = \App\Models\Customer::orderBy('name')->get();
+
+        return view('tech-head.job-details', compact('job', 'assignment', 'checklistItems', 'crewMembers', 'technicians', 'customers'));
+    })->name('job-details');
+
     // Technicians management
     Route::post('/technicians', function (\Illuminate\Http\Request $request) {
         $data = $request->validate([
@@ -1770,7 +1826,12 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         return redirect()->route('tech-head.technicians')->with('status', 'Skills updated');
     })->name('technicians.skills');
     
+    // Redirect assignments to work-orders (merged functionality)
     Route::get('/assignments', function (\Illuminate\Http\Request $request) {
+        return redirect()->route('tech-head.work-orders', $request->all());
+    })->name('assignments');
+
+    Route::get('/assignments-old', function (\Illuminate\Http\Request $request) {
         $search = $request->get('search');
         $status = $request->get('status');
         $priority = $request->get('priority');
@@ -1826,13 +1887,13 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             'assigned_by' => auth()->id(),
             'status' => 'assigned',
         ]));
-        return redirect()->route('tech-head.assignments')->with('status', 'Assignment created');
+        return redirect()->route('tech-head.work-orders')->with('status', 'Assignment created');
     })->name('assignments.store');
 
     Route::post('/assignments/{assignment}/reassign', function (\Illuminate\Http\Request $request, Assignment $assignment) {
         $data = $request->validate(['assigned_to' => 'required|exists:users,id']);
         $assignment->update(['assigned_to' => $data['assigned_to'], 'status' => 'assigned']);
-        return redirect()->route('tech-head.assignments')->with('status', 'Assignment reassigned');
+        return redirect()->route('tech-head.work-orders')->with('status', 'Assignment reassigned');
     })->name('assignments.reassign');
 
     Route::post('/assignments/{assignment}/unassign', function (Assignment $assignment) {

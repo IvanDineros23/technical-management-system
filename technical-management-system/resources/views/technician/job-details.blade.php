@@ -328,7 +328,7 @@
                     </div>
                     <div class="mt-4">
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Description</p>
-                        <p class="text-sm text-gray-900 dark:text-white">{{ $job->description ?? 'No description provided' }}</p>
+                        <p class="text-sm text-gray-900 dark:text-white">{{ $job->service_description ?? 'No description provided' }}</p>
                     </div>
                 </div>
 
