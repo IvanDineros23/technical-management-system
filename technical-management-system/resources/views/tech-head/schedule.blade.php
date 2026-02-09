@@ -21,7 +21,7 @@
         $summary = [
             'week_total' => $weeklySchedule->flatten()->count(),
             'unassigned' => $unassignedJobs->count(),
-            'overdue' => $weeklySchedule->flatten()->filter(fn($a) => optional($a->scheduled_date)->isPast())->count(),
+            'overdue' => $weeklySchedule->flatten()->filter(fn($a) => optional($a->effective_due_date ?? $a->scheduled_date)->isPast())->count(),
             'available_today' => $availableTechnicians
         ];
         
@@ -198,8 +198,8 @@
                         <div class="space-y-2">
                             @forelse($items->take(4) as $assignment)
                                 @php
-                                    $scheduledDate = $assignment->scheduled_date
-                                        ? $assignment->scheduled_date->setTimezone('Asia/Manila')->format('M d')
+                                    $displayDate = ($assignment->effective_due_date ?? $assignment->scheduled_date)
+                                        ? ($assignment->effective_due_date ?? $assignment->scheduled_date)->setTimezone('Asia/Manila')->format('M d')
                                         : 'TBD';
                                 @endphp
                                 <div class="flex items-start justify-between rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2">
@@ -208,7 +208,7 @@
                                             {{ $assignment->jobOrder->job_order_number ?? 'N/A' }}
                                         </p>
                                         <p class="text-[11px] text-gray-500 dark:text-gray-400">
-                                            {{ $scheduledDate }}
+                                            {{ $displayDate }}
                                             @if($assignment->scheduled_time)
                                                 - {{ \Carbon\Carbon::createFromFormat('H:i:s', $assignment->scheduled_time)->setTimezone('Asia/Manila')->format('h:i A') }}
                                             @endif
@@ -337,7 +337,7 @@
                                         'wo_number' => $assignment->jobOrder->job_order_number ?? 'N/A',
                                         'customer' => $assignment->jobOrder->customer->name ?? 'N/A',
                                         'technician' => $assignment->assignedTo->name ?? 'Unassigned',
-                                        'scheduled_date' => optional($assignment->scheduled_date)->setTimezone('Asia/Manila')->format('M d, Y'),
+                                        'scheduled_date' => optional($assignment->effective_due_date ?? $assignment->scheduled_date)->setTimezone('Asia/Manila')->format('M d, Y'),
                                         'scheduled_time' => $assignment->scheduled_time ? \Carbon\Carbon::createFromFormat('H:i:s', $assignment->scheduled_time)->setTimezone('Asia/Manila')->format('h:i A') : null,
                                         'status' => $assignment->status ?? 'pending',
                                         'service_type' => $assignment->jobOrder->service_type ?? 'N/A',

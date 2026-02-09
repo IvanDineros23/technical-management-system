@@ -2116,7 +2116,13 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         
         // Get weekly schedule with filters
         $query = Assignment::with(['jobOrder.customer', 'assignedTo'])
-            ->whereBetween('scheduled_date', [$weekStart, $weekEnd])
+            ->where(function ($filter) use ($weekStart, $weekEnd) {
+                $filter->whereBetween('scheduled_date', [$weekStart, $weekEnd])
+                    ->orWhereHas('jobOrder', function ($jobFilter) use ($weekStart, $weekEnd) {
+                        $jobFilter->whereBetween('required_date', [$weekStart, $weekEnd])
+                            ->orWhereBetween('expected_completion_date', [$weekStart, $weekEnd]);
+                    });
+            })
             ->orderBy('scheduled_date')
             ->orderBy('scheduled_time');
         
@@ -2131,11 +2137,19 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             $query->where('priority', request('priority'));
         }
         
-        $assignments = $query->get();
-        
-        $weeklySchedule = $assignments->groupBy(function($assignment) {
-            return $assignment->scheduled_date->format('Y-m-d');
+        $assignments = $query->get()->map(function ($assignment) {
+            $assignment->effective_due_date = $assignment->scheduled_date
+                ?? $assignment->jobOrder?->required_date
+                ?? $assignment->jobOrder?->expected_completion_date;
+
+            return $assignment;
         });
+        
+        $weeklySchedule = $assignments
+            ->filter(fn ($assignment) => (bool) $assignment->effective_due_date)
+            ->groupBy(function ($assignment) {
+                return $assignment->effective_due_date->format('Y-m-d');
+            });
         
         // Get unassigned jobs (jobs without assignments or with null assigned_to)
         $unassignedJobs = JobOrder::with('customer')
