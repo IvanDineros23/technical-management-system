@@ -1744,7 +1744,7 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         $job = \App\Models\JobOrder::with([
             'customer',
             'assignments.calibrations.measurementPoints',
-            'attachments',
+            'attachments.uploader',
             'items',
             'checklistItems.creator',
             'checklistItems.completer',

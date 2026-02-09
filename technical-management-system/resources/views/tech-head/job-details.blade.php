@@ -100,7 +100,13 @@
                                 </svg>
                                 <div>
                                     <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $attachment->file_name }}</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ number_format($attachment->file_size / 1024, 2) }} KB • {{ $attachment->created_at->format('M d, Y H:i') }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                                        {{ number_format($attachment->file_size / 1024, 2) }} KB • 
+                                        {{ $attachment->created_at->format('M d, Y H:i') }}
+                                        @if($attachment->uploader)
+                                            <span class="ml-1">• Uploaded by: <span class="font-medium">{{ $attachment->uploader->name }}</span></span>
+                                        @endif
+                                    </p>
                                 </div>
                             </div>
                             <a href="{{ Storage::url($attachment->file_path) }}" target="_blank" 
