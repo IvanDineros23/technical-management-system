@@ -109,4 +109,14 @@ class JobOrder extends Model
     {
         return $this->hasMany(JobOrderAttachment::class);
     }
+
+    public function checklistItems()
+    {
+        return $this->hasMany(ChecklistItem::class);
+    }
+
+    public function crewMembers()
+    {
+        return $this->hasMany(JobOrderCrewMember::class);
+    }
 }

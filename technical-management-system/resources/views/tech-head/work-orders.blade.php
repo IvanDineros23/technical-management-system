@@ -171,7 +171,7 @@
                 
                 <a href="{{ route('tech-head.work-orders', ['status' => 'pending'] + request()->except('status')) }}" 
                    class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'pending' ? 'bg-amber-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    Pending
+                    Waiting for Assignment
                 </a>
                 
                 <a href="{{ route('tech-head.work-orders', ['status' => 'in_progress'] + request()->except('status')) }}" 
@@ -269,7 +269,25 @@
                                     'service_address' => $order->service_address ?? '',
                                     'city' => $order->city ?? '',
                                     'notes' => $order->notes ?? '',
-                                    'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')
+                                    'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
+                                    'attachments' => $order->attachments->map(function ($attachment) {
+                                        return [
+                                            'id' => $attachment->id,
+                                            'file_name' => $attachment->file_name,
+                                            'file_path' => $attachment->file_path,
+                                            'created_at' => optional($attachment->created_at)->toDateTimeString(),
+                                        ];
+                                    })->values(),
+                                    'checklist' => $order->checklistItems->map(function ($item) {
+                                        return [
+                                            'id' => $item->id,
+                                            'description' => $item->description,
+                                            'is_completed' => (bool) $item->is_completed,
+                                            'completed_at' => optional($item->completed_at)->toDateTimeString(),
+                                            'created_by' => optional($item->creator)->name,
+                                            'completed_by' => optional($item->completer)->name,
+                                        ];
+                                    })->values(),
                                 ]) }})"
                                 class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                             >
@@ -297,7 +315,7 @@
                                         {{ $order->status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' : '' }}
                                         {{ $order->status === 'completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' : '' }}
                                         {{ $order->status === 'cancelled' ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200' : '' }}">
-                                        {{ ucfirst(str_replace('_', ' ', $order->status)) }}
+                                        {{ $order->status === 'pending' ? 'Waiting for Assignment' : ucfirst(str_replace('_', ' ', $order->status)) }}
                                     </span>
                                 </td>
                                 <td class="py-3 text-center">
@@ -434,7 +452,7 @@
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>
-                                <span class="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200" x-text="selectedOrder?.status"></span>
+                                <span class="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200" x-text="selectedOrder?.status === 'pending' ? 'Waiting for Assignment' : selectedOrder?.status"></span>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Required Date</p>
@@ -451,6 +469,42 @@
                             <div class="col-span-2">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Notes</p>
                                 <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedOrder?.notes || 'No notes'"></p>
+                            </div>
+                            <div class="col-span-2" x-show="selectedOrder?.attachments?.length">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Attachments</p>
+                                <div class="space-y-2">
+                                    <template x-for="attachment in selectedOrder.attachments" :key="attachment.id">
+                                        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/40 rounded-lg">
+                                            <div>
+                                                <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="attachment.file_name"></p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="attachment.created_at ? new Date(attachment.created_at).toLocaleString('en-US') : ''"></p>
+                                            </div>
+                                            <a class="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                                               :href="'{{ rtrim(Storage::url(''), '/') }}/' + attachment.file_path"
+                                               target="_blank">
+                                                View
+                                            </a>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="col-span-2">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Task Checklist</p>
+                                <div class="space-y-2" x-show="selectedOrder?.checklist?.length">
+                                    <template x-for="item in selectedOrder.checklist" :key="item.id">
+                                        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/40 rounded-lg">
+                                            <div>
+                                                <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="item.description"></p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="item.is_completed ? 'Completed' : 'Pending'"></p>
+                                            </div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400 text-right">
+                                                <div x-text="item.completed_by ? 'By: ' + item.completed_by : ''"></div>
+                                                <div x-text="item.completed_at ? new Date(item.completed_at).toLocaleString('en-US') : ''"></div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400" x-show="!selectedOrder?.checklist?.length">No checklist items yet.</p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Created At</p>
@@ -728,7 +782,7 @@
                             <div>
                                 <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Work Order Status</label>
                                 <select name="status" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="pending">Pending</option>
+                                    <option value="pending">Waiting for Assignment</option>
                                     <option value="in_progress">In Progress</option>
                                     <option value="completed">Completed</option>
                                     <option value="cancelled">Cancelled</option>
@@ -793,7 +847,7 @@
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>
-                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedOrder?.status || 'N/A'"></p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedOrder?.status === 'pending' ? 'Waiting for Assignment' : (selectedOrder?.status || 'N/A')"></p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Priority</p>

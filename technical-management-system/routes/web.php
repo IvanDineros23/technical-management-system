@@ -400,55 +400,404 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     })->name('work-orders');
     
     Route::get('/job-details/{id}', function ($id) {
-        $job = \App\Models\JobOrder::with(['customer', 'assignments.calibrations.measurementPoints', 'attachments'])->findOrFail($id);
-        return view('technician.job-details', compact('job'));
+        $job = \App\Models\JobOrder::with([
+            'customer',
+            'assignments.calibrations.measurementPoints',
+            'attachments',
+            'items',
+            'checklistItems.creator',
+            'checklistItems.completer',
+            'crewMembers.user',
+            'crewMembers.addedBy'
+        ])->findOrFail($id);
+        $assignment = \App\Models\Assignment::with('report')
+            ->where('job_order_id', $id)
+            ->where('assigned_to', auth()->id())
+            ->first();
+        
+        // Automatically add assigned technician to crew if not already added
+        if ($assignment) {
+            $alreadyInCrew = $job->crewMembers()->where('user_id', auth()->id())->exists();
+            if (!$alreadyInCrew) {
+                $crewMember = $job->crewMembers()->create([
+                    'user_id' => auth()->id(),
+                    'added_by' => auth()->id()
+                ]);
+                // Log the auto-addition
+                \App\Helpers\AuditLogHelper::log(
+                    'CREATE',
+                    'JobOrderCrewMember',
+                    $crewMember->id,
+                    auth()->id(),
+                    'Auto-added assigned technician to crew',
+                    null,
+                    ['user_id' => auth()->id(), 'job_order_id' => $job->id]
+                );
+            }
+            // Reload crew members to include the newly added one
+            $job->load('crewMembers.user', 'crewMembers.addedBy');
+        }
+        
+        $checklistItems = $job->checklistItems->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'description' => $item->description,
+                'is_completed' => (bool) $item->is_completed,
+                'completed_at' => optional($item->completed_at)->toDateTimeString(),
+                'created_by' => optional($item->creator)->name,
+                'completed_by' => optional($item->completer)->name,
+            ];
+        })->values();
+
+        $crewMembers = $job->crewMembers->map(function ($member) {
+            return [
+                'id' => $member->id,
+                'user_id' => $member->user_id,
+                'name' => $member->user ? $member->user->name : $member->name,
+                'added_by' => optional($member->addedBy)->name
+            ];
+        })->values();
+
+        $technicianRoleId = \App\Models\Role::where('slug', 'tech_personnel')->value('id');
+        $technicians = \App\Models\User::where('role_id', $technicianRoleId)
+            ->where('id', '!=', auth()->id()) // Exclude current user since they're auto-added
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('technician.job-details', compact('job', 'assignment', 'checklistItems', 'crewMembers', 'technicians'));
     })->name('job-details');
-    
-    // Calibration data storage routes
-    Route::post('/calibration/store/{assignmentId}', function ($assignmentId, \Illuminate\Http\Request $request) {
-        $assignment = \App\Models\Assignment::findOrFail($assignmentId);
-        
-        // Create calibration record
-        $calibration = $assignment->calibrations()->create([
-            'calibration_date' => $request->calibration_date,
-            'location' => $request->location,
-            'start_time' => $request->start_time,
-            'end_time' => $request->end_time,
-            'procedure_reference' => $request->procedure_reference,
-            'technician_id' => auth()->id(),
-            'status' => 'pending_review'
+
+    Route::post('/job/{jobId}/crew-members', function (\Illuminate\Http\Request $request, $jobId) {
+        $job = \App\Models\JobOrder::findOrFail($jobId);
+        $assignment = \App\Models\Assignment::where('job_order_id', $job->id)
+            ->where('assigned_to', auth()->id())
+            ->first();
+        abort_if(!$assignment, 403, 'Not authorized to update crew members.');
+
+        $data = $request->validate([
+            'user_id' => 'nullable|exists:users,id',
+            'name' => 'nullable|string|max:255'
         ]);
-        
-        // Store measurement points
-        if ($request->has('measurement_points')) {
-            foreach ($request->measurement_points as $point) {
-                $calibration->measurementPoints()->create([
-                    'point_number' => $point['point_number'],
-                    'reference_value' => $point['reference_value'],
-                    'uut_reading' => $point['uut_reading'],
-                    'uncertainty' => $point['uncertainty'],
-                    'acceptance_criteria' => $point['acceptance_criteria'] ?? null,
+
+        if (!$data['user_id'] && !$data['name']) {
+            return response()->json(['success' => false, 'message' => 'Select a technician or provide a name.'], 422);
+        }
+
+        if (!empty($data['user_id'])) {
+            $existing = \App\Models\JobOrderCrewMember::where('job_order_id', $job->id)
+                ->where('user_id', $data['user_id'])
+                ->first();
+
+            if ($existing) {
+                return response()->json([
+                    'success' => true,
+                    'item' => [
+                        'id' => $existing->id,
+                        'user_id' => $existing->user_id,
+                        'name' => optional($existing->user)->name,
+                        'added_by' => optional($existing->addedBy)->name
+                    ]
                 ]);
             }
         }
-        
+
+        $member = $job->crewMembers()->create([
+            'user_id' => $data['user_id'] ?? null,
+            'name' => $data['user_id'] ? null : $data['name'],
+            'added_by' => auth()->id()
+        ]);
+
         \App\Helpers\AuditLogHelper::log(
             'CREATE',
-            'Calibration',
-            $calibration->id,
-            auth()->id(),
-            "Technician submitted calibration data for Job Order {$assignment->jobOrder->job_order_number}",
+            'JobOrderCrewMember',
+            $member->id,
+            "Crew member added for Job Order {$job->job_order_number}",
             null,
-            $calibration->toArray()
+            $member->toArray(),
+            ['user_id', 'name']
         );
+
+        return response()->json([
+            'success' => true,
+            'item' => [
+                'id' => $member->id,
+                'user_id' => $member->user_id,
+                'name' => $member->user ? $member->user->name : $member->name,
+                'added_by' => optional($member->addedBy)->name
+            ]
+        ]);
+    })->name('job.crew-members.store');
+
+    Route::delete('/crew-members/{member}', function (\App\Models\JobOrderCrewMember $member) {
+        $assignment = \App\Models\Assignment::where('job_order_id', $member->job_order_id)
+            ->where('assigned_to', auth()->id())
+            ->first();
+        abort_if(!$assignment, 403, 'Not authorized to update crew members.');
         
-        return redirect()->back()->with('success', 'Calibration data saved successfully and submitted for review.');
-    })->name('calibration.store-points');
+        // Prevent assigned technician from removing themselves
+        if ($member->user_id === auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot remove yourself. You are assigned to this job.'
+            ], 403);
+        }
+
+        $snapshot = $member->toArray();
+        $member->delete();
+
+        \App\Helpers\AuditLogHelper::log(
+            'DELETE',
+            'JobOrderCrewMember',
+            $snapshot['id'],
+            'Crew member removed',
+            $snapshot,
+            null,
+            ['user_id', 'name']
+        );
+
+        return response()->json(['success' => true]);
+    })->name('crew-members.delete');
+
+    Route::post('/job/{jobId}/checklist', function (\Illuminate\Http\Request $request, $jobId) {
+        $job = \App\Models\JobOrder::findOrFail($jobId);
+        $assignment = \App\Models\Assignment::where('job_order_id', $job->id)
+            ->where('assigned_to', auth()->id())
+            ->first();
+        abort_if(!$assignment, 403, 'Not authorized to update checklist.');
+
+        $data = $request->validate([
+            'description' => 'required|string|max:1000'
+        ]);
+
+        $item = $job->checklistItems()->create([
+            'description' => $data['description'],
+            'is_completed' => false,
+            'created_by' => auth()->id(),
+        ]);
+
+        \App\Helpers\AuditLogHelper::log(
+            'CREATE',
+            'ChecklistItem',
+            $item->id,
+            'Checklist item created',
+            null,
+            $item->toArray(),
+            ['description', 'is_completed']
+        );
+
+        return response()->json([
+            'success' => true,
+            'item' => [
+                'id' => $item->id,
+                'description' => $item->description,
+                'is_completed' => $item->is_completed,
+                'completed_at' => null,
+                'created_by' => optional($item->creator)->name,
+                'completed_by' => null
+            ]
+        ]);
+    })->name('job.checklist.store');
+
+    Route::patch('/checklist-items/{item}', function (\Illuminate\Http\Request $request, \App\Models\ChecklistItem $item) {
+        $assignment = \App\Models\Assignment::where('job_order_id', $item->job_order_id)
+            ->where('assigned_to', auth()->id())
+            ->first();
+        abort_if(!$assignment, 403, 'Not authorized to update checklist.');
+
+        $data = $request->validate([
+            'is_completed' => 'required|boolean'
+        ]);
+
+        $oldValues = $item->only(['is_completed', 'completed_by', 'completed_at']);
+
+        if ($data['is_completed']) {
+            $item->update([
+                'is_completed' => true,
+                'completed_by' => auth()->id(),
+                'completed_at' => now()
+            ]);
+        } else {
+            $item->update([
+                'is_completed' => false,
+                'completed_by' => null,
+                'completed_at' => null
+            ]);
+        }
+
+        \App\Helpers\AuditLogHelper::log(
+            'UPDATE',
+            'ChecklistItem',
+            $item->id,
+            'Checklist item updated',
+            $oldValues,
+            $item->only(['is_completed', 'completed_by', 'completed_at']),
+            ['is_completed', 'completed_by', 'completed_at']
+        );
+
+        return response()->json([
+            'success' => true,
+            'item' => [
+                'id' => $item->id,
+                'description' => $item->description,
+                'is_completed' => $item->is_completed,
+                'completed_at' => optional($item->completed_at)->toDateTimeString(),
+                'created_by' => optional($item->creator)->name,
+                'completed_by' => optional($item->completer)->name
+            ]
+        ]);
+    })->name('checklist.update');
+
+    Route::delete('/checklist-items/{item}', function (\App\Models\ChecklistItem $item) {
+        $assignment = \App\Models\Assignment::where('job_order_id', $item->job_order_id)
+            ->where('assigned_to', auth()->id())
+            ->first();
+        abort_if(!$assignment, 403, 'Not authorized to update checklist.');
+
+        $snapshot = $item->toArray();
+        $item->delete();
+
+        \App\Helpers\AuditLogHelper::log(
+            'DELETE',
+            'ChecklistItem',
+            $snapshot['id'],
+            'Checklist item deleted',
+            $snapshot,
+            null,
+            ['description', 'is_completed']
+        );
+
+        return response()->json(['success' => true]);
+    })->name('checklist.delete');
+
+    // Technician report submission
+    Route::post('/job/{job}/submit-report', function (\Illuminate\Http\Request $request, \App\Models\JobOrder $job) {
+        $assignment = \App\Models\Assignment::where('job_order_id', $job->id)
+            ->where('assigned_to', auth()->id())
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'work_summary' => 'required|string|max:2000',
+            'parts_used' => 'nullable|string|max:2000',
+            'remarks' => 'nullable|string|max:2000',
+        ]);
+
+        $report = $assignment->report;
+        if ($report && $report->status === 'approved') {
+            return redirect()->back()->with('error', 'Report already approved and cannot be edited.');
+        }
+
+        if ($report) {
+            $report->update([
+                'work_summary' => $validated['work_summary'],
+                'parts_used' => $validated['parts_used'] ?? null,
+                'remarks' => $validated['remarks'] ?? null,
+                'status' => 'pending',
+                'reviewed_by' => null,
+                'reviewed_at' => null,
+                'review_notes' => null,
+            ]);
+        } else {
+            $report = \App\Models\Report::create([
+                'assignment_id' => $assignment->id,
+                'submitted_by' => auth()->id(),
+                'work_summary' => $validated['work_summary'],
+                'parts_used' => $validated['parts_used'] ?? null,
+                'remarks' => $validated['remarks'] ?? null,
+                'status' => 'pending',
+            ]);
+        }
+
+        $assignment->update([
+            'status' => 'completed',
+            'completed_at' => $assignment->completed_at ?? now(),
+        ]);
+
+        $job->update([
+            'status' => 'pending',
+        ]);
+
+        return redirect()->back()->with('status', 'Report submitted for review.');
+    })->name('job.submit-report');
+
+    // Technician report submission (from reports modal)
+    Route::post('/reports/{assignment}/submit', function (\Illuminate\Http\Request $request, \App\Models\Assignment $assignment) {
+        abort_unless($assignment->assigned_to === auth()->id(), 403);
+
+        $validated = $request->validate([
+            'work_summary' => 'required|string|max:2000',
+            'parts_used' => 'nullable|string|max:2000',
+            'remarks' => 'nullable|string|max:2000',
+            'photos.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
+        ]);
+
+        $report = $assignment->report;
+        if ($report && $report->status === 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Report already approved and cannot be edited.'
+            ], 422);
+        }
+
+        $job = $assignment->jobOrder;
+        $photoPaths = [];
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $file) {
+                $path = $file->store('job-attachments/' . $job->id, 'public');
+                $photoPaths[] = $path;
+                $job->attachments()->create([
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_path' => $path,
+                    'file_type' => $file->getClientMimeType(),
+                    'file_size' => $file->getSize(),
+                    'description' => 'Report photo',
+                    'uploaded_by' => auth()->id(),
+                    'uploaded_at' => now(),
+                ]);
+            }
+        }
+
+        if ($report) {
+            $report->update([
+                'work_summary' => $validated['work_summary'],
+                'parts_used' => $validated['parts_used'] ?? null,
+                'remarks' => $validated['remarks'] ?? null,
+                'photos' => array_values(array_filter(array_merge($report->photos ?? [], $photoPaths))),
+                'status' => 'pending',
+                'reviewed_by' => null,
+                'reviewed_at' => null,
+                'review_notes' => null,
+            ]);
+        } else {
+            $report = \App\Models\Report::create([
+                'assignment_id' => $assignment->id,
+                'submitted_by' => auth()->id(),
+                'work_summary' => $validated['work_summary'],
+                'parts_used' => $validated['parts_used'] ?? null,
+                'remarks' => $validated['remarks'] ?? null,
+                'photos' => $photoPaths,
+                'status' => 'pending',
+            ]);
+        }
+
+        $assignment->update([
+            'status' => 'completed',
+            'completed_at' => $assignment->completed_at ?? now(),
+        ]);
+
+        $job->update([
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Report submitted for review.'
+        ]);
+    })->name('reports.submit');
     
     // Attachments upload route
     Route::post('/job/{jobId}/attachments', function ($jobId, \Illuminate\Http\Request $request) {
         $request->validate([
-            'files.*' => 'required|file|max:10240', // 10MB max
+            'files.*' => 'required|file|mimes:jpg,jpeg,png,gif,webp,xls,xlsx|max:10240', // 10MB max
         ]);
         
         $job = \App\Models\JobOrder::findOrFail($jobId);
@@ -730,12 +1079,6 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         return view('technician.calendar', compact('assignments'));
     })->name('calendar');
 
-    // Calibration Data Entry Routes
-    Route::get('/calibration-assignments', [CalibrationController::class, 'index'])->name('calibration.assignments');
-    Route::get('/calibration/{assignment}', [CalibrationController::class, 'show'])->name('calibration.show');
-    Route::post('/calibration/{calibration}/store-points', [CalibrationController::class, 'storeMeasurementPoints'])->name('calibration.store-points');
-    Route::post('/calibration/{calibration}/submit', [CalibrationController::class, 'submitForReview'])->name('calibration.submit');
-    Route::post('/measurement-point/{measurementPoint}/uncertainty', [CalibrationController::class, 'storeUncertainty'])->name('measurement-point.uncertainty');
 });
 
 // Tech Head Routes
@@ -1044,7 +1387,12 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         $status = $request->get('status');
         $priority = $request->get('priority');
         
-        $query = JobOrder::with(['customer'])->withCount('certificates');
+        $query = JobOrder::with([
+            'customer',
+            'attachments',
+            'checklistItems.creator',
+            'checklistItems.completer'
+        ])->withCount('certificates');
         
         // Exclude work orders that already have assignments (they should appear in Assignments page only)
         $query->whereDoesntHave('assignments');
@@ -1505,7 +1853,7 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         $filter = $request->get('filter', 'all');
         
         // Get all reports with relationships
-        $query = Report::with(['assignment.jobOrder.customer', 'submittedBy', 'reviewedBy'])
+        $query = Report::with(['assignment.jobOrder.customer', 'assignment.jobOrder.attachments', 'submittedBy', 'reviewedBy'])
             ->latest();
         
         // Apply filter
@@ -1520,7 +1868,7 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         $reports = $query->paginate(15);
         
         // Get pending reports for the card
-        $pendingReports = Report::with(['assignment.jobOrder.customer', 'submittedBy'])
+        $pendingReports = Report::with(['assignment.jobOrder.customer', 'assignment.jobOrder.attachments', 'submittedBy'])
             ->where('status', 'pending')
             ->latest()
             ->get();

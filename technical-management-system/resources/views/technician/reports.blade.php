@@ -10,6 +10,8 @@
                 showSubmitModal: false,
                 showViewModal: false,
                 selectedReport: null,
+                selectedAssignmentId: null,
+                isSubmitting: false,
                 toast: {
                     show: false,
                     message: '',
@@ -23,8 +25,8 @@
                         this.toast.show = false;
                     }, 4000);
                 },
-                openSubmitModal(jobId) {
-                    this.selectedReport = jobId;
+                openSubmitModal(assignmentId) {
+                    this.selectedAssignmentId = assignmentId;
                     this.showSubmitModal = true;
                     document.body.style.overflow = 'hidden';
                 },
@@ -32,7 +34,7 @@
                     this.showSubmitModal = false;
                     setTimeout(() => {
                         document.body.style.overflow = 'auto';
-                        this.selectedReport = null;
+                        this.selectedAssignmentId = null;
                     }, 250);
                 },
                 openViewModal(reportId) {
@@ -55,24 +57,40 @@
                 },
                 async submitReport(event) {
                     event.preventDefault();
+                    if (!this.selectedAssignmentId || this.isSubmitting) {
+                        return;
+                    }
+                    this.isSubmitting = true;
                     const form = event.target;
                     const formData = new FormData(form);
-                    
+                    const url = `{{ url('/technician/reports') }}/${this.selectedAssignmentId}/submit`;
+
                     try {
-                        // Simulate API call
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                        
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            },
+                            body: formData
+                        });
+
+                        const data = await response.json();
+                        if (!response.ok || !data.success) {
+                            throw new Error(data.message || 'Error submitting report.');
+                        }
+
                         this.closeSubmitModal();
                         setTimeout(() => {
-                            this.showToast('Report submitted successfully!', 'success');
+                            this.showToast(data.message || 'Report submitted successfully!', 'success');
                             setTimeout(() => {
                                 location.reload();
                             }, 1500);
-                        }, 600);
+                        }, 300);
                     } catch (error) {
-                        setTimeout(() => {
-                            this.showToast('Error submitting report. Please try again.', 'error');
-                        }, 600);
+                        this.showToast(error.message || 'Error submitting report. Please try again.', 'error');
+                    } finally {
+                        this.isSubmitting = false;
                     }
                 }
             }
@@ -418,8 +436,10 @@
                         Cancel
                     </button>
                     <button type="submit"
-                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-                        Submit Report
+                            :disabled="isSubmitting"
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span x-show="!isSubmitting">Submit Report</span>
+                        <span x-show="isSubmitting">Submitting...</span>
                     </button>
                 </div>
             </form>

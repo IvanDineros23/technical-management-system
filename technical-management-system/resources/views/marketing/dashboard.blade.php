@@ -110,13 +110,13 @@
                 </div>
             </div>
 
-            <!-- Pending -->
+            <!-- Waiting for Assignment -->
             <div class="flex-1 min-w-[220px] bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-900/20
                         rounded-[20px] shadow-md p-6 border border-orange-200 dark:border-orange-800">
                 <div class="flex flex-col h-full">
-                    <p class="text-xs text-orange-600 dark:text-orange-400 font-semibold mb-3">Pending Approval</p>
+                    <p class="text-xs text-orange-600 dark:text-orange-400 font-semibold mb-3">Waiting for Assignment</p>
                     <h3 class="text-4xl font-bold text-orange-900 dark:text-orange-100 mb-3">{{ $pendingJobOrders }}</h3>
-                    <p class="text-xs text-orange-600 dark:text-orange-400 mt-auto">Awaiting review</p>
+                    <p class="text-xs text-orange-600 dark:text-orange-400 mt-auto">Awaiting assignment</p>
                 </div>
             </div>
 
@@ -165,7 +165,7 @@
                             </div>
                         </div>
                         @if($jobOrder->status === 'pending')
-                            <span class="px-3 py-1 text-xs font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full">Pending</span>
+                            <span class="px-3 py-1 text-xs font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full">Waiting for Assignment</span>
                         @elseif($jobOrder->status === 'in_progress')
                             <span class="px-3 py-1 text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">In Progress</span>
                         @elseif($jobOrder->status === 'completed')
@@ -264,7 +264,7 @@
                                           'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300': selectedJO?.status === 'in_progress',
                                           'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300': selectedJO?.status === 'completed',
                                           'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': !['pending','in_progress','completed'].includes(selectedJO?.status)
-                                      }" x-text="(selectedJO?.status || 'N/A').replace('_',' ')"></span>
+                                      }" x-text="selectedJO?.status === 'pending' ? 'Waiting for Assignment' : (selectedJO?.status || 'N/A').replace('_',' ')"></span>
                             </div>
                         </div>
 

@@ -345,6 +345,26 @@
                         <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Remarks</h4>
                         <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4" x-text="selectedReport?.remarks || 'None'"></p>
                     </div>
+
+                    <!-- Attachments -->
+                    <div x-show="selectedReport?.assignment?.job_order?.attachments?.length">
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Attachments</h4>
+                        <div class="space-y-2">
+                            <template x-for="attachment in selectedReport.assignment.job_order.attachments" :key="attachment.id">
+                                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="attachment.file_name"></p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="attachment.created_at ? new Date(attachment.created_at).toLocaleString('en-US') : ''"></p>
+                                    </div>
+                                    <a class="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                                       :href="'{{ rtrim(Storage::url(''), '/') }}/' + attachment.file_path"
+                                       target="_blank">
+                                        View
+                                    </a>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
                     
                     <!-- Review Notes -->
                     <div x-show="selectedReport?.review_notes">

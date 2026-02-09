@@ -55,7 +55,7 @@
                         'in_progress': 'In Progress',
                         'on_hold': 'On Hold',
                         'completed': 'Completed',
-                        'pending': 'Pending'
+                        'pending': 'Waiting for Assignment'
                     };
                     return labels[status] || status;
                 }
@@ -173,13 +173,13 @@
                 </div>
             </div>
 
-            <!-- Pending Jobs -->
+            <!-- Waiting for Assignment -->
             <div class="flex-1 min-w-[220px] bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20
                         rounded-[20px] shadow-md p-6 border border-blue-200 dark:border-blue-800">
                 <div class="flex flex-col h-full">
-                    <p class="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-3">Pending Jobs</p>
+                    <p class="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-3">Waiting for Assignment</p>
                     <h3 class="text-4xl font-bold text-blue-900 dark:text-blue-100 mb-3">{{ $pendingJobs }}</h3>
-                    <p class="text-xs text-blue-600 dark:text-blue-400 mt-auto">Awaiting start</p>
+                    <p class="text-xs text-blue-600 dark:text-blue-400 mt-auto">Awaiting assignment</p>
                 </div>
             </div>
 
@@ -387,7 +387,7 @@
                                             'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': '{{ $job->status }}' === 'completed',
                                             'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300': '{{ $job->status }}' === 'on_hold'
                                         }" class="px-2 py-1 text-xs font-medium rounded-full">
-                                            {{ ucfirst(str_replace('_', ' ', $job->status)) }}
+                                            {{ $job->status === 'pending' ? 'Waiting for Assignment' : ucfirst(str_replace('_', ' ', $job->status)) }}
                                         </span>
                                     </td>
                                     <td class="py-3">
@@ -525,7 +525,7 @@
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>
-                                <span x-text="selectedJob?.status" :class="{
+                                <span x-text="getStatusLabel(selectedJob?.status)" :class="{
                                     'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300': selectedJob?.status === 'pending',
                                     'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300': selectedJob?.status === 'assigned',
                                     'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300': selectedJob?.status === 'in_progress',
