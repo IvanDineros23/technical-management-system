@@ -79,6 +79,10 @@
                class="px-4 py-2 rounded-lg text-xs font-semibold {{ $status === 'pending' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700' }}">
                 Pending
             </a>
+            <a href="{{ route('customer.requests', ['status' => 'approved']) }}"
+               class="px-4 py-2 rounded-lg text-xs font-semibold {{ $status === 'approved' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-700' }}">
+                Approved
+            </a>
             <a href="{{ route('customer.requests', ['status' => 'in_progress']) }}"
                class="px-4 py-2 rounded-lg text-xs font-semibold {{ $status === 'in_progress' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700' }}">
                 In Progress
@@ -116,6 +120,7 @@
                                 @php
                                     $statusStyles = [
                                         'pending' => 'bg-amber-100 text-amber-700',
+                                        'approved' => 'bg-emerald-100 text-emerald-700',
                                         'in_progress' => 'bg-blue-100 text-blue-700',
                                         'completed' => 'bg-emerald-100 text-emerald-700',
                                         'cancelled' => 'bg-rose-100 text-rose-700',

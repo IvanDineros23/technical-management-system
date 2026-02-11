@@ -18,6 +18,7 @@
                 deletingCustomerId: null,
                 deletingCustomerName: '',
                 detailsCustomer: {},
+                missingFields: [],
                 toast: {
                     show: false,
                     message: '',
@@ -25,13 +26,19 @@
                 },
                 formData: {
                     name: '',
+                    business_name: '',
                     email: '',
                     phone: '',
                     address: '',
                     city: '',
+                    state: '',
+                    postal_code: '',
                     country: 'Philippines',
                     contact_person: '',
-                    tax_id: ''
+                    industry_type: '',
+                    tax_id: '',
+                    credit_terms: '',
+                    notes: ''
                 },
                 init() {
                     // Listen for ESC key
@@ -60,6 +67,7 @@
                 },
                 openDetailsModal(customer) {
                     this.detailsCustomer = customer;
+                    this.missingFields = this.getMissingFields(customer);
                     this.showDetailsModal = true;
                     document.body.style.overflow = 'hidden';
                 },
@@ -67,6 +75,31 @@
                     this.showDetailsModal = false;
                     document.body.style.overflow = 'auto';
                     this.detailsCustomer = {};
+                    this.missingFields = [];
+                },
+                openEditFromDetails() {
+                    const customer = this.detailsCustomer;
+                    this.closeDetailsModal();
+                    this.openEditModal(customer);
+                },
+                isBlank(value) {
+                    return value === null || value === undefined || String(value).trim() === '';
+                },
+                getMissingFields(customer) {
+                    const fields = [
+                        { key: 'email', label: 'Email' },
+                        { key: 'phone', label: 'Phone' },
+                        { key: 'address', label: 'Address' },
+                        { key: 'city', label: 'City' },
+                        { key: 'state', label: 'Province/State' },
+                        { key: 'postal_code', label: 'Postal Code' },
+                        { key: 'contact_person', label: 'Contact Person' },
+                        { key: 'tax_id', label: 'Tax ID' }
+                    ];
+
+                    return fields
+                        .filter((field) => this.isBlank(customer?.[field.key]))
+                        .map((field) => field.label);
                 },
                 toggleMenu(id) {
                     this.openMenuId = this.openMenuId === id ? null : id;
@@ -106,13 +139,19 @@
                 resetForm() {
                     this.formData = {
                         name: '',
+                        business_name: '',
                         email: '',
                         phone: '',
                         address: '',
                         city: '',
+                        state: '',
+                        postal_code: '',
                         country: 'Philippines',
                         contact_person: '',
-                        tax_id: ''
+                        industry_type: '',
+                        tax_id: '',
+                        credit_terms: '',
+                        notes: ''
                     };
                     this.isSubmitting = false;
                     this.errorMessage = '';
@@ -216,13 +255,19 @@
                     this.editingCustomerId = customer.id;
                     this.formData = {
                         name: customer.name,
+                        business_name: customer.business_name || '',
                         email: customer.email || '',
                         phone: customer.phone || '',
                         address: customer.address || '',
                         city: customer.city || '',
+                        state: customer.state || '',
+                        postal_code: customer.postal_code || '',
                         country: customer.country || 'Philippines',
                         contact_person: customer.contact_person || '',
-                        tax_id: customer.tax_id || ''
+                        industry_type: customer.industry_type || '',
+                        tax_id: customer.tax_id || '',
+                        credit_terms: customer.credit_terms || '',
+                        notes: customer.notes || ''
                     };
                     this.showEditModal = true;
                     this.errorMessage = '';
@@ -497,6 +542,16 @@
                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
 
+                        <!-- Business Name -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Business Name (Optional)
+                            </label>
+                            <input x-model="formData.business_name" 
+                                   type="text" 
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
                         <!-- Email -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -529,12 +584,32 @@
                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
 
+                        <!-- Industry Type -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Industry Type
+                            </label>
+                            <input x-model="formData.industry_type" 
+                                   type="text" 
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
                         <!-- Tax ID -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Tax ID / TIN
                             </label>
                             <input x-model="formData.tax_id" 
+                                   type="text" 
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        <!-- Credit Terms -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Credit Terms
+                            </label>
+                            <input x-model="formData.credit_terms" 
                                    type="text" 
                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
@@ -560,6 +635,26 @@
                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
 
+                        <!-- Province / State -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Province / State
+                            </label>
+                            <input x-model="formData.state" 
+                                   type="text" 
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        <!-- Postal Code -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Postal Code
+                            </label>
+                            <input x-model="formData.postal_code" 
+                                   type="text" 
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
                         <!-- Country -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -568,6 +663,15 @@
                             <input x-model="formData.country" 
                                    type="text" 
                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Notes
+                            </label>
+                            <textarea x-model="formData.notes" rows="3"
+                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
                         </div>
                     </div>
 
@@ -662,6 +766,16 @@
                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
 
+                        <!-- Business Name -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Business Name (Optional)
+                            </label>
+                            <input x-model="formData.business_name" 
+                                   type="text" 
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
                         <!-- Email -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -694,12 +808,32 @@
                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
 
+                        <!-- Industry Type -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Industry Type
+                            </label>
+                            <input x-model="formData.industry_type" 
+                                   type="text" 
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
                         <!-- Tax ID -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Tax ID / TIN
                             </label>
                             <input x-model="formData.tax_id" 
+                                   type="text" 
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        <!-- Credit Terms -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Credit Terms
+                            </label>
+                            <input x-model="formData.credit_terms" 
                                    type="text" 
                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
@@ -725,6 +859,26 @@
                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
 
+                        <!-- Province / State -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Province / State
+                            </label>
+                            <input x-model="formData.state" 
+                                   type="text" 
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        <!-- Postal Code -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Postal Code
+                            </label>
+                            <input x-model="formData.postal_code" 
+                                   type="text" 
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
                         <!-- Country -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -733,6 +887,15 @@
                             <input x-model="formData.country" 
                                    type="text" 
                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Notes
+                            </label>
+                            <textarea x-model="formData.notes" rows="3"
+                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
                         </div>
                     </div>
 
@@ -895,6 +1058,16 @@
                 <!-- Modal Body -->
                 <div class="p-6">
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2" x-text="detailsCustomer.name"></h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400" x-show="detailsCustomer.business_name" x-text="detailsCustomer.business_name"></p>
+
+                    <div x-show="missingFields.length" class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+                        <p class="text-sm font-semibold">Customer profile is incomplete.</p>
+                        <p class="text-xs mt-1">Missing: <span x-text="missingFields.join(', ')"></span></p>
+                        <button type="button" @click="openEditFromDetails()" class="mt-3 text-xs font-semibold text-amber-800 hover:text-amber-900">
+                            Complete profile
+                        </button>
+                    </div>
+
                     <div class="space-y-2 text-sm">
                         <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -920,6 +1093,14 @@
                             <span x-text="detailsCustomer.city ?? 'N/A'"></span>
                         </div>
                         <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <span class="font-medium">Province/State:</span>
+                            <span x-text="detailsCustomer.state ?? 'N/A'"></span>
+                        </div>
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <span class="font-medium">Postal Code:</span>
+                            <span x-text="detailsCustomer.postal_code ?? 'N/A'"></span>
+                        </div>
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                             <span class="font-medium">Country:</span>
                             <span x-text="detailsCustomer.country ?? 'Philippines'"></span>
                         </div>
@@ -928,8 +1109,20 @@
                             <span x-text="detailsCustomer.contact_person ?? 'N/A'"></span>
                         </div>
                         <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <span class="font-medium">Industry:</span>
+                            <span x-text="detailsCustomer.industry_type ?? 'N/A'"></span>
+                        </div>
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                             <span class="font-medium">Tax ID:</span>
                             <span x-text="detailsCustomer.tax_id ?? 'N/A'"></span>
+                        </div>
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <span class="font-medium">Credit Terms:</span>
+                            <span x-text="detailsCustomer.credit_terms ?? 'N/A'"></span>
+                        </div>
+                        <div class="flex items-start gap-2 text-gray-600 dark:text-gray-400">
+                            <span class="font-medium">Notes:</span>
+                            <span x-text="detailsCustomer.notes ?? 'N/A'"></span>
                         </div>
                     </div>
 
@@ -942,6 +1135,7 @@
                 <!-- Modal Footer -->
                 <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex gap-3 justify-end">
                     <button type="button" @click="closeDetailsModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Close</button>
+                    <button type="button" @click="openEditFromDetails()" class="px-4 py-2 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors">Update Details</button>
                     <a :href="`{{ route('marketing.create-job-order') }}?customer_name=${encodeURIComponent(detailsCustomer.name||'')}&email=${encodeURIComponent(detailsCustomer.email||'')}&phone=${encodeURIComponent(detailsCustomer.phone||'')}&service_address=${encodeURIComponent(detailsCustomer.address||'')}&city=${encodeURIComponent(detailsCustomer.city||'')}`" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Create JO</a>
                 </div>
             </div>

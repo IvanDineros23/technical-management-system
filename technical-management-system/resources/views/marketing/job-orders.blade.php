@@ -115,11 +115,17 @@
             <button @click="filterByStatus('pending')" :class="filterStatus === 'pending' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 Pending
             </button>
+            <button @click="filterByStatus('approved')" :class="filterStatus === 'approved' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                Approved
+            </button>
             <button @click="filterByStatus('in_progress')" :class="filterStatus === 'in_progress' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 In Progress
             </button>
             <button @click="filterByStatus('completed')" :class="filterStatus === 'completed' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 Completed
+            </button>
+            <button @click="filterByStatus('rejected')" :class="filterStatus === 'rejected' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                Rejected
             </button>
         </div>
 
@@ -141,7 +147,15 @@
                     @forelse($jobOrders as $jobOrder)
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $jobOrder->job_order_number }}</span>
+                                @php
+                                    $isCustomerRequest = $jobOrder->creator && $jobOrder->creator->role && $jobOrder->creator->role->slug === 'customer';
+                                @endphp
+                                <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $jobOrder->job_order_number }}</div>
+                                @if($isCustomerRequest)
+                                    <span class="mt-1 inline-flex items-center px-2 py-0.5 text-[11px] font-semibold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+                                        Customer Request
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $jobOrder->customer->name ?? 'N/A' }}</div>
@@ -152,16 +166,34 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($jobOrder->status === 'pending')
                                     <span class="px-3 py-1 text-xs font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full">Pending</span>
+                                @elseif($jobOrder->status === 'approved')
+                                    <span class="px-3 py-1 text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full">Approved</span>
                                 @elseif($jobOrder->status === 'in_progress')
                                     <span class="px-3 py-1 text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">In Progress</span>
                                 @elseif($jobOrder->status === 'completed')
                                     <span class="px-3 py-1 text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full">Completed</span>
+                                @elseif($jobOrder->status === 'rejected')
+                                    <span class="px-3 py-1 text-xs font-semibold bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 rounded-full">Rejected</span>
                                 @else
                                     <span class="px-3 py-1 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">{{ ucfirst($jobOrder->status) }}</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <button @click='openJODetails(@json($jobOrder))' class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium">View</button>
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <button @click='openJODetails(@json($jobOrder))' class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium">View</button>
+                                    @if($isCustomerRequest && $jobOrder->status === 'pending')
+                                        <form method="POST" action="{{ route('marketing.job-orders.approve', $jobOrder) }}" class="inline">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="text-emerald-600 hover:text-emerald-700 font-semibold">Accept</button>
+                                        </form>
+                                        <form method="POST" action="{{ route('marketing.job-orders.reject', $jobOrder) }}" class="inline" onsubmit="return confirm('Decline this customer request?');">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="text-rose-600 hover:text-rose-700 font-semibold">Decline</button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -231,9 +263,11 @@
                             <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full"
                                   :class="{
                                       'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300': selectedJO?.status === 'pending',
+                                      'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300': selectedJO?.status === 'approved',
                                       'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300': selectedJO?.status === 'in_progress',
                                       'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300': selectedJO?.status === 'completed',
-                                      'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': !['pending','in_progress','completed'].includes(selectedJO?.status)
+                                      'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300': selectedJO?.status === 'rejected',
+                                      'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': !['pending','approved','in_progress','completed','rejected'].includes(selectedJO?.status)
                                   }" x-text="(selectedJO?.status || 'N/A').replace('_',' ')"></span>
                         </div>
                     </div>

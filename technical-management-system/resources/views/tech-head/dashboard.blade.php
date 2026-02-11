@@ -44,6 +44,7 @@
                 getStatusColor(status) {
                     const colors = {
                         'pending': 'amber',
+                        'approved': 'emerald',
                         'in_progress': 'blue',
                         'on_hold': 'orange',
                         'completed': 'green',
@@ -54,6 +55,7 @@
                 getStatusLabel(status) {
                     const labels = {
                         'pending': 'Pending',
+                        'approved': 'Approved',
                         'in_progress': 'In Progress',
                         'on_hold': 'On Hold',
                         'completed': 'Completed',
@@ -185,7 +187,7 @@
                 <div class="flex flex-col h-full">
                     <p class="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-2">Active Work Orders</p>
                     <h3 class="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">{{ $summary['activeWorkOrders'] }}</h3>
-                    <p class="text-xs text-blue-600 dark:text-blue-400 mt-auto">Pending + In Progress</p>
+                    <p class="text-xs text-blue-600 dark:text-blue-400 mt-auto">Approved + Pending + In Progress</p>
                 </div>
             </div>
 
@@ -736,6 +738,7 @@
                             $filters = [
                                 '' => 'All',
                                 'pending' => 'Pending',
+                                'approved' => 'Approved',
                                 'in_progress' => 'In Progress',
                                 'overdue' => 'Overdue',
                                 'high_priority' => 'High Priority',
@@ -782,6 +785,7 @@
                                 ];
                                 $statusColors = [
                                     'pending' => 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200',
+                                    'approved' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200',
                                     'in_progress' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200',
                                     'completed' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200',
                                     'on_hold' => 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200',

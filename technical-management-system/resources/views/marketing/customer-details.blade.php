@@ -50,6 +50,25 @@
 @endsection
 
 @section('content')
+    @php
+        $missingFields = [];
+        $requiredFields = [
+            'email' => 'Email',
+            'phone' => 'Phone',
+            'address' => 'Address',
+            'city' => 'City',
+            'state' => 'Province/State',
+            'postal_code' => 'Postal Code',
+            'contact_person' => 'Contact Person',
+            'tax_id' => 'Tax ID',
+        ];
+        foreach ($requiredFields as $field => $label) {
+            if (empty($customer->{$field})) {
+                $missingFields[] = $label;
+            }
+        }
+    @endphp
+
     <div class="mb-6 flex items-center justify-between">
         <div>
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Customer Details</h2>
@@ -68,12 +87,21 @@
     </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
+        @if(count($missingFields))
+            <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+                <p class="text-sm font-semibold">Customer profile is incomplete.</p>
+                <p class="text-xs mt-1">Missing: {{ implode(', ', $missingFields) }}</p>
+            </div>
+        @endif
         <div class="flex items-start gap-4">
             <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
                 <span class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ strtoupper(substr($customer->name, 0, 2)) }}</span>
             </div>
             <div class="flex-1">
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{{ $customer->name }}</h3>
+                @if($customer->business_name)
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ $customer->business_name }}</p>
+                @endif
                 <div class="mt-2 space-y-2 text-sm">
                     <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,6 +121,42 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                         </svg>
                         {{ $customer->address ?? 'N/A' }}
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">City:</span>
+                        <span>{{ $customer->city ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">Province/State:</span>
+                        <span>{{ $customer->state ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">Postal Code:</span>
+                        <span>{{ $customer->postal_code ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">Country:</span>
+                        <span>{{ $customer->country ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">Contact Person:</span>
+                        <span>{{ $customer->contact_person ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">Industry:</span>
+                        <span>{{ $customer->industry_type ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">Tax ID:</span>
+                        <span>{{ $customer->tax_id ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">Credit Terms:</span>
+                        <span>{{ $customer->credit_terms ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex items-start gap-2 text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">Notes:</span>
+                        <span>{{ $customer->notes ?? 'N/A' }}</span>
                     </div>
                 </div>
                 <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-sm">

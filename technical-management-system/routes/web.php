@@ -1,5 +1,6 @@
 <?php
 
+use App\Helpers\AuditLogHelper;
 use App\Http\Controllers\{AdminController, ApprovalController, AuditLogController, CalibrationController, CustomerPortalController, EquipmentController, InventoryController, ProfileController, ReportController, RoleController, SettingsController, SignatoryController, TimelineController, VerificationController};
 use App\Models\{Assignment, Calibration, Certificate, Customer, Equipment, JobOrder, Report, Role, User};
 use Illuminate\Http\Request;
@@ -74,7 +75,7 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
     })->name('dashboard');
     
     Route::get('/job-orders', function () {
-        $query = \App\Models\JobOrder::with('customer')->latest();
+        $query = \App\Models\JobOrder::with(['customer', 'creator.role'])->latest();
         
         // Filter by status if provided
         if (request()->has('status') && request('status') != '') {
@@ -84,6 +85,76 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
         $jobOrders = $query->paginate(10);
         return view('marketing.job-orders', compact('jobOrders'));
     })->name('job-orders');
+
+    Route::patch('/job-orders/{jobOrder}/approve', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
+        $jobOrder->load('creator.role');
+        $isCustomerRequest = $jobOrder->creator && $jobOrder->creator->role && $jobOrder->creator->role->slug === 'customer';
+
+        if (!$isCustomerRequest) {
+            return back()->withErrors(['error' => 'Only customer requests can be approved here.']);
+        }
+
+        if ($jobOrder->status !== 'pending') {
+            return back()->withErrors(['error' => 'Only pending requests can be approved.']);
+        }
+
+        $jobOrder->update([
+            'status' => 'approved',
+            'approved_by' => $request->user()->id,
+            'approved_at' => now(),
+            'rejected_by' => null,
+            'rejected_at' => null,
+            'rejection_reason' => null,
+        ]);
+
+        AuditLogHelper::log(
+            action: 'APPROVE',
+            modelType: 'JobOrder',
+            modelId: $jobOrder->id,
+            description: "Marketing approved customer request {$jobOrder->job_order_number}",
+            newValues: [
+                'status' => 'approved',
+                'approved_by' => $request->user()->id,
+            ],
+            changedFields: ['status', 'approved_by', 'approved_at']
+        );
+
+        return back()->with('status', 'Request approved and ready for technical head.');
+    })->name('job-orders.approve');
+
+    Route::patch('/job-orders/{jobOrder}/reject', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
+        $jobOrder->load('creator.role');
+        $isCustomerRequest = $jobOrder->creator && $jobOrder->creator->role && $jobOrder->creator->role->slug === 'customer';
+
+        if (!$isCustomerRequest) {
+            return back()->withErrors(['error' => 'Only customer requests can be declined here.']);
+        }
+
+        if ($jobOrder->status !== 'pending') {
+            return back()->withErrors(['error' => 'Only pending requests can be declined.']);
+        }
+
+        $jobOrder->update([
+            'status' => 'rejected',
+            'rejected_by' => $request->user()->id,
+            'rejected_at' => now(),
+            'rejection_reason' => 'Declined by marketing',
+        ]);
+
+        AuditLogHelper::log(
+            action: 'REJECT',
+            modelType: 'JobOrder',
+            modelId: $jobOrder->id,
+            description: "Marketing declined customer request {$jobOrder->job_order_number}",
+            newValues: [
+                'status' => 'rejected',
+                'rejection_reason' => 'Declined by marketing',
+            ],
+            changedFields: ['status', 'rejected_by', 'rejected_at', 'rejection_reason']
+        );
+
+        return back()->with('status', 'Request declined.');
+    })->name('job-orders.reject');
     
     Route::get('/create-job-order', function () {
         $customers = \App\Models\Customer::where('is_active', true)->get();
@@ -144,7 +215,9 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
                 'request_date' => now(),
                 'required_date' => $validated['expected_completion_date'] ?? null,
                 'priority' => $priority,
-                'status' => 'pending',
+                'status' => 'approved',
+                'approved_by' => auth()->id() ?? 1,
+                'approved_at' => now(),
                 'created_by' => auth()->id() ?? 1, // Use auth user or default to 1
             ]);
 
@@ -188,13 +261,19 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
         try {
             $validated = request()->validate([
                 'name' => 'required|string|max:255',
+                'business_name' => 'nullable|string|max:255',
                 'email' => 'required|email|unique:customers,email',
                 'phone' => 'required|string|max:50',
                 'address' => 'required|string',
                 'city' => 'nullable|string|max:100',
+                'state' => 'nullable|string|max:100',
+                'postal_code' => 'nullable|string|max:20',
                 'country' => 'nullable|string|max:100',
                 'contact_person' => 'nullable|string|max:255',
+                'industry_type' => 'nullable|string|max:255',
                 'tax_id' => 'nullable|string|max:100',
+                'credit_terms' => 'nullable|string|max:100',
+                'notes' => 'nullable|string',
             ]);
             
             $validated['is_active'] = true;
@@ -219,13 +298,19 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
         try {
             $validated = request()->validate([
                 'name' => 'required|string|max:255',
+                'business_name' => 'nullable|string|max:255',
                 'email' => 'required|email|unique:customers,email,' . $customer->id,
                 'phone' => 'required|string|max:50',
                 'address' => 'required|string',
                 'city' => 'nullable|string|max:100',
+                'state' => 'nullable|string|max:100',
+                'postal_code' => 'nullable|string|max:20',
                 'country' => 'nullable|string|max:100',
                 'contact_person' => 'nullable|string|max:255',
+                'industry_type' => 'nullable|string|max:255',
                 'tax_id' => 'nullable|string|max:100',
+                'credit_terms' => 'nullable|string|max:100',
+                'notes' => 'nullable|string',
             ]);
             
             $customer->update($validated);
@@ -1105,7 +1190,15 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
 Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->name('tech-head.')->group(function () {
     Route::get('/dashboard', function (Request $request) {
         $statusFilter = $request->string('status')->toString();
-        $statusFilter = in_array($statusFilter, ['pending', 'in_progress', 'overdue', 'high_priority', 'completed']) ? $statusFilter : null;
+        $statusFilter = in_array($statusFilter, ['pending', 'approved', 'in_progress', 'overdue', 'high_priority', 'completed']) ? $statusFilter : null;
+
+        $techHeadId = $request->user()->id;
+        $applyWorkOrderScope = function ($query) use ($techHeadId) {
+            $query->where(function ($scoped) use ($techHeadId) {
+                $scoped->whereNotNull('approved_by')
+                    ->orWhere('created_by', $techHeadId);
+            });
+        };
 
 
         $today = now();
@@ -1113,17 +1206,17 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         $endOfWeek = now()->endOfWeek();
 
         $summary = [
-            'activeWorkOrders' => JobOrder::whereIn('status', ['pending', 'in_progress'])->count(),
-            'pendingApprovals' => JobOrder::where('status', 'pending')->count(),
-            'inProgressJobs' => JobOrder::where('status', 'in_progress')->count(),
-            'overdueJobs' => JobOrder::whereIn('status', ['pending', 'in_progress'])
+            'activeWorkOrders' => JobOrder::query()->where($applyWorkOrderScope)->whereIn('status', ['pending', 'approved', 'in_progress'])->count(),
+            'pendingApprovals' => JobOrder::query()->where($applyWorkOrderScope)->where('status', 'pending')->count(),
+            'inProgressJobs' => JobOrder::query()->where($applyWorkOrderScope)->where('status', 'in_progress')->count(),
+            'overdueJobs' => JobOrder::query()->where($applyWorkOrderScope)->whereIn('status', ['pending', 'approved', 'in_progress'])
                 ->where(function ($query) {
                     $query->whereDate('required_date', '<', today())
                         ->orWhereDate('expected_completion_date', '<', today());
                 })
                 ->count(),
-            'completedToday' => JobOrder::where('status', 'completed')->whereDate('updated_at', today())->count(),
-            'completedThisWeek' => JobOrder::where('status', 'completed')
+            'completedToday' => JobOrder::query()->where($applyWorkOrderScope)->where('status', 'completed')->whereDate('updated_at', today())->count(),
+            'completedThisWeek' => JobOrder::query()->where($applyWorkOrderScope)->where('status', 'completed')
                 ->whereBetween('updated_at', [$startOfWeek, $endOfWeek])
                 ->count(),
         ];
@@ -1175,6 +1268,7 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
 
         // Fetch overdue work orders (past required_date or expected_completion_date, not completed/cancelled)
         $overdueWorkOrders = JobOrder::with('customer')
+            ->where($applyWorkOrderScope)
             ->whereNotIn('status', ['completed', 'cancelled'])
             ->where(function ($query) {
                 $today = today();
@@ -1194,7 +1288,8 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
 
         // Fetch unassigned jobs (pending/in_progress with no active assignments)
         $unassignedJobs = JobOrder::with('customer')
-            ->whereIn('status', ['pending', 'in_progress'])
+            ->where($applyWorkOrderScope)
+            ->whereIn('status', ['pending', 'approved', 'in_progress'])
             ->whereDoesntHave('assignments', function ($query) {
                 $query->whereIn('status', ['assigned', 'in_progress']);
             })
@@ -1204,6 +1299,7 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
 
         // Fetch pending approvals waiting longest (aging approval queue)
         $agingPendingApprovals = JobOrder::with('customer')
+            ->where($applyWorkOrderScope)
             ->where('status', 'pending')
             ->whereNull('approved_at')
             ->orderBy('request_date', 'asc')
@@ -1219,21 +1315,26 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             ->get();
 
         $highPriorityJobs = JobOrder::with('customer')
+            ->where($applyWorkOrderScope)
             ->whereIn('priority', ['urgent', 'high'])
-            ->whereIn('status', ['pending', 'in_progress'])
+            ->whereIn('status', ['pending', 'approved', 'in_progress'])
             ->latest()
             ->take(5)
             ->get();
 
-        $workOrderQuery = JobOrder::with('customer')->latest('created_at');
+        $workOrderQuery = JobOrder::with('customer')
+            ->where($applyWorkOrderScope)
+            ->latest('created_at');
         if ($statusFilter === 'pending') {
             $workOrderQuery->where('status', 'pending');
+        } elseif ($statusFilter === 'approved') {
+            $workOrderQuery->where('status', 'approved');
         } elseif ($statusFilter === 'in_progress') {
             $workOrderQuery->where('status', 'in_progress');
         } elseif ($statusFilter === 'completed') {
             $workOrderQuery->where('status', 'completed');
         } elseif ($statusFilter === 'overdue') {
-            $workOrderQuery->whereIn('status', ['pending', 'in_progress'])
+            $workOrderQuery->whereIn('status', ['pending', 'approved', 'in_progress'])
                 ->where(function ($query) {
                     $query->whereDate('required_date', '<', today())
                         ->orWhereDate('expected_completion_date', '<', today());
@@ -1250,19 +1351,21 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             ->keyBy('job_order_id');
 
         $workOrderCounts = [
-            'pending' => JobOrder::where('status', 'pending')->count(),
-            'in_progress' => JobOrder::where('status', 'in_progress')->count(),
+            'pending' => JobOrder::query()->where($applyWorkOrderScope)->where('status', 'pending')->count(),
+            'approved' => JobOrder::query()->where($applyWorkOrderScope)->where('status', 'approved')->count(),
+            'in_progress' => JobOrder::query()->where($applyWorkOrderScope)->where('status', 'in_progress')->count(),
             'overdue' => $summary['overdueJobs'],
-            'high_priority' => JobOrder::whereIn('priority', ['urgent', 'high'])
-                ->whereIn('status', ['pending', 'in_progress'])
+            'high_priority' => JobOrder::query()->where($applyWorkOrderScope)->whereIn('priority', ['urgent', 'high'])
+                ->whereIn('status', ['pending', 'approved', 'in_progress'])
                 ->count(),
-            'completed' => JobOrder::where('status', 'completed')->count(),
+            'completed' => JobOrder::query()->where($applyWorkOrderScope)->where('status', 'completed')->count(),
         ];
 
         $activityTimeline = collect();
 
         $activityTimeline = $activityTimeline->merge(
             JobOrder::with('customer')
+                ->where($applyWorkOrderScope)
                 ->latest('created_at')
                 ->take(8)
                 ->get()
@@ -1406,6 +1509,8 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         $search = $request->get('search');
         $status = $request->get('status');
         $priority = $request->get('priority');
+
+        $techHeadId = $request->user()->id;
         
         $query = JobOrder::with([
             'customer',
@@ -1414,6 +1519,11 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             'checklistItems.completer',
             'assignments.assignedTo'
         ])->withCount('certificates');
+
+        $query->where(function ($scoped) use ($techHeadId) {
+            $scoped->whereNotNull('approved_by')
+                ->orWhere('created_by', $techHeadId);
+        });
         
         // Show all work orders (assigned and unassigned)
         
@@ -2124,9 +2234,20 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         $today = now();
         $weekStart = now()->startOfWeek();
         $weekEnd = now()->endOfWeek();
+
+        $techHeadId = auth()->id();
+        $applyWorkOrderScope = function ($query) use ($techHeadId) {
+            $query->where(function ($scoped) use ($techHeadId) {
+                $scoped->whereNotNull('approved_by')
+                    ->orWhere('created_by', $techHeadId);
+            });
+        };
         
         // Get weekly schedule with filters
         $query = Assignment::with(['jobOrder.customer', 'assignedTo'])
+            ->whereHas('jobOrder', function ($jobFilter) use ($applyWorkOrderScope) {
+                $applyWorkOrderScope($jobFilter);
+            })
             ->where(function ($filter) use ($weekStart, $weekEnd) {
                 $filter->whereBetween('scheduled_date', [$weekStart, $weekEnd])
                     ->orWhereHas('jobOrder', function ($jobFilter) use ($weekStart, $weekEnd) {
@@ -2164,9 +2285,12 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         
         // Get unassigned jobs (jobs without assignments or with null assigned_to)
         $unassignedJobs = JobOrder::with('customer')
-            ->whereDoesntHave('assignments')
-            ->orWhereHas('assignments', function($q) {
-                $q->whereNull('assigned_to');
+            ->where($applyWorkOrderScope)
+            ->where(function ($query) {
+                $query->whereDoesntHave('assignments')
+                    ->orWhereHas('assignments', function ($q) {
+                        $q->whereNull('assigned_to');
+                    });
             })
             ->orderBy('created_at', 'desc')
             ->get();
