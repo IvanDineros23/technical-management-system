@@ -116,6 +116,10 @@ class RoleController extends Controller
                 'view_reports',
                 'view_timeline',
             ],
+            'Customer' => [
+                'view_job_orders',
+                'view_certificates',
+            ],
         ];
         
         return view('admin.roles', compact('roles', 'modules', 'permissions'));

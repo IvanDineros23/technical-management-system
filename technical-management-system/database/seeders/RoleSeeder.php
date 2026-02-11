@@ -105,8 +105,25 @@ class RoleSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'name' => 'Customer',
+                'slug' => 'customer',
+                'description' => 'View own job requests and certificates',
+                'permissions' => json_encode([
+                    'view_job_orders',
+                    'view_certificates'
+                ]),
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ];
 
-        DB::table('roles')->insert($roles);
+        foreach ($roles as $role) {
+            DB::table('roles')->updateOrInsert(
+                ['slug' => $role['slug']],
+                $role
+            );
+        }
     }
 }

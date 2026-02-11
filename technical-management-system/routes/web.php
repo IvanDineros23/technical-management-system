@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{AdminController, ApprovalController, AuditLogController, CalibrationController, EquipmentController, InventoryController, ProfileController, ReportController, RoleController, SettingsController, SignatoryController, TimelineController, VerificationController};
+use App\Http\Controllers\{AdminController, ApprovalController, AuditLogController, CalibrationController, CustomerPortalController, EquipmentController, InventoryController, ProfileController, ReportController, RoleController, SettingsController, SignatoryController, TimelineController, VerificationController};
 use App\Models\{Assignment, Calibration, Certificate, Customer, Equipment, JobOrder, Report, Role, User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +38,8 @@ Route::get('/dashboard', function () {
                 return redirect()->route('accounting.dashboard');
             case 'admin':
                 return redirect()->route('admin.dashboard');
+            case 'customer':
+                return redirect()->route('customer.dashboard');
         }
     }
     
@@ -293,6 +295,15 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
     
     // Timeline route for Marketing
     Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
+});
+
+// Customer Routes
+Route::middleware(['auth', 'verified', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
+    Route::get('/dashboard', [CustomerPortalController::class, 'dashboard'])->name('dashboard');
+    Route::get('/requests', [CustomerPortalController::class, 'requests'])->name('requests');
+    Route::post('/requests', [CustomerPortalController::class, 'storeRequest'])->name('requests.store');
+    Route::patch('/requests/{jobOrder}/cancel', [CustomerPortalController::class, 'cancelRequest'])->name('requests.cancel');
+    Route::get('/certificates', [CustomerPortalController::class, 'certificates'])->name('certificates');
 });
 
 // Technician Routes

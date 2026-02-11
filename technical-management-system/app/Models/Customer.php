@@ -50,6 +50,11 @@ class Customer extends Model
         return $this->hasMany(JobOrder::class);
     }
 
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
+
     public function contacts()
     {
         return $this->hasMany(CustomerContact::class);
