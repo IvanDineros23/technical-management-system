@@ -6,14 +6,14 @@ use Illuminate\Database\Seeder;
 use App\Models\{JobOrder, Certificate, Payment, User};
 use Illuminate\Support\Facades\DB;
 
-class AccountingTestDataSeeder extends Seeder
+class InvoiceTestDataSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        $this->command->info('Seeding Accounting Test Data...');
+        $this->command->info('Seeding Invoice Test Data...');
 
         DB::beginTransaction();
         try {

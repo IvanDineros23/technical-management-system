@@ -38,12 +38,12 @@ All demo accounts use the password: **password**
 - **Department**: Management
 - **Permissions**: Approve job orders, view reports
 
-### 6. Accounting
-- **Email**: accounting@gemarcph.com
-- **Name**: Carlos Mendoza
-- **Role**: Accounting
-- **Department**: Accounting
-- **Permissions**: Manage billing, view financial reports
+### 6. Customer
+- **Email**: customer@gemarcph.com
+- **Name**: CUSTOMER
+- **Role**: Customer
+- **Customer Profile**: CUSTOMER (ID: 4)
+- **Permissions**: View own job orders, view own certificates, verify certificates
 
 ## How to Run the Seeders
 

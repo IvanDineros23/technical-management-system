@@ -280,9 +280,9 @@
         <p>For verification, please visit our website or scan the QR code.</p>
         <p>Generated on {{ now()->setTimezone('Asia/Manila')->format('F d, Y h:i A') }}</p>
         <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ urlencode(route('verification.show', $certificate->certificate_number)) }}" alt="QR" style="width:120px;height:120px;border:1px solid #e5e7eb;border-radius:8px;"/>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ urlencode(route('certificate-verification.show', $certificate->certificate_number)) }}" alt="QR" style="width:120px;height:120px;border:1px solid #e5e7eb;border-radius:8px;"/>
             <div>
-                <p style="margin:0;">Verify: {{ route('verification.show', $certificate->certificate_number) }}</p>
+                <p style="margin:0;">Verify: {{ route('certificate-verification.show', $certificate->certificate_number) }}</p>
             </div>
         </div>
     </div>

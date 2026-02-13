@@ -33,7 +33,7 @@
         Certificates
     </a>
 
-    <a href="{{ route('verification.verify') }}"
+    <a href="{{ route('certificate-verification.verify') }}"
        class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -73,7 +73,7 @@
     <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 mb-6">
         <h3 class="text-base font-bold text-slate-900 dark:text-white">Quick Certificate Verification</h3>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter a certificate number to validate.</p>
-        <form method="GET" action="{{ route('verification.verify') }}" class="mt-4 flex flex-col sm:flex-row gap-3">
+        <form method="GET" action="{{ route('certificate-verification.verify') }}" class="mt-4 flex flex-col sm:flex-row gap-3">
             <input
                 type="text"
                 name="certificate_number"

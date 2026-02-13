@@ -91,21 +91,6 @@ class RoleSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Accounting',
-                'slug' => 'accounting',
-                'description' => 'Manage financial aspects and billing',
-                'permissions' => json_encode([
-                    'view_job_costs',
-                    'process_billing',
-                    'view_financial_reports',
-                    'manage_inventory_costs',
-                    'generate_invoices'
-                ]),
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
                 'name' => 'Customer',
                 'slug' => 'customer',
                 'description' => 'View own job requests and certificates',

@@ -109,13 +109,13 @@
                     <h2 class="text-lg font-bold text-gray-900 mb-4">Quick Verification</h2>
                     <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
                         <img class="w-32 h-32 rounded-lg shadow-md border-2 border-white" 
-                             src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ urlencode(route('verification.show', $certificate->certificate_number)) }}" 
+                             src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ urlencode(route('certificate-verification.show', $certificate->certificate_number)) }}" 
                              alt="QR Code"/>
                         <div class="flex-1">
                             <span class="block text-xs font-semibold text-gray-600 uppercase mb-2">Verify URL</span>
-                            <a href="{{ route('verification.show', $certificate->certificate_number) }}" 
+                            <a href="{{ route('certificate-verification.show', $certificate->certificate_number) }}" 
                                class="text-blue-600 hover:text-blue-700 font-medium break-all transition-colors">
-                                {{ route('verification.show', $certificate->certificate_number) }}
+                                {{ route('certificate-verification.show', $certificate->certificate_number) }}
                             </a>
                             <p class="text-sm text-gray-600 mt-2">Scan the QR code or visit the URL above to verify this certificate.</p>
                         </div>
@@ -125,7 +125,7 @@
 
             <!-- Back to Verification -->
             <div class="text-center mt-6">
-                <a href="{{ route('verification.verify') }}" class="inline-flex items-center gap-2 text-white hover:text-blue-100 font-medium transition-colors">
+                <a href="{{ route('certificate-verification.verify') }}" class="inline-flex items-center gap-2 text-white hover:text-blue-100 font-medium transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                     </svg>

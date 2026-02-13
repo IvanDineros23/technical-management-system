@@ -38,7 +38,7 @@
                 </div>
 
                 <!-- Search Form -->
-                <form method="GET" action="{{ route('verification.verify') }}" class="space-y-4">
+                <form method="GET" action="{{ route('certificate-verification.verify') }}" class="space-y-4">
                     <div>
                         <label for="certificate_number" class="block text-sm font-semibold text-gray-700 mb-2">Certificate Number</label>
                         <div class="flex gap-3">
@@ -84,7 +84,7 @@
                                     </div>
                                 </div>
 
-                                <a href="{{ route('verification.show', $certificate->certificate_number) }}" 
+                                <a href="{{ route('certificate-verification.show', $certificate->certificate_number) }}" 
                                    class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold transition-colors">
                                     View full certificate details
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -33,7 +33,7 @@
         Certificates
     </a>
 
-    <a href="{{ route('verification.verify') }}"
+    <a href="{{ route('certificate-verification.verify') }}"
        class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

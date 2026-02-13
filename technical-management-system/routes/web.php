@@ -12,7 +12,7 @@ Route::get('/', function () {
 });
 
 // Public Certificate Verification
-Route::prefix('verify')->name('verification.')->group(function () {
+Route::prefix('verify')->name('certificate-verification.')->group(function () {
     // Search page (public)
     Route::get('/', [VerificationController::class, 'verify'])->name('verify');
     // Show certificate verification details
@@ -35,8 +35,6 @@ Route::get('/dashboard', function () {
                 return redirect()->route('tech-head.dashboard');
             case 'signatory':
                 return redirect()->route('signatory.dashboard');
-            case 'accounting':
-                return redirect()->route('accounting.dashboard');
             case 'admin':
                 return redirect()->route('admin.dashboard');
             case 'customer':
@@ -1992,7 +1990,7 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         ]);
         
         return view('tech-head.assignments', compact('assignments', 'search'));
-    })->name('assignments');
+    })->name('assignments-old');
 
     // Assignments control
     Route::post('/assignments', function (\Illuminate\Http\Request $request) {
@@ -2380,41 +2378,6 @@ Route::middleware(['auth', 'verified', 'role:signatory'])->prefix('signatory')->
     // Profile
     Route::get('/profile', [SignatoryController::class, 'profile'])->name('profile');
     Route::patch('/profile', [SignatoryController::class, 'updateProfile'])->name('profile.update');
-});
-
-// Accounting Routes
-Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')->name('accounting.')->group(function () {
-    // Dashboard
-    Route::get('/dashboard', [\App\Http\Controllers\AccountingController::class, 'dashboard'])->name('dashboard');
-    
-    // Payment Verification
-    Route::get('/payments', [\App\Http\Controllers\AccountingController::class, 'payments'])->name('payments');
-    Route::patch('/payments/{jobOrder}/verify', [\App\Http\Controllers\AccountingController::class, 'verifyPayment'])->name('payments.verify');
-    Route::post('/payments/{jobOrder}/mark-paid', [\App\Http\Controllers\AccountingController::class, 'markAsPaid'])->name('payments.mark-paid');
-    
-    // Certificates For Release
-    Route::get('/certificates/for-release', [\App\Http\Controllers\AccountingController::class, 'certificatesForRelease'])->name('certificates.for-release');
-    Route::get('/certificates/{certificate}/preview', [\App\Http\Controllers\AccountingController::class, 'previewCertificate'])->name('certificates.preview');
-    Route::patch('/certificates/{certificate}/release', [\App\Http\Controllers\AccountingController::class, 'releaseCertificate'])->name('certificates.release');
-    Route::patch('/certificates/{certificate}/hold', [\App\Http\Controllers\AccountingController::class, 'holdCertificate'])->name('certificates.hold');
-    
-    // Released Certificates (History)
-    Route::get('/certificates/released', [\App\Http\Controllers\AccountingController::class, 'releasedCertificates'])->name('certificates.released');
-    Route::get('/certificates/{certificate}/download', [\App\Http\Controllers\AccountingController::class, 'downloadCertificate'])->name('certificates.download');
-    
-    // Timeline (Read-only)
-    Route::get('/timelines', [\App\Http\Controllers\AccountingController::class, 'allTimelines'])->name('timelines');
-    Route::get('/timeline/{jobOrder}', [\App\Http\Controllers\AccountingController::class, 'timeline'])->name('timeline');
-    
-    // Reports Export
-    Route::get('/reports', [\App\Http\Controllers\AccountingController::class, 'reports'])->name('reports');
-    Route::get('/reports/export', [\App\Http\Controllers\AccountingController::class, 'exportReports'])->name('reports.export');
-    
-    // Invoices (unified with admin)
-    Route::get('/invoices', [\App\Http\Controllers\InvoiceController::class, 'index'])->name('invoices');
-    Route::post('/invoices', [\App\Http\Controllers\InvoiceController::class, 'store'])->name('invoices.store');
-    Route::patch('/invoices/{invoice}/pay', [\App\Http\Controllers\InvoiceController::class, 'markAsPaid'])->name('invoices.pay');
-    Route::delete('/invoices/{invoice}', [\App\Http\Controllers\InvoiceController::class, 'destroy'])->name('invoices.destroy');
 });
 
 // Admin Routes

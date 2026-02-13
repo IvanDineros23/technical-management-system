@@ -70,7 +70,7 @@
                         </a>
                     @endif
                 </div>
-                <a href="{{ route('verification.verify') }}" 
+                <a href="{{ route('certificate-verification.verify') }}" 
                    class="group inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-blue-600 bg-white/90 border-2 border-white rounded-xl hover:bg-white hover:text-blue-700 transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105">
                     <span class="flex items-center gap-2">
                         Verify Certificate
