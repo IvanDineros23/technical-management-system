@@ -22,9 +22,8 @@
                     <span class="text-xl font-semibold text-slate-900">Gemarc Enterprises Inc</span>
                 </div>
 
-                <h1 class="text-2xl md:text-3xl font-semibold text-slate-900 flex items-center gap-2">
+                <h1 class="text-2xl md:text-3xl font-semibold text-slate-900">
                     Welcome
-                    <span class="text-2xl">👋</span>
                 </h1>
                 <p class="mt-1 text-sm text-slate-500">Please login here</p>
             </div>
