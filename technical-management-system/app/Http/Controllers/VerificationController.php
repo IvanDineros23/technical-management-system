@@ -38,10 +38,26 @@ class VerificationController extends Controller
             'jobOrder.customer',
             'jobOrderItem',
             'calibration.measurementPoints',
-            'issuedBy', 'reviewedBy', 'approvedBy', 'signedBy'
+            'issuedBy', 'reviewedBy', 'approvedBy', 'signedBy.role'
         ])->where('certificate_number', $certificateNumber)->firstOrFail();
 
-        return view('verification.show', compact('certificate'));
+        $verificationCode = null;
+        if ($certificate->signed_at) {
+            $key = (string) config('app.key');
+            if (str_starts_with($key, 'base64:')) {
+                $key = base64_decode(substr($key, 7)) ?: $key;
+            }
+
+            $payload = implode('|', [
+                $certificate->certificate_number,
+                (string) optional($certificate->signed_at)->timestamp,
+                (string) ($certificate->pdf_hash ?? ''),
+            ]);
+
+            $verificationCode = strtoupper(substr(hash_hmac('sha256', $payload, $key), 0, 16));
+        }
+
+        return view('verification.show', compact('certificate', 'verificationCode'));
     }
 
     // Lightweight JSON status endpoint

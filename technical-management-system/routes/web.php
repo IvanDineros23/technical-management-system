@@ -19,6 +19,28 @@ Route::prefix('verify')->name('certificate-verification.')->group(function () {
     Route::get('/certificate/{certificateNumber}', [VerificationController::class, 'show'])->name('show');
     // Lightweight status endpoint (JSON)
     Route::get('/status/{certificateNumber}', [VerificationController::class, 'getStatus'])->name('status');
+    // Public certificate PDF download
+    Route::get('/certificate/{certificateNumber}/download', function (string $certificateNumber) {
+        $certificate = Certificate::where('certificate_number', $certificateNumber)->firstOrFail();
+        
+        // Generate QR code as base64 for PDF
+        $qrCodeUrl = route('certificate-verification.show', $certificate->certificate_number);
+        $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($qrCodeUrl);
+        
+        try {
+            $qrImageData = @file_get_contents($qrApiUrl);
+            $qrCodeBase64 = $qrImageData ? 'data:image/png;base64,' . base64_encode($qrImageData) : null;
+        } catch (\Exception $e) {
+            $qrCodeBase64 = null;
+        }
+        
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('certificates.pdf', [
+            'certificate' => $certificate->load(['jobOrder.customer', 'jobOrderItem', 'calibration.measurementPoints', 'issuedBy', 'approvedBy', 'signedBy']),
+            'qrCodeBase64' => $qrCodeBase64
+        ]);
+        
+        return $pdf->download($certificate->certificate_number . '.pdf');
+    })->name('download');
 });
 
 Route::get('/dashboard', function () {
@@ -1125,8 +1147,20 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
 
         abort_unless($hasAccess, 403);
 
+        // Generate QR code as base64 for PDF
+        $qrCodeUrl = route('certificate-verification.show', $certificate->certificate_number);
+        $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($qrCodeUrl);
+        
+        try {
+            $qrImageData = @file_get_contents($qrApiUrl);
+            $qrCodeBase64 = $qrImageData ? 'data:image/png;base64,' . base64_encode($qrImageData) : null;
+        } catch (\Exception $e) {
+            $qrCodeBase64 = null;
+        }
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('certificates.pdf', [
-            'certificate' => $certificate->load(['jobOrder.customer', 'issuedBy', 'approvedBy'])
+            'certificate' => $certificate->load(['jobOrder.customer', 'issuedBy', 'approvedBy']),
+            'qrCodeBase64' => $qrCodeBase64
         ]);
 
         return $pdf->download($certificate->certificate_number . '.pdf');
@@ -1764,9 +1798,21 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
     })->name('certificates.store');
     
     Route::get('/certificates/{certificate}/download', function (Certificate $certificate) {
+        // Generate QR code as base64 for PDF
+        $qrCodeUrl = route('certificate-verification.show', $certificate->certificate_number);
+        $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($qrCodeUrl);
+        
+        try {
+            $qrImageData = @file_get_contents($qrApiUrl);
+            $qrCodeBase64 = $qrImageData ? 'data:image/png;base64,' . base64_encode($qrImageData) : null;
+        } catch (\Exception $e) {
+            $qrCodeBase64 = null;
+        }
+        
         // Generate PDF using DomPDF
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('certificates.pdf', [
-            'certificate' => $certificate->load(['jobOrder.customer', 'issuedBy', 'approvedBy'])
+            'certificate' => $certificate->load(['jobOrder.customer', 'issuedBy', 'approvedBy']),
+            'qrCodeBase64' => $qrCodeBase64
         ]);
         
         return $pdf->download($certificate->certificate_number . '.pdf');

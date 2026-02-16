@@ -143,15 +143,12 @@
         }
         
         .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
             text-align: center;
             font-size: 9pt;
             color: #6b7280;
             border-top: 1px solid #e5e7eb;
             padding: 10px 0;
+            margin-top: 30px;
         }
         
         .validity-notice {
@@ -162,13 +159,44 @@
             font-size: 10pt;
         }
         
-        .qr-code {
-            float: right;
-            margin: 0 0 10px 10px;
+        .qr-verification {
+            position: absolute;
+            top: 40px;
+            right: 50px;
+            text-align: center;
+            background: white;
+            padding: 15px;
+            border: 3px solid #2563eb;
+            border-radius: 8px;
+            width: 140px;
+        }
+        
+        .qr-verification img {
+            width: 110px;
+            height: 110px;
+            display: block;
+            margin: 0 auto 8px auto;
+        }
+        
+        .qr-verification p {
+            margin: 0;
+            font-size: 9pt;
+            color: #1e40af;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
+    <!-- QR Code Verification Box -->
+    <div class="qr-verification">
+        @if(isset($qrCodeBase64) && $qrCodeBase64)
+            <img src="{{ $qrCodeBase64 }}" alt="QR Code" style="width:110px;height:110px;"/>
+        @else
+            <div style="width:110px;height:110px;border:2px dashed #2563eb;display:flex;align-items:center;justify-content:center;font-size:8pt;color:#6b7280;text-align:center;padding:5px;">QR Code<br/>Unavailable</div>
+        @endif
+        <p>SCAN TO VERIFY</p>
+    </div>
+    
     <div class="header">
         <h1>CALIBRATION CERTIFICATE</h1>
         <h2>Certificate of Calibration</h2>
@@ -277,14 +305,8 @@
     
     <div class="footer">
         <p>This certificate is computer-generated and is valid without signature.</p>
-        <p>For verification, please visit our website or scan the QR code.</p>
+        <p>For verification, scan the QR code above or visit: {{ route('certificate-verification.show', $certificate->certificate_number) }}</p>
         <p>Generated on {{ now()->setTimezone('Asia/Manila')->format('F d, Y h:i A') }}</p>
-        <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ urlencode(route('certificate-verification.show', $certificate->certificate_number)) }}" alt="QR" style="width:120px;height:120px;border:1px solid #e5e7eb;border-radius:8px;"/>
-            <div>
-                <p style="margin:0;">Verify: {{ route('certificate-verification.show', $certificate->certificate_number) }}</p>
-            </div>
-        </div>
     </div>
 </body>
 </html>

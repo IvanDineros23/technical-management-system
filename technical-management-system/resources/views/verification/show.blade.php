@@ -33,8 +33,37 @@
             <!-- Main Card -->
             <div class="bg-white rounded-2xl shadow-2xl p-8 md:p-10">
                 <div class="mb-8">
-                    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Certificate {{ $certificate->certificate_number }}</h1>
-                    <p class="text-gray-600">Verification details and calibration summary</p>
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Certificate {{ $certificate->certificate_number }}</h1>
+                            <p class="text-gray-600">Official verification record for this e-certificate</p>
+                            <div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                                <span class="inline-flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    <span>Issued by: {{ optional($certificate->issuedBy)->name ?? 'System' }}</span>
+                                </span>
+                                <span class="inline-flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span>{{ $certificate->generated_at ? $certificate->generated_at->format('M d, Y H:i') : ($certificate->created_at ? $certificate->created_at->format('M d, Y H:i') : 'N/A') }}</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold {{ $certificate->signed_at ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200' }}">
+                                <span class="inline-flex h-2.5 w-2.5 rounded-full {{ $certificate->signed_at ? 'bg-green-500' : 'bg-amber-500' }}"></span>
+                                {{ $certificate->signed_at ? 'Verified and Signed' : 'Issued - Pending Signature' }}
+                            </div>
+                            <div class="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700">
+                                <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">GE</span>
+                                Security Seal
+                            </div>
+                        </div>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">This page is the official public verification portal of Gemarc Enterprises Inc.</p>
                 </div>
 
                 <!-- Certificate Info Grid -->
@@ -55,7 +84,14 @@
                     </div>
                     <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-5 rounded-xl border border-gray-200">
                         <span class="block text-xs font-semibold text-gray-500 uppercase mb-2">Signed By</span>
-                        <div class="text-gray-900 font-medium">{{ optional($certificate->signedBy)->name ?? 'N/A' }}</div>
+                        <div class="text-gray-900 font-medium">{{ optional($certificate->signedBy)->name ?? 'Not Available' }}</div>
+                        @php
+                            $signatoryRole = optional(optional($certificate->signedBy)->role);
+                            $signatoryTitle = $signatoryRole ? ($signatoryRole->slug === 'signatory' ? 'Authorized Signatory' : $signatoryRole->name) : 'Authorized Signatory';
+                        @endphp
+                        <div class="mt-1 text-xs text-gray-500">
+                            <strong>Title:</strong> {{ $certificate->signed_at && $certificate->signedBy ? $signatoryTitle : 'Not Available' }}
+                        </div>
                     </div>
                     <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-5 rounded-xl border border-gray-200">
                         <span class="block text-xs font-semibold text-gray-500 uppercase mb-2">Signed Date</span>
@@ -64,6 +100,21 @@
                     <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-5 rounded-xl border border-gray-200">
                         <span class="block text-xs font-semibold text-gray-500 uppercase mb-2">Certificate Number</span>
                         <div class="text-gray-900 font-medium">{{ $certificate->certificate_number }}</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div class="bg-white p-5 rounded-xl border border-gray-200">
+                        <span class="block text-xs font-semibold text-gray-500 uppercase mb-2">Verification Guidance</span>
+                        <p class="text-sm text-gray-700">A certificate is fully verified only when it shows a signed status and a signatory name.</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200">
+                        <span class="block text-xs font-semibold text-gray-500 uppercase mb-2">Issued By</span>
+                        <p class="text-sm text-gray-700">Gemarc Enterprises Inc - Technical Management System</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200">
+                        <span class="block text-xs font-semibold text-gray-500 uppercase mb-2">Public Record</span>
+                        <p class="text-sm text-gray-700">This record is viewable without login to allow third-party verification.</p>
                     </div>
                 </div>
 
@@ -104,21 +155,30 @@
                 </div>
                 @endif
 
-                <!-- QR Code & Verification URL -->
-                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
-                    <h2 class="text-lg font-bold text-gray-900 mb-4">Quick Verification</h2>
-                    <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
-                        <img class="w-32 h-32 rounded-lg shadow-md border-2 border-white" 
-                             src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ urlencode(route('certificate-verification.show', $certificate->certificate_number)) }}" 
-                             alt="QR Code"/>
-                        <div class="flex-1">
-                            <span class="block text-xs font-semibold text-gray-600 uppercase mb-2">Verify URL</span>
-                            <a href="{{ route('certificate-verification.show', $certificate->certificate_number) }}" 
-                               class="text-blue-600 hover:text-blue-700 font-medium break-all transition-colors">
-                                {{ route('certificate-verification.show', $certificate->certificate_number) }}
-                            </a>
-                            <p class="text-sm text-gray-600 mt-2">Scan the QR code or visit the URL above to verify this certificate.</p>
-                        </div>
+                <!-- Download Certificate Button -->
+                <div class="flex justify-center mb-6">
+                    <a href="{{ route('certificate-verification.download', $certificate->certificate_number) }}" 
+                       class="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-all shadow-lg hover:shadow-xl hover:scale-105">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Download Certificate
+                    </a>
+                </div>
+
+                <!-- Verification Instructions -->
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200 text-center">
+                    <h2 class="text-lg font-bold text-gray-900 mb-2">Certificate Verified Successfully</h2>
+                    <p class="text-sm text-gray-600 mb-4">This e-certificate record is authentic and issued by Gemarc Enterprises Inc.</p>
+                    <div class="bg-white rounded-lg border border-blue-200 px-4 py-3 text-left">
+                        <span class="block text-xs font-semibold text-gray-600 uppercase mb-2">Official Verification URL</span>
+                        <a href="{{ route('certificate-verification.show', $certificate->certificate_number) }}" 
+                           class="text-blue-600 hover:text-blue-700 font-medium break-all transition-colors text-sm">
+                            {{ route('certificate-verification.show', $certificate->certificate_number) }}
+                        </a>
+                    </div>
+                    <div class="mt-4 rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs text-blue-700">
+                        <strong>Note:</strong> To verify a printed certificate, look for the QR code at the top-right corner of the document and scan it to reach this page.
                     </div>
                 </div>
             </div>
