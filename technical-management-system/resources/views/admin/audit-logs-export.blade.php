@@ -21,13 +21,30 @@
         .header {
             text-align: center;
             margin-bottom: 25px;
-            border-bottom: 2px solid #2563eb;
+            border-bottom: 2px solid #16a34a;
             padding-bottom: 15px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .logo img {
+            height: 80px;
+            width: auto;
         }
         
         .header h1 {
             font-size: 20px;
-            color: #1e40af;
+            color: #16a34a;
+            margin-bottom: 5px;
+        }
+
+        .header h2 {
+            font-size: 16px;
+            color: #374151;
+            margin-top: 5px;
             margin-bottom: 5px;
         }
         
@@ -55,7 +72,7 @@
         }
         
         thead {
-            background-color: #2563eb;
+            background-color: #16a34a;
             color: white;
         }
         
@@ -64,7 +81,7 @@
             text-align: left;
             font-weight: 600;
             font-size: 9px;
-            border: 1px solid #1e40af;
+            border: 1px solid #15803d;
         }
         
         td {
@@ -79,7 +96,7 @@
         }
         
         tbody tr:hover {
-            background-color: #eff6ff;
+            background-color: #dcfce7;
         }
         
         .action-badge {
@@ -118,8 +135,11 @@
 </head>
 <body>
     <div class="header">
+        <div class="logo">
+            <img src="{{ public_path('assets/0fae4580-eff0-4ee7-98e2-8ab80dd542cf-removebg-preview.png') }}" alt="Gemarc Logo">
+        </div>
         <h1>Gemarc Enterprises Inc</h1>
-        <h2 style="font-size: 16px; color: #374151; margin-top: 5px;">Audit Logs Report</h2>
+        <h2>Audit Logs Report</h2>
         <p>Technical Management System - Activity Tracking</p>
     </div>
     
