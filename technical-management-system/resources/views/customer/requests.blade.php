@@ -51,6 +51,29 @@
         </div>
     @endif
 
+    @if(session('status'))
+        <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
+            <div class="flex items-start gap-3">
+                <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <div class="flex-1">
+                    <p class="text-sm font-semibold">{{ session('status') }}</p>
+                    @if(session('pdf_url'))
+                        <p class="text-xs mt-2">
+                            <a href="{{ session('pdf_url') }}" download class="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-semibold">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                                Download your PDF form
+                            </a>
+                        </p>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div x-data="{ showCreateModal: false }" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -132,17 +155,33 @@
                                 </span>
                             </td>
                             <td class="py-3">
-                                @if($order->status === 'pending')
-                                    <form method="POST" action="{{ route('customer.requests.cancel', $order) }}{{ $status !== '' ? '?status=' . $status : '' }}" onsubmit="return confirm('Cancel this request?');">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" class="text-xs font-semibold text-rose-600 hover:text-rose-700">
-                                            Cancel
-                                        </button>
-                                    </form>
-                                @else
-                                    <span class="text-xs text-gray-400">-</span>
-                                @endif
+                                <div class="flex items-center gap-2">
+                                    @if($order->pdf_filename)
+                                        <a href="{{ asset('storage/generated/' . $order->pdf_filename) }}"
+                                           download
+                                           class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                                           title="Download PDF form">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            </svg>
+                                            Download
+                                        </a>
+                                    @endif
+                                    
+                                    @if($order->status === 'pending')
+                                        <form method="POST" action="{{ route('customer.requests.cancel', $order) }}{{ $status !== '' ? '?status=' . $status : '' }}" onsubmit="return confirm('Cancel this request?');" class="inline">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="text-xs font-semibold text-rose-600 hover:text-rose-700">
+                                                Cancel
+                                            </button>
+                                        </form>
+                                    @endif
+                                    
+                                    @if(!$order->pdf_filename && $order->status !== 'pending')
+                                        <span class="text-xs text-gray-400">-</span>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty

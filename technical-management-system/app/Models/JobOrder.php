@@ -40,6 +40,8 @@ class JobOrder extends Model
         'rejected_by',
         'rejected_at',
         'rejection_reason',
+        'pdf_filename',
+        'pdf_path',
     ];
 
     protected $casts = [

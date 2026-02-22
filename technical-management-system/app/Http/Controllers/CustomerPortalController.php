@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\AuditLogHelper;
 use App\Models\Certificate;
 use App\Models\JobOrder;
+use App\Services\JobOrderPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -187,10 +188,23 @@ class CustomerPortalController extends Controller
                 changedFields: ['job_order_number', 'customer_id', 'service_type', 'status']
             );
 
+            // Generate PDF using coordinate overlay
+            $pdfUrl = null;
+            try {
+                $pdfService = app(JobOrderPdfService::class);
+                $pdfUrl = $pdfService->generate($jobOrder);
+            } catch (\Exception $e) {
+                \Log::warning('PDF generation skipped: ' . $e->getMessage(), [
+                    'job_order_id' => $jobOrder->id,
+                ]);
+                // Continue anyway - PDF is optional
+            }
+
             DB::commit();
 
             return redirect()->route('customer.requests')
-                ->with('status', 'Your service request has been submitted successfully! Our team will review it shortly.');
+                ->with('status', 'Your service request has been submitted successfully! Our team will review it shortly.')
+                ->with('pdf_url', $pdfUrl);
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Failed to submit request: ' . $e->getMessage()])->withInput();
