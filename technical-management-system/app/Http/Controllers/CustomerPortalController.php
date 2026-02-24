@@ -79,12 +79,34 @@ class CustomerPortalController extends Controller
         }
 
         $status = $request->string('status')->toString();
+        $minutesToShowCancelled = 60; // Change to 30 if you want 30 mins
         $query = JobOrder::with('customer')
             ->where('customer_id', $customer->id)
             ->latest();
 
         if ($status !== '') {
             $query->where('status', $status);
+        }
+
+        // Hide old cancelled in non-cancelled tabs
+        if ($status !== 'cancelled') {
+            $query->where(function ($qq) use ($minutesToShowCancelled) {
+                $qq->where('status', '!=', 'cancelled')
+                   ->orWhere(function ($q2) use ($minutesToShowCancelled) {
+                       $q2->where('status', 'cancelled')
+                          ->where(function ($q3) use ($minutesToShowCancelled) {
+                              $q3->whereExists(function ($sub) use ($minutesToShowCancelled) {
+                                  $sub->selectRaw(1)
+                                      ->from('job_order_statuses as jos')
+                                      ->whereColumn('jos.job_order_id', 'job_orders.id')
+                                      ->where('jos.status', 'cancelled')
+                                      ->where('jos.changed_at', '>=', now()->subMinutes($minutesToShowCancelled));
+                              })
+                              // fallback if no logs yet:
+                              ->orWhere('job_orders.updated_at', '>=', now()->subMinutes($minutesToShowCancelled));
+                          });
+                   });
+            });
         }
 
         $jobOrders = $query->paginate(20)->appends(['status' => $status]);

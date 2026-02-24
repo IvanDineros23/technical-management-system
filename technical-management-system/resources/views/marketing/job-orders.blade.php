@@ -11,9 +11,7 @@
                 filterStatus: '{{ request("status") ?? "all" }}',
                 init() {
                     window.addEventListener('keydown', (e) => {
-                        if (e.key === 'Escape' && this.showJODetails) {
-                            this.closeJODetails();
-                        }
+                        if (e.key === 'Escape' && this.showJODetails) this.closeJODetails();
                     });
                 },
                 openJODetails(jo) {
@@ -33,11 +31,9 @@
                 },
                 filterByStatus(status) {
                     const url = new URL(window.location);
-                    if (status === 'all') {
-                        url.searchParams.delete('status');
-                    } else {
-                        url.searchParams.set('status', status);
-                    }
+                    if (status === 'all') url.searchParams.delete('status');
+                    else url.searchParams.set('status', status);
+                    // keep q if exists
                     window.location.href = url.toString();
                 }
             }
@@ -127,26 +123,66 @@
             <button @click="filterByStatus('rejected')" :class="filterStatus === 'rejected' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 Rejected
             </button>
+            <button
+              @click="filterByStatus('cancelled')"
+              :class="filterStatus === 'cancelled' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'"
+              class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              Cancelled
+            </button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <form method="GET" action="{{ route('marketing.job-orders') }}" class="w-full sm:w-96">
+              {{-- keep current status when searching --}}
+              @if(request('status'))
+                  <input type="hidden" name="status" value="{{ request('status') }}">
+              @endif
+
+              <div class="relative">
+                  <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18.0a7.5 7.5 0 006.15-3.35z"/>
+                  </svg>
+
+                  <input
+                      name="q"
+                      value="{{ request('q') }}"
+                      type="text"
+                      placeholder="Search JO / customer / email / service / status..."
+                      class="w-full pl-9 pr-20 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+
+                  <button type="submit"
+                      class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white hover:bg-blue-700">
+                      Search
+                  </button>
+              </div>
+          </form>
+
+          <div class="text-xs text-gray-500 dark:text-gray-400">
+              Tip: Try “JO-00008” or “Repair"
+          </div>
         </div>
 
     <!-- Job Orders Table -->
     <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto max-w-full">
             <table class="w-full">
-                <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 sticky top-0 z-10">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">JO Number</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Customer</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Service Type</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Date Created</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">JO Number</th>
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Service Type</th>
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Date Created</th>
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($jobOrders as $jobOrder)
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="px-6 py-4 whitespace-nowrap text-center align-middle">
                                 @php
                                     $isCustomerRequest = $jobOrder->creator && $jobOrder->creator->role && $jobOrder->creator->role->slug === 'customer';
                                 @endphp
@@ -157,13 +193,13 @@
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4 text-center align-middle">
                                 <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $jobOrder->customer->name ?? 'N/A' }}</div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ $jobOrder->customer->email ?? '' }}</div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->service_type ?? 'N/A' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="px-6 py-4 whitespace-nowrap text-center align-middle text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->service_type ?? 'N/A' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center align-middle text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center align-middle">
                                 @if($jobOrder->status === 'pending')
                                     <span class="px-3 py-1 text-xs font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full">Pending</span>
                                 @elseif($jobOrder->status === 'approved')
@@ -178,20 +214,41 @@
                                     <span class="px-3 py-1 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">{{ ucfirst($jobOrder->status) }}</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <div class="flex flex-wrap items-center gap-3">
-                                    <button @click='openJODetails(@json($jobOrder))' class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium">View</button>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center align-middle">
+                                <div class="grid grid-cols-3 items-center justify-items-center gap-4 min-w-[220px]">
+                                    {{-- Slot 1: View --}}
+                                    <button
+                                        @click='openJODetails(@json($jobOrder))'
+                                        class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+                                    >
+                                        View
+                                    </button>
+
+                                    {{-- Slot 2: Accept --}}
                                     @if($isCustomerRequest && $jobOrder->status === 'pending')
-                                        <form method="POST" action="{{ route('marketing.job-orders.approve', $jobOrder) }}" class="inline">
+                                        <form method="POST" action="{{ route('marketing.job-orders.approve', $jobOrder) }}" class="m-0">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="text-emerald-600 hover:text-emerald-700 font-semibold">Accept</button>
+                                            <button type="submit" class="text-emerald-600 hover:text-emerald-700 font-semibold">
+                                                Accept
+                                            </button>
                                         </form>
-                                        <form method="POST" action="{{ route('marketing.job-orders.reject', $jobOrder) }}" class="inline" onsubmit="return confirm('Decline this customer request?');">
+                                    @else
+                                        <span class="invisible select-none">Accept</span>
+                                    @endif
+
+                                    {{-- Slot 3: Decline --}}
+                                    @if($isCustomerRequest && $jobOrder->status === 'pending')
+                                        <form method="POST" action="{{ route('marketing.job-orders.reject', $jobOrder) }}" class="m-0"
+                                              onsubmit="return confirm('Decline this customer request?');">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="text-rose-600 hover:text-rose-700 font-semibold">Decline</button>
+                                            <button type="submit" class="text-rose-600 hover:text-rose-700 font-semibold">
+                                                Decline
+                                            </button>
                                         </form>
+                                    @else
+                                        <span class="invisible select-none">Decline</span>
                                     @endif
                                 </div>
                             </td>
@@ -213,7 +270,7 @@
                 Showing {{ $jobOrders->firstItem() ?? 0 }} to {{ $jobOrders->lastItem() ?? 0 }} of {{ $jobOrders->total() }} results
             </div>
             <div class="flex gap-2">
-                {{ $jobOrders->links() }}
+                {{ $jobOrders->appends(request()->query())->links() }}
             </div>
         </div>
     </div>
