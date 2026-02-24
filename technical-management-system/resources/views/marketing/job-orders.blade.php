@@ -250,6 +250,14 @@
                                     @else
                                         <span class="invisible select-none">Decline</span>
                                     @endif
+
+                                    {{-- Slot 4: Download PDF --}}
+                                    <a
+                                        href="{{ route('marketing.job-orders.download', $jobOrder) }}"
+                                        class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium"
+                                    >
+                                        Download PDF
+                                    </a>
                                 </div>
                             </td>
                         </tr>
@@ -335,37 +343,8 @@
                             <p class="font-medium text-gray-900 dark:text-white" x-text="selectedJO?.service_type || 'N/A'"></p>
                         </div>
                         <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Priority</p>
-                            <p class="font-medium text-gray-900 dark:text-white" x-text="selectedJO?.priority || 'N/A'"></p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Expected Start</p>
-                            <p class="font-medium text-gray-900 dark:text-white" x-text="formatDate(selectedJO?.expected_start_date)"></p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Expected Completion</p>
-                            <p class="font-medium text-gray-900 dark:text-white" x-text="formatDate(selectedJO?.expected_completion_date)"></p>
-                        </div>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Service Description</p>
-                        <p class="mt-1 text-gray-900 dark:text-white" x-text="selectedJO?.service_description || 'N/A'"></p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Service Address</p>
-                        <p class="mt-1 text-gray-900 dark:text-white" x-text="[selectedJO?.service_address, selectedJO?.city, selectedJO?.province, selectedJO?.postal_code].filter(Boolean).join(', ') || 'N/A'"></p>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
                             <p class="text-sm text-gray-500 dark:text-gray-400">Created</p>
                             <p class="font-medium text-gray-900 dark:text-white" x-text="formatDate(selectedJO?.created_at)"></p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Requested By</p>
-                            <p class="font-medium text-gray-900 dark:text-white" x-text="selectedJO?.requested_by || 'N/A'"></p>
                         </div>
                     </div>
                 </div>
