@@ -106,31 +106,31 @@
     <!-- Users Table -->
     <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="w-full text-center">
                 <thead>
                     <tr class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Name</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Email</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Role</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Last Login</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Actions</th>
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">Name</th>
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">Email</th>
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">Role</th>
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">Status</th>
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">Last Login</th>
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($users as $user)
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ $user->name }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $user->email }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $user->role?->name ?? 'N/A' }}</td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white text-center">{{ $user->name }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 text-center">{{ $user->email }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 text-center">{{ $user->role?->name ?? 'N/A' }}</td>
+                            <td class="px-6 py-4 text-center">
                                 @if($user->is_active)
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Active</span>
                                 @else
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">Inactive</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 text-center">
                                 @php
                                     $lastLogin = $user->last_login_at ?? $user->updated_at;
                                     $lastLoginFormatted = 'N/A';
@@ -144,9 +144,9 @@
                                 @endphp
                                 {{ $lastLoginFormatted }}
                             </td>
-                            <td class="px-6 py-4 text-sm">
+                            <td class="px-6 py-4 text-sm text-center space-x-3">
                                 <button type="button"
-                                        class="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 mr-3"
+                                        class="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400"
                                         @click="openEdit(@js([
                                             'id' => $user->id,
                                             'name' => $user->name,
@@ -158,7 +158,7 @@
                                     Edit
                                 </button>
                                 <button type="button" 
-                                        class="text-orange-600 hover:text-orange-900 dark:hover:text-orange-400 mr-3"
+                                        class="text-orange-600 hover:text-orange-900 dark:hover:text-orange-400"
                                         @click="openConfirmDeactivate(@js(['id' => $user->id, 'name' => $user->name, 'email' => $user->email]))">
                                     Deactivate
                                 </button>

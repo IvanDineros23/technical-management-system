@@ -96,9 +96,9 @@
 
         @if($recentUserActivity->count() > 0)
             <div class="overflow-x-auto">
-                <table class="w-full">
+                <table class="w-full text-center">
                     <thead class="border-b border-gray-200 dark:border-gray-700">
-                        <tr class="text-left text-xs">
+                        <tr class="text-center text-xs">
                             <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">User</th>
                             <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">Email</th>
                             <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">Role</th>
@@ -109,7 +109,7 @@
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                         @foreach($recentUserActivity as $user)
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                            <td class="py-3 font-semibold text-gray-900 dark:text-white">{{ $user->name }}</td>
+                            <td class="py-3 font-semibold text-gray-900 dark:text-white text-center">{{ $user->name }}</td>
                             <td class="py-3 text-gray-700 dark:text-gray-300 text-sm">{{ $user->email }}</td>
                             <td class="py-3 text-gray-700 dark:text-gray-300 text-sm">
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
