@@ -36,7 +36,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">
-                    ✍️ Certificates for Approval
+                    Certificates for Approval
                     <span class="text-xs font-normal text-gray-500 dark:text-gray-400">({{ $certificates->total() }} total)</span>
                 </h3>
             </div>
@@ -45,52 +45,52 @@
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead class="border-b border-gray-200 dark:border-gray-700">
-                            <tr class="text-left text-xs">
-                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">Certificate #</th>
-                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">WO Number</th>
-                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">Customer</th>
-                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">Signed By</th>
-                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">Signed Date</th>
-                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">Status</th>
-                                <th class="pb-3 text-right font-semibold text-gray-600 dark:text-gray-400">Action</th>
+                            <tr class="text-center text-xs">
+                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400 text-center">Certificate #</th>
+                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400 text-center">WO Number</th>
+                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400 text-center">Customer</th>
+                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400 text-center">Signed By</th>
+                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400 text-center">Signed Date</th>
+                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400 text-center">Status</th>
+                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400 text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                             @foreach($certificates as $certificate)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                    <td class="py-3 text-sm font-semibold text-gray-900 dark:text-white">
+                                    <td class="py-3 text-sm font-semibold text-gray-900 dark:text-white text-center">
                                         {{ $certificate->certificate_number }}
                                     </td>
-                                    <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
+                                    <td class="py-3 text-sm text-gray-700 dark:text-gray-300 text-center">
                                         {{ $certificate->jobOrder?->job_order_number ?? $certificate->calibration?->assignment?->jobOrder?->job_order_number ?? 'N/A' }}
                                     </td>
-                                    <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
+                                    <td class="py-3 text-sm text-gray-700 dark:text-gray-300 text-center">
                                         {{ $certificate->jobOrder?->customer?->name ?? $certificate->calibration?->assignment?->jobOrder?->customer?->name ?? 'N/A' }}
                                     </td>
-                                    <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
+                                    <td class="py-3 text-sm text-gray-700 dark:text-gray-300 text-center">
                                         {{ $certificate->signedBy?->name ?? 'N/A' }}
                                     </td>
-                                    <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
+                                    <td class="py-3 text-sm text-gray-700 dark:text-gray-300 text-center">
                                         {{ $certificate->signed_at ? $certificate->signed_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') : 'Not Signed' }}
                                     </td>
-                                    <td class="py-3">
+                                    <td class="py-3 text-center">
                                         @if($certificate->signed_by)
-                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
+                                            <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
                                                 ✓ Approved
                                             </span>
                                         @else
-                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                                            <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
                                                 ⏳ Pending Approval
                                             </span>
                                         @endif
                                     </td>
-                                    <td class="py-3 text-right">
+                                    <td class="py-3 text-center">
                                         @if($certificate->signed_by)
                                             <a href="{{ route('signatory.certificate.preview', $certificate) }}" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">
                                                 Preview →
                                             </a>
                                         @else
-                                            <div class="flex gap-2 justify-end">
+                                            <div class="flex gap-2 justify-center">
                                                 <a href="{{ route('signatory.certificate.preview', $certificate) }}" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">
                                                     Review
                                                 </a>
