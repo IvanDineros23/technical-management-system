@@ -12,7 +12,7 @@
     <div class="space-y-6">
         <!-- Filters -->
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">🔍 Filters</h3>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4"> Filters</h3>
             <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Date From</label>
@@ -41,7 +41,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">
-                    📋 Calibrations for Review
+                     Calibrations for Review
                     <span class="text-xs font-normal text-gray-500 dark:text-gray-400">({{ $calibrations->total() }} total)</span>
                 </h3>
             </div>
