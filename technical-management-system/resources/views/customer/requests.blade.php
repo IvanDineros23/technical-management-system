@@ -61,11 +61,11 @@
                         <p class="text-sm font-semibold">{{ session('status') }}</p>
                         @if(session('pdf_url'))
                             <p class="text-xs mt-2">
-                                <a href="{{ session('pdf_url') }}" download class="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-semibold">
+                                <a href="{{ session('pdf_url') }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-semibold">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                     </svg>
-                                    Download your PDF form
+                                    View your PDF form
                                 </a>
                             </p>
                         @endif
@@ -78,10 +78,36 @@
             x-data="{
                 showCreateModal: false,
                 showViewModal: false,
+                showPdfLoader: false,
+                viewDelayMs: 2000,
+                viewTimer: null,
                 selectedOrder: null,
                 search: '',
-                openView(order) { this.selectedOrder = order; this.showViewModal = true; },
-                closeView() { this.showViewModal = false; this.selectedOrder = null; },
+                openView(order) {
+                    if (this.viewTimer) {
+                        clearTimeout(this.viewTimer);
+                        this.viewTimer = null;
+                    }
+
+                    this.showViewModal = false;
+                    this.selectedOrder = order;
+                    this.showPdfLoader = true;
+
+                    this.viewTimer = setTimeout(() => {
+                        this.showPdfLoader = false;
+                        this.showViewModal = true;
+                        this.viewTimer = null;
+                    }, this.viewDelayMs);
+                },
+                closeView() {
+                    this.showViewModal = false;
+                    this.showPdfLoader = false;
+                    if (this.viewTimer) {
+                        clearTimeout(this.viewTimer);
+                        this.viewTimer = null;
+                    }
+                    this.selectedOrder = null;
+                },
                 matchRow(order) {
                     if (!this.search) return true;
                     const q = this.search.toLowerCase();
@@ -219,50 +245,33 @@
                                 </td>
                                 <td class="py-3 text-center align-middle">
                                     <div class="flex items-center justify-center gap-2 flex-nowrap whitespace-nowrap">
-                                        <button
-                                            type="button"
-                                            @click="openView({
-                                                job_order_number: @js($order->job_order_number),
-                                                service_type: @js($order->service_type),
-                                                request_date: @js(optional($order->request_date)->format('M d, Y')),
-                                                status: @js($order->status),
-                                                priority: @js($order->priority ?? 'normal'),
-                                                service_address: @js($order->service_address),
-                                                city: @js($order->city),
-                                                province: @js($order->province),
-                                                postal_code: @js($order->postal_code),
-                                                expected_completion_date: @js(optional($order->expected_completion_date)->format('M d, Y')),
-                                                notes: @js($order->notes),
-                                                service_description: @js($order->service_description),
-                                                pdf_filename: @js($order->pdf_filename),
-                                            })"
-                                            class="inline-flex items-center justify-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-slate-700 hover:text-slate-900 dark:text-gray-200 dark:hover:text-white"
-                                            title="View details"
-                                        >
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                            </svg>
-                                            View
-                                        </button>
                                         @if($order->pdf_filename)
-                                            <a href="{{ asset('storage/generated/' . $order->pdf_filename) }}"
-                                               download
-                                               class="inline-flex items-center justify-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-blue-600 hover:text-blue-700"
-                                               title="Download PDF form">
+                                            <button
+                                                type="button"
+                                                @click="openView({
+                                                    job_order_number: @js($order->job_order_number),
+                                                    pdf_url: @js(asset('storage/generated/' . $order->pdf_filename)),
+                                                })"
+                                                class="inline-flex items-center justify-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-slate-700 hover:text-slate-900 dark:text-gray-200 dark:hover:text-white"
+                                                title="View PDF form"
+                                            >
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                                 </svg>
-                                                Download
-                                            </a>
+                                                View
+                                            </button>
                                         @else
                                             <button
-                                                class="inline-flex items-center justify-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-blue-300 cursor-not-allowed"
-                                                disabled>
+                                                class="inline-flex items-center justify-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-slate-300 cursor-not-allowed"
+                                                disabled
+                                                title="PDF not available"
+                                            >
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                                 </svg>
-                                                Download
+                                                View
                                             </button>
                                         @endif
 
@@ -290,119 +299,6 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="py-6 text-center text-sm text-gray-500">No requests found.</td>
-                                    <!-- View Details Modal -->
-                                    <div x-show="showViewModal" x-cloak
-                                         x-on:keydown.escape.window="closeView()"
-                                         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-                                         @click.self="closeView()">
-
-                                        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto"
-                                             @click.stop>
-                                            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-                                                <div>
-                                                    <h3 class="text-lg font-bold text-slate-900 dark:text-white" x-text="selectedOrder?.job_order_number || 'Job Order'"></h3>
-                                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                        <span x-text="selectedOrder?.service_type || 'N/A'"></span>
-                                                        <span class="mx-2">•</span>
-                                                        Requested: <span x-text="selectedOrder?.request_date || 'N/A'"></span>
-                                                    </p>
-                                                </div>
-                                                <button @click="closeView()" class="text-gray-400 hover:text-gray-600">
-                                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                                    </svg>
-                                                </button>
-                                            </div>
-
-                                            <div class="p-6 space-y-6">
-                                                <!-- Badges -->
-                                                <div class="flex flex-wrap items-center gap-2">
-                                                    <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700"
-                                                          x-text="'Priority: ' + priorityLabel(selectedOrder?.priority)"></span>
-
-                                                    <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700"
-                                                          x-text="'Status: ' + statusLabel(selectedOrder?.status)"></span>
-
-                                                    <template x-if="selectedOrder?.expected_completion_date">
-                                                        <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700"
-                                                              x-text="'ETA: ' + selectedOrder.expected_completion_date"></span>
-                                                    </template>
-                                                </div>
-
-                                                <!-- Timeline -->
-                                                <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                                                    <p class="text-sm font-semibold text-slate-900 dark:text-white mb-3">Progress</p>
-
-                                                    <div class="flex items-center justify-between gap-2">
-                                                        <template x-for="(step, i) in statusSteps" :key="step">
-                                                            <div class="flex-1">
-                                                                <div class="flex items-center gap-2">
-                                                                    <div class="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold"
-                                                                         :class="i <= stepIndex(selectedOrder?.status) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'">
-                                                                        <span x-text="i+1"></span>
-                                                                    </div>
-                                                                    <div class="text-xs font-semibold"
-                                                                         :class="i <= stepIndex(selectedOrder?.status) ? 'text-slate-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
-                                                                         x-text="statusLabel(step)"></div>
-                                                                </div>
-                                                                <div class="mt-2 h-1 rounded"
-                                                                     :class="i < stepIndex(selectedOrder?.status) ? 'bg-blue-600' : 'bg-gray-200'"></div>
-                                                            </div>
-                                                        </template>
-                                                    </div>
-
-                                                    <template x-if="selectedOrder?.status === 'cancelled'">
-                                                        <p class="mt-3 text-xs text-rose-600 font-semibold">This request was cancelled.</p>
-                                                    </template>
-                                                </div>
-
-                                                <!-- Details grid -->
-                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                                                        <p class="text-xs font-semibold text-gray-500 mb-2">Service Description</p>
-                                                        <p class="text-sm text-slate-900 dark:text-white whitespace-pre-line" x-text="selectedOrder?.service_description || 'N/A'"></p>
-                                                    </div>
-
-                                                    <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                                                        <p class="text-xs font-semibold text-gray-500 mb-2">Address</p>
-                                                        <p class="text-sm text-slate-900 dark:text-white whitespace-pre-line">
-                                                            <span x-text="selectedOrder?.service_address || 'N/A'"></span>
-                                                            <template x-if="selectedOrder?.city || selectedOrder?.province || selectedOrder?.postal_code">
-                                                                <span class="block text-xs text-gray-500 dark:text-gray-400 mt-2"
-                                                                      x-text="[(selectedOrder?.city||''),(selectedOrder?.province||''),(selectedOrder?.postal_code||'')].filter(Boolean).join(', ')"></span>
-                                                            </template>
-                                                        </p>
-                                                    </div>
-
-                                                    <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4 md:col-span-2">
-                                                        <p class="text-xs font-semibold text-gray-500 mb-2">Special Instructions / Notes</p>
-                                                        <p class="text-sm text-slate-900 dark:text-white whitespace-pre-line" x-text="selectedOrder?.notes || 'None'"></p>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Footer actions -->
-                                                <div class="flex flex-wrap items-center justify-end gap-2 pt-2">
-                                                    <template x-if="selectedOrder?.pdf_filename">
-                                                        <a
-                                                            :href="`{{ asset('storage/generated') }}/${selectedOrder.pdf_filename}`"
-                                                            download
-                                                            class="inline-flex items-center justify-center gap-1 h-9 px-4 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700"
-                                                        >
-                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                                            </svg>
-                                                            Download PDF
-                                                        </a>
-                                                    </template>
-
-                                                    <button type="button" @click="closeView()"
-                                                            class="inline-flex items-center justify-center h-9 px-4 rounded-lg text-sm font-semibold bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-500">
-                                                        Close
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                             </tr>
                         @endforelse
                     </tbody>
@@ -412,6 +308,73 @@
             @if(method_exists($jobOrders, 'links'))
                 <div class="mt-4">{{ $jobOrders->links() }}</div>
             @endif
+
+            <div x-show="showPdfLoader" x-cloak
+                 x-transition:enter="ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-150"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+                 @click.self="closeView()">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl px-8 py-7 w-full max-w-sm text-center"
+                     x-transition:enter="ease-out duration-200"
+                     x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+                     x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                     x-transition:leave="ease-in duration-150"
+                     x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                     x-transition:leave-end="opacity-0 translate-y-2 scale-95">
+                    <div class="mx-auto h-10 w-10 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin"></div>
+                    <p class="mt-4 text-sm font-semibold text-slate-900 dark:text-white">Please wait, loading PDF...</p>
+                </div>
+            </div>
+
+            <!-- View PDF Modal -->
+            <div x-show="showViewModal" x-cloak
+                 x-on:keydown.escape.window="closeView()"
+                 x-transition:enter="ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-150"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+                 @click.self="closeView()">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl h-[92vh] overflow-hidden"
+                     x-transition:enter="ease-out duration-200"
+                     x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+                     x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                     x-transition:leave="ease-in duration-150"
+                     x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                     x-transition:leave-end="opacity-0 translate-y-2 scale-95"
+                     @click.stop>
+                    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white" x-text="selectedOrder?.job_order_number ? selectedOrder.job_order_number + ' - PDF Preview' : 'PDF Preview'"></h3>
+                        <button @click="closeView()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="h-[calc(92vh-73px)] bg-gray-100 dark:bg-gray-900">
+                        <template x-if="selectedOrder?.pdf_url">
+                            <iframe
+                                :src="selectedOrder.pdf_url"
+                                class="w-full h-full"
+                                title="Customer Request PDF"
+                            ></iframe>
+                        </template>
+
+                        <template x-if="!selectedOrder?.pdf_url">
+                            <div class="h-full flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                                PDF not available for this request.
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
 
             <!-- Create Request Modal -->
             <div x-show="showCreateModal" x-cloak
