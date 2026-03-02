@@ -115,7 +115,7 @@
                         || (order.service_type || '').toLowerCase().includes(q)
                         || (order.status || '').toLowerCase().includes(q);
                 },
-                statusSteps: ['pending','approved','in_progress','completed'],
+                statusSteps: ['pending','for_accounting_approval','approved','in_progress','completed'],
                 stepIndex(status) {
                     const idx = this.statusSteps.indexOf(status);
                     return idx === -1 ? 0 : idx;
@@ -169,6 +169,10 @@
                 <a href="{{ route('customer.requests', ['status' => 'pending']) }}"
                 class="px-4 py-2 rounded-lg text-xs font-semibold {{ $status === 'pending' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700' }}">
                     Pending
+                </a>
+                <a href="{{ route('customer.requests', ['status' => 'for_accounting_approval']) }}"
+                class="px-4 py-2 rounded-lg text-xs font-semibold {{ $status === 'for_accounting_approval' ? 'bg-violet-500 text-white' : 'bg-gray-100 text-gray-700' }}">
+                    Accounting Review
                 </a>
                 <a href="{{ route('customer.requests', ['status' => 'approved']) }}"
                 class="px-4 py-2 rounded-lg text-xs font-semibold {{ $status === 'approved' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-700' }}">
@@ -232,6 +236,7 @@
                                     @php
                                         $statusStyles = [
                                             'pending' => 'bg-amber-100 text-amber-700',
+                                            'for_accounting_approval' => 'bg-violet-100 text-violet-700',
                                             'approved' => 'bg-emerald-100 text-emerald-700',
                                             'in_progress' => 'bg-blue-100 text-blue-700',
                                             'completed' => 'bg-emerald-100 text-emerald-700',
@@ -240,7 +245,7 @@
                                         $statusClass = $statusStyles[$order->status] ?? 'bg-slate-100 text-slate-700';
                                     @endphp
                                     <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full {{ $statusClass }}">
-                                        {{ ucfirst(str_replace('_', ' ', $order->status)) }}
+                                        {{ $order->status === 'for_accounting_approval' ? 'Waiting for Accounting Approval' : ucfirst(str_replace('_', ' ', $order->status)) }}
                                     </span>
                                 </td>
                                 <td class="py-3 text-center align-middle">

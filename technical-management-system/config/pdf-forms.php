@@ -25,7 +25,7 @@ return [
     | Path to the fillable PDF template (AcroForm)
     |
     */
-    'template_path' => storage_path('app/templates/GEI-MAR-F-3 Customer Request Form Rev 2.pdf'),
+    'template_path' => public_path('assets/GEI-MAR-F-3 Customer Request Form Rev 2 ACROBAT.pdf'),
 
     /*
     |--------------------------------------------------------------------------

@@ -117,7 +117,7 @@
                 })
                 .then(data => {
                     if (data.success) {
-                        this.showToast('Job Order created successfully!', 'success');
+                        this.showToast(data.message || 'Job Order created successfully!', data.pdf_generated === false ? 'error' : 'success');
                         setTimeout(() => window.location.href = '{{ route('marketing.job-orders') }}', 1200);
                     } else {
                         this.showToast(data.message || 'Error creating job order', 'error');

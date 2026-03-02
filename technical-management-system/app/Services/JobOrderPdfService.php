@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\JobOrder;
+use App\Models\User;
 use Symfony\Component\Process\Process;
 use Exception;
 
@@ -13,18 +14,23 @@ class JobOrderPdfService
 
     public function __construct()
     {
-        $this->templatePath = storage_path('app/templates/GEI-MAR-F-3 Customer Request Form Rev 2.pdf');
+        $publicAcrobatTemplate = public_path('assets/GEI-MAR-F-3 Customer Request Form Rev 2 ACROBAT.pdf');
+        $storageTemplate = storage_path('app/templates/GEI-MAR-F-3 Customer Request Form Rev 2.pdf');
+
+        $this->templatePath = file_exists($publicAcrobatTemplate)
+            ? $publicAcrobatTemplate
+            : $storageTemplate;
         $this->outputDir = storage_path('app/public/generated');
     }
 
     /**
      * Generate PDF by filling form fields using pdftk
      */
-    public function generate(JobOrder $jobOrder): string
+    public function generate(JobOrder $jobOrder, ?User $generatedByUser = null): string
     {
         try {
             // Build form data
-            $formData = $this->buildFormData($jobOrder);
+            $formData = $this->buildFormData($jobOrder, $generatedByUser);
             
             // Create FDF file
             $fdfPath = $this->createFdf($formData);
@@ -64,34 +70,129 @@ class JobOrderPdfService
     /**
      * Build form field data from job order
      */
-    private function buildFormData(JobOrder $jobOrder): array
+    private function buildFormData(JobOrder $jobOrder, ?User $generatedByUser = null): array
     {
-        $data = [];
-        
-        // Map JobOrder data to PDF form fields
-        // Field names will be discovered using: pdftk template.pdf dump_data_fields
-        
-        if ($jobOrder->customer) {
-            $data['Company Name'] = $jobOrder->customer->name ?? '';
-            $data['Address'] = $jobOrder->service_address ?? '';
+        $jobOrder->loadMissing(['customer.contacts', 'items']);
+        $customer = $jobOrder->customer;
+        $overrides = $this->extractCustomerRequestOverrides($jobOrder);
+        $marketingReceiverName = $overrides['name_signature'] ?? $this->resolveMarketingReceiverName($jobOrder, $generatedByUser);
+
+        $contact = $customer?->contacts?->first();
+
+        $data = [
+            'Company Name' => $overrides['company_name'] ?? ($customer?->business_name ?: ($customer?->name ?? '')),
+            'Address 1' => $overrides['address_1'] ?? ($customer?->address ?? ''),
+            'Address 2' => $overrides['address_2'] ?? implode(', ', array_filter([
+                $customer?->city,
+                $customer?->state,
+                $customer?->postal_code,
+            ])),
+            'Company TIN' => $overrides['company_tin'] ?? ($customer?->tax_id ?? ''),
+            'Contact Person' => $overrides['contact_person'] ?? ($jobOrder->requested_by ?: ($customer?->contact_person ?? $customer?->name ?? '')),
+            'Email Address' => $overrides['email_address'] ?? ($customer?->email ?: ($contact?->email ?? '')),
+            'Contact Number' => $overrides['contact_number'] ?? ($customer?->phone ?: ($contact?->phone ?? '')),
+            'Date' => $overrides['request_date'] ?? ($jobOrder->request_date ? $jobOrder->request_date->format('m/d/Y') : now()->format('m/d/Y')),
+            'Calibration Site Address 1' => $overrides['calibration_site_address_1'] ?? ($jobOrder->service_address ?? ($customer?->address ?? '')),
+            'Calibration Site Address 2' => $overrides['calibration_site_address_2'] ?? implode(', ', array_filter([
+                $jobOrder->city,
+                $jobOrder->province,
+                $jobOrder->postal_code,
+            ])),
+            'Others' => '',
+            'REMARKS' => $overrides['remarks'] ?? implode("\n", array_filter([
+                $jobOrder->service_description,
+                $jobOrder->notes,
+            ])),
+            'Name and Signature' => $marketingReceiverName,
+            'Date_2' => $overrides['date_2'] ?? ($jobOrder->request_date ? $jobOrder->request_date->format('m/d/Y') : now()->format('m/d/Y')),
+            'Name and Signature_2' => $overrides['name_signature_2'] ?? '',
+            'Date_3' => $overrides['date_3'] ?? '',
+            'Noted by' => $overrides['noted_by'] ?? '',
+            'Date_4' => $overrides['date_4'] ?? '',
+        ];
+
+        $serviceType = strtolower((string) ($jobOrder->service_type ?? ''));
+        $checkboxes = [
+            'Check Box1' => str_contains($serviceType, 'inspection'),
+            'Check Box2' => str_contains($serviceType, 'repair'),
+            'Check Box3' => str_contains($serviceType, 'installation'),
+            'Check Box4' => str_contains($serviceType, 'demonstration'),
+            'Check Box5' => str_contains($serviceType, 'calibration'),
+        ];
+
+        $hasKnownService = collect($checkboxes)->contains(true);
+        $checkboxes['Check Box6'] = !$hasKnownService && $serviceType !== '';
+
+        foreach ($checkboxes as $fieldName => $isChecked) {
+            $data[$fieldName] = $isChecked ? 'Yes' : 'Off';
         }
-        
-        $data['Contact Person'] = $jobOrder->requested_by ?? '';
-        $data['Date'] = $jobOrder->request_date ? $jobOrder->request_date->format('m/d/Y') : '';
-        
-        if ($jobOrder->customer && $jobOrder->customer->contacts->first()) {
-            $contact = $jobOrder->customer->contacts->first();
-            $data['Contact Number'] = $contact->phone ?? '';
-            $data['Email Address'] = $contact->email ?? '';
+
+        $otherValue = trim((string) ($overrides['others'] ?? ''));
+
+        if ($checkboxes['Check Box6']) {
+            $data['Others'] = $otherValue !== '' ? $otherValue : (string) ($jobOrder->service_type ?? '');
+        } else {
+            $normalizedOtherValue = strtolower($otherValue);
+            $knownServices = ['inspection', 'repair', 'installation', 'demonstration', 'calibration'];
+            $containsKnownService = false;
+
+            foreach ($knownServices as $knownService) {
+                if (str_contains($normalizedOtherValue, $knownService)) {
+                    $containsKnownService = true;
+                    break;
+                }
+            }
+
+            $data['Others'] = $containsKnownService ? '' : $otherValue;
         }
-        
-        // Service type checkbox - need to map to exact export value
-        $data['Calibration'] = ($jobOrder->service_type === 'Calibration') ? 'Yes' : 'Off';
-        $data['Repair'] = ($jobOrder->service_type === 'Repair') ? 'Yes' : 'Off';
-        $data['Installation'] = ($jobOrder->service_type === 'Installation') ? 'Yes' : 'Off';
-        $data['Maintenance'] = ($jobOrder->service_type === 'Maintenance') ? 'Yes' : 'Off';
-        
+
+        $items = $jobOrder->items()->orderBy('item_number')->limit(8)->get();
+        foreach ($items as $index => $item) {
+            $row = $index + 1;
+            $data["QtyRow{$row}"] = (string) ($item->quantity ?? 1);
+            $data["Equipment NameRow{$row}"] = (string) ($item->equipment_type ?? '');
+            $data["ModelRow{$row}"] = (string) ($item->model ?? '');
+            $data["Serial NoRow{$row}"] = (string) ($item->serial_number ?? '');
+            $data["CapacityRow{$row}"] = (string) ($item->range ?? '');
+        }
+
         return $data;
+    }
+
+    private function extractCustomerRequestOverrides(JobOrder $jobOrder): array
+    {
+        $specialInstructions = $jobOrder->special_instructions;
+        if (!is_string($specialInstructions) || trim($specialInstructions) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($specialInstructions, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $overrides = $decoded['customer_request_pdf_overrides'] ?? null;
+        return is_array($overrides) ? $overrides : [];
+    }
+
+    private function resolveMarketingReceiverName(JobOrder $jobOrder, ?User $generatedByUser = null): string
+    {
+        if ($generatedByUser) {
+            $generatedByUser->loadMissing('role');
+            if ($generatedByUser->hasRole('marketing')) {
+                return (string) ($generatedByUser->name ?? '');
+            }
+        }
+
+        $creator = $jobOrder->creator;
+        if ($creator) {
+            $creator->loadMissing('role');
+            if ($creator->hasRole('marketing')) {
+                return (string) ($creator->name ?? '');
+            }
+        }
+
+        return '';
     }
 
     /**

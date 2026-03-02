@@ -51,6 +51,8 @@ Route::get('/dashboard', function () {
         switch ($user->role->slug) {
             case 'marketing':
                 return redirect()->route('marketing.dashboard');
+            case 'accounting':
+                return redirect()->route('accounting.dashboard');
             case 'tech_personnel':
                 return redirect()->route('technician.dashboard');
             case 'tech_head':
@@ -94,17 +96,107 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
         ));
     })->name('dashboard');
     
-    Route::get('/job-orders', function () {
-        $query = \App\Models\JobOrder::with(['customer', 'creator.role'])->latest();
-        
-        // Filter by status if provided
-        if (request()->has('status') && request('status') != '') {
-            $query->where('status', request('status'));
+    Route::get('/job-orders', function (Illuminate\Http\Request $request) {
+        $query = \App\Models\JobOrder::with(['customer', 'creator.role', 'items']);
+
+        // Hide cancelled job orders from marketing listing
+        $query->where('status', '!=', 'cancelled');
+
+        $status = $request->string('status')->toString();
+        $allowedStatuses = ['pending', 'for_accounting_approval', 'approved', 'in_progress', 'completed', 'rejected'];
+        if (in_array($status, $allowedStatuses, true)) {
+            $query->where('status', $status);
+        } else {
+            $query->where('status', '!=', 'pending');
         }
-        
-        $jobOrders = $query->paginate(10);
+
+        $search = trim($request->string('q')->toString());
+        if ($search !== '') {
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('job_order_number', 'like', "%{$search}%")
+                    ->orWhere('service_type', 'like', "%{$search}%")
+                    ->orWhere('status', 'like', "%{$search}%")
+                    ->orWhere('requested_by', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $query->orderByRaw("CASE WHEN status = 'rejected' THEN 1 ELSE 0 END ASC")
+            ->latest();
+
+        $jobOrders = $query->paginate(8)->appends($request->only(['status', 'q']));
         return view('marketing.job-orders', compact('jobOrders'));
     })->name('job-orders');
+
+    Route::get('/job-orders/{jobOrder}/edit', function (\App\Models\JobOrder $jobOrder) {
+        $jobOrder->load(['customer', 'creator.role']);
+        return view('marketing.edit-job-order', compact('jobOrder'));
+    })->name('job-orders.edit');
+
+    Route::patch('/job-orders/{jobOrder}', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
+        $validated = $request->validate([
+            'service_type' => 'required|string|max:255',
+            'priority' => 'required|in:normal,high,urgent',
+            'service_description' => 'required|string',
+            'service_address' => 'required|string',
+            'city' => 'nullable|string|max:100',
+            'province' => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
+            'requested_by' => 'nullable|string|max:255',
+            'client_po_ctrl_no' => 'nullable|string|max:255',
+            'terms' => 'nullable|string',
+            'service_invoice_number' => 'nullable|string|max:255',
+            'others' => 'nullable|string|max:255',
+            'expected_completion_date' => 'nullable|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        $jobOrder->update([
+            'service_type' => $validated['service_type'],
+            'priority' => $validated['priority'],
+            'service_description' => $validated['service_description'],
+            'service_address' => $validated['service_address'],
+            'city' => $validated['city'] ?? null,
+            'province' => $validated['province'] ?? null,
+            'postal_code' => $validated['postal_code'] ?? null,
+            'requested_by' => $validated['requested_by'] ?? $jobOrder->requested_by,
+            'client_po_ctrl_no' => $validated['client_po_ctrl_no'] ?? null,
+            'terms' => $validated['terms'] ?? null,
+            'service_invoice_number' => $validated['service_invoice_number'] ?? null,
+            'other_details' => $validated['others'] ?? null,
+            'expected_completion_date' => $validated['expected_completion_date'] ?? null,
+            'required_date' => $validated['expected_completion_date'] ?? $jobOrder->required_date,
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        AuditLogHelper::log(
+            action: 'UPDATE',
+            modelType: 'JobOrder',
+            modelId: $jobOrder->id,
+            description: "Marketing updated job order {$jobOrder->job_order_number} details",
+            newValues: [
+                'service_type' => $validated['service_type'],
+                'priority' => $validated['priority'],
+            ],
+            changedFields: ['service_type', 'priority', 'service_description', 'service_address', 'city', 'province', 'postal_code', 'requested_by', 'client_po_ctrl_no', 'terms', 'service_invoice_number', 'other_details', 'expected_completion_date', 'required_date', 'notes']
+        );
+
+        $statusMessage = "Job order {$jobOrder->job_order_number} updated successfully.";
+        try {
+            app(\App\Services\MarketingJobOrderPdfService::class)->generate($jobOrder->fresh(['customer', 'items']));
+            $statusMessage .= ' PDF regenerated.';
+        } catch (\Throwable $e) {
+            \Log::warning('Marketing job order PDF regeneration failed: ' . $e->getMessage(), [
+                'job_order_id' => $jobOrder->id,
+            ]);
+            $statusMessage .= ' PDF regeneration skipped.';
+        }
+
+        return redirect()->route('marketing.job-orders')->with('status', $statusMessage);
+    })->name('job-orders.update');
 
     Route::patch('/job-orders/{jobOrder}/approve', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
         $jobOrder->load('creator.role');
@@ -119,9 +211,9 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
         }
 
         $jobOrder->update([
-            'status' => 'approved',
-            'approved_by' => $request->user()->id,
-            'approved_at' => now(),
+            'status' => 'for_accounting_approval',
+            'approved_by' => null,
+            'approved_at' => null,
             'rejected_by' => null,
             'rejected_at' => null,
             'rejection_reason' => null,
@@ -133,14 +225,41 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
             modelId: $jobOrder->id,
             description: "Marketing approved customer request {$jobOrder->job_order_number}",
             newValues: [
-                'status' => 'approved',
-                'approved_by' => $request->user()->id,
+                'status' => 'for_accounting_approval',
             ],
-            changedFields: ['status', 'approved_by', 'approved_at']
+            changedFields: ['status']
         );
 
-        return back()->with('status', 'Request approved and ready for technical head.');
+        return back()->with('status', 'Request endorsed to accounting for approval.');
     })->name('job-orders.approve');
+
+    Route::patch('/job-orders/{jobOrder}/submit-accounting', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
+        if (!in_array($jobOrder->status, ['pending', 'rejected', 'cancelled'], true)) {
+            return back()->withErrors(['error' => 'Only pending, rejected, or cancelled job orders can be submitted to accounting.']);
+        }
+
+        $jobOrder->update([
+            'status' => 'for_accounting_approval',
+            'approved_by' => null,
+            'approved_at' => null,
+            'rejected_by' => null,
+            'rejected_at' => null,
+            'rejection_reason' => null,
+        ]);
+
+        AuditLogHelper::log(
+            action: 'UPDATE',
+            modelType: 'JobOrder',
+            modelId: $jobOrder->id,
+            description: "Marketing resubmitted {$jobOrder->job_order_number} to accounting",
+            newValues: [
+                'status' => 'for_accounting_approval',
+            ],
+            changedFields: ['status', 'approved_by', 'approved_at', 'rejected_by', 'rejected_at', 'rejection_reason']
+        );
+
+        return back()->with('status', 'Job order resubmitted to accounting.');
+    })->name('job-orders.submit-accounting');
 
     Route::patch('/job-orders/{jobOrder}/reject', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
         $jobOrder->load('creator.role');
@@ -175,6 +294,261 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
 
         return back()->with('status', 'Request declined.');
     })->name('job-orders.reject');
+
+    Route::get('/job-orders/{jobOrder}/download', function (\App\Models\JobOrder $jobOrder) {
+        try {
+            $outputPath = app(\App\Services\MarketingJobOrderPdfService::class)->generate($jobOrder->fresh(['customer', 'items']));
+            return response()->download($outputPath, basename($outputPath));
+        } catch (\Throwable $e) {
+            \Log::warning('Marketing download PDF failed: ' . $e->getMessage(), [
+                'job_order_id' => $jobOrder->id,
+            ]);
+
+            return back()->withErrors(['error' => 'Unable to generate Job Order PDF right now.']);
+        }
+    })->name('job-orders.download');
+
+    Route::get('/job-orders/{jobOrder}/customer-request-form', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
+        try {
+            if ($jobOrder->status === 'pending') {
+                app(\App\Services\JobOrderPdfService::class)->generate(
+                    $jobOrder->fresh(['customer', 'customer.contacts']),
+                    $request->user()
+                );
+                $jobOrder->refresh();
+            }
+
+            if (empty($jobOrder->pdf_path) || !file_exists($jobOrder->pdf_path)) {
+                return response('Customer request form PDF is not available yet.', 404);
+            }
+
+            return response()->file($jobOrder->pdf_path, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . basename($jobOrder->pdf_path) . '"',
+            ]);
+        } catch (\Throwable $e) {
+            \Log::warning('Marketing customer request PDF preview failed: ' . $e->getMessage(), [
+                'job_order_id' => $jobOrder->id,
+            ]);
+
+            return response('Unable to load customer request form PDF right now.', 500);
+        }
+    })->name('job-orders.customer-request-form');
+
+    Route::get('/customer-request-forms', function () {
+        $pendingRequests = \App\Models\JobOrder::with(['customer', 'creator.role'])
+            ->where('status', 'pending')
+            ->where(function ($query) {
+                $query->whereNull('pdf_path')
+                    ->orWhereRaw("TRIM(pdf_path) = ''");
+            })
+            ->latest()
+            ->paginate(10, ['*'], 'pending_page');
+
+        $generatedRequests = \App\Models\JobOrder::with(['customer', 'creator.role'])
+            ->where('status', 'pending')
+            ->whereNotNull('pdf_path')
+            ->whereRaw("TRIM(pdf_path) <> ''")
+            ->latest('updated_at')
+            ->paginate(10, ['*'], 'generated_page');
+
+        return view('marketing.customer-request-forms', compact('pendingRequests', 'generatedRequests'));
+    })->name('customer-request-forms');
+
+    Route::post('/customer-request-forms/manual', function (Illuminate\Http\Request $request) {
+        $validated = $request->validate([
+            'company_name' => 'required|string|max:255',
+            'address_1' => 'required|string|max:500',
+            'company_tin' => 'nullable|string|max:255',
+            'contact_person' => 'required|string|max:255',
+            'email_address' => 'required|email|max:255',
+            'contact_number' => 'required|string|max:255',
+            'request_date' => 'required|date',
+            'calibration_site_address_1' => 'required|string|max:500',
+            'others' => 'required|string|max:255',
+            'remarks' => 'nullable|string',
+            'items' => 'nullable|array|max:8',
+            'items.*.qty' => 'nullable|integer|min:1|max:9999',
+            'items.*.equipment_name' => 'nullable|string|max:255',
+            'items.*.model' => 'nullable|string|max:255',
+            'items.*.serial_no' => 'nullable|string|max:255',
+            'items.*.capacity' => 'nullable|string|max:255',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $lastJobOrder = \App\Models\JobOrder::latest('id')->first();
+            $nextNumber = $lastJobOrder ? (intval(substr((string) $lastJobOrder->job_order_number, 3)) + 1) : 1;
+            $jobOrderNumber = 'JO-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
+
+            $companyName = trim((string) $validated['company_name']);
+            $customer = \App\Models\Customer::where('name', $companyName)
+                ->orWhere('business_name', $companyName)
+                ->first();
+
+            if (!$customer) {
+                $customer = \App\Models\Customer::create([
+                    'name' => $companyName,
+                    'business_name' => $companyName,
+                    'address' => trim((string) $validated['address_1']),
+                    'phone' => trim((string) $validated['contact_number']),
+                    'email' => trim((string) $validated['email_address']),
+                    'contact_person' => trim((string) $validated['contact_person']),
+                    'tax_id' => trim((string) ($validated['company_tin'] ?? '')),
+                    'is_active' => true,
+                    'created_by' => $request->user()->id,
+                ]);
+            }
+
+            $customerRequestOverrides = [
+                'company_name' => $companyName,
+                'address_1' => trim((string) $validated['address_1']),
+                'company_tin' => trim((string) ($validated['company_tin'] ?? '')),
+                'contact_person' => trim((string) $validated['contact_person']),
+                'email_address' => trim((string) $validated['email_address']),
+                'contact_number' => trim((string) $validated['contact_number']),
+                'request_date' => \Illuminate\Support\Carbon::parse($validated['request_date'])->format('m/d/Y'),
+                'calibration_site_address_1' => trim((string) $validated['calibration_site_address_1']),
+                'others' => trim((string) $validated['others']),
+                'remarks' => trim((string) ($validated['remarks'] ?? '')),
+            ];
+
+            $jobOrder = \App\Models\JobOrder::create([
+                'job_order_number' => $jobOrderNumber,
+                'customer_id' => $customer->id,
+                'service_type' => $validated['others'],
+                'service_description' => $validated['remarks'] ?? 'Manual customer request form created by marketing',
+                'service_address' => $validated['calibration_site_address_1'],
+                'city' => null,
+                'province' => null,
+                'postal_code' => null,
+                'requested_by' => $validated['contact_person'],
+                'request_date' => $validated['request_date'],
+                'priority' => 'normal',
+                'status' => 'pending',
+                'notes' => $validated['remarks'] ?? null,
+                'special_instructions' => json_encode([
+                    'customer_request_pdf_overrides' => $customerRequestOverrides,
+                ], JSON_UNESCAPED_UNICODE),
+                'created_by' => $request->user()->id,
+            ]);
+
+            if (!empty($validated['items']) && is_array($validated['items'])) {
+                foreach ($validated['items'] as $index => $item) {
+                    $equipmentName = trim((string) ($item['equipment_name'] ?? ''));
+                    $model = trim((string) ($item['model'] ?? ''));
+                    $serialNo = trim((string) ($item['serial_no'] ?? ''));
+                    $capacity = trim((string) ($item['capacity'] ?? ''));
+                    $hasAnyValue = $equipmentName !== '' || $model !== '' || $serialNo !== '' || $capacity !== '';
+
+                    if (!$hasAnyValue) {
+                        continue;
+                    }
+
+                    DB::table('job_order_items')->insert([
+                        'job_order_id' => $jobOrder->id,
+                        'item_number' => $index + 1,
+                        'equipment_type' => $equipmentName,
+                        'manufacturer' => null,
+                        'model' => $model !== '' ? $model : null,
+                        'serial_number' => $serialNo !== '' ? $serialNo : null,
+                        'id_number' => null,
+                        'range' => $capacity !== '' ? $capacity : null,
+                        'resolution' => null,
+                        'accuracy' => null,
+                        'calibration_type' => null,
+                        'calibration_points' => null,
+                        'quantity' => (int) ($item['qty'] ?? 1),
+                        'unit_price' => null,
+                        'total_price' => null,
+                        'remarks' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            app(\App\Services\JobOrderPdfService::class)->generate(
+                $jobOrder->fresh(['customer', 'customer.contacts', 'items']),
+                $request->user()
+            );
+
+            AuditLogHelper::log(
+                action: 'CREATE',
+                modelType: 'JobOrder',
+                modelId: $jobOrder->id,
+                description: "Marketing manually created customer request form {$jobOrder->job_order_number}",
+                newValues: [
+                    'job_order_number' => $jobOrder->job_order_number,
+                    'status' => 'pending',
+                    'created_by' => $request->user()->id,
+                ],
+                changedFields: ['job_order_number', 'status', 'special_instructions', 'pdf_filename', 'pdf_path']
+            );
+
+            DB::commit();
+
+            return redirect()->route('marketing.customer-request-forms')->with('status', 'Manual customer request form created successfully.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            \Log::warning('Manual customer request form creation failed: ' . $e->getMessage(), [
+                'user_id' => $request->user()->id,
+            ]);
+
+            return back()->withErrors(['error' => 'Unable to create manual customer request form right now.'])->withInput();
+        }
+    })->name('customer-request-forms.manual-store');
+
+    Route::post('/job-orders/{jobOrder}/generate-customer-request-form', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
+        if ($jobOrder->status !== 'pending') {
+            return back()->withErrors(['error' => 'Only pending requests can be generated.']);
+        }
+
+        try {
+            app(\App\Services\JobOrderPdfService::class)->generate(
+                $jobOrder->fresh(['customer', 'customer.contacts', 'items']),
+                $request->user()
+            );
+
+            AuditLogHelper::log(
+                action: 'UPDATE',
+                modelType: 'JobOrder',
+                modelId: $jobOrder->id,
+                description: "Marketing generated customer request form for {$jobOrder->job_order_number}",
+                newValues: [
+                    'pdf_generated_by' => $request->user()->id,
+                    'pdf_filename' => $jobOrder->fresh()->pdf_filename,
+                ],
+                changedFields: ['pdf_filename', 'pdf_path']
+            );
+
+            return back()->with('status', "Customer request form generated for {$jobOrder->job_order_number}.");
+        } catch (\Throwable $e) {
+            \Log::warning('Marketing generate customer request form failed: ' . $e->getMessage(), [
+                'job_order_id' => $jobOrder->id,
+            ]);
+
+            return back()->withErrors(['error' => 'Unable to generate customer request form right now.']);
+        }
+    })->name('job-orders.generate-customer-request-form');
+
+    Route::delete('/job-orders/{jobOrder}', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
+        $jobOrderNumber = $jobOrder->job_order_number;
+        $jobOrder->delete();
+
+        AuditLogHelper::log(
+            action: 'DELETE',
+            modelType: 'JobOrder',
+            modelId: $jobOrder->id,
+            description: "Marketing deleted job order {$jobOrderNumber}",
+            newValues: [
+                'deleted_by' => $request->user()->id,
+            ],
+            changedFields: ['deleted_at']
+        );
+
+        return back()->with('status', "Job order {$jobOrderNumber} deleted.");
+    })->name('job-orders.destroy');
     
     Route::get('/create-job-order', function () {
         $customers = \App\Models\Customer::where('is_active', true)->get();
@@ -191,25 +565,53 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
         try {
             $validated = $request->validate([
                 'customer_id' => 'required|exists:customers,id',
-                'service_type' => 'required|string',
-                'priority_level' => 'required|string',
-                'service_description' => 'required|string',
+                'company_name' => 'nullable|string|max:255',
+                'company_tin' => 'nullable|string|max:255',
+                'address' => 'nullable|string',
+                'contact_no' => 'nullable|string|max:255',
+                'service_type' => 'nullable|string|max:255',
+                'services' => 'nullable|array',
+                'services.*' => 'string',
+                'priority' => 'nullable|in:normal,high,urgent',
+                'priority_level' => 'nullable|string',
+                'service_description' => 'nullable|string',
                 'expected_start_date' => 'nullable|date',
                 'expected_completion_date' => 'nullable|date|after_or_equal:expected_start_date',
-                'service_address' => 'required|string',
+                'service_address' => 'nullable|string',
+                'calibration_site_address' => 'nullable|string',
                 'city' => 'nullable|string|max:100',
                 'province' => 'nullable|string|max:100',
                 'postal_code' => 'nullable|string|max:20',
                 'contact_person' => 'nullable|string|max:255',
+                'requested_by' => 'nullable|string|max:255',
+                'client_po_ctrl_no' => 'nullable|string|max:255',
+                'terms' => 'nullable|string',
+                'service_invoice_number' => 'nullable|string|max:255',
+                'others' => 'nullable|string|max:255',
+                'notes' => 'nullable|string',
+                'remarks' => 'nullable|string',
+                'date' => 'nullable|date',
+                'jo_no' => 'nullable|string|max:255',
+                'items' => 'nullable|array',
+                'items.*.item_no' => 'nullable|integer|min:1',
+                'items.*.qty' => 'nullable|integer|min:1',
+                'items.*.equipment_name' => 'nullable|string|max:255',
+                'items.*.model' => 'nullable|string|max:255',
+                'items.*.serial_no' => 'nullable|string|max:255',
+                'items.*.capacity' => 'nullable|string|max:255',
             ]);
 
             // Get the customer
             $customer = \App\Models\Customer::findOrFail($validated['customer_id']);
 
             // Generate job order number
-            $lastJobOrder = \App\Models\JobOrder::latest('id')->first();
-            $nextNumber = $lastJobOrder ? (intval(substr($lastJobOrder->job_order_number, 3)) + 1) : 1;
-            $jobOrderNumber = 'JO-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
+            if (!empty($validated['jo_no'])) {
+                $jobOrderNumber = trim($validated['jo_no']);
+            } else {
+                $lastJobOrder = \App\Models\JobOrder::latest('id')->first();
+                $nextNumber = $lastJobOrder ? (intval(substr((string) $lastJobOrder->job_order_number, 3)) + 1) : 1;
+                $jobOrderNumber = 'JO-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
+            }
 
             // Map priority level
             $priorityMap = [
@@ -217,34 +619,111 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
                 'High' => 'high',
                 'Urgent' => 'urgent'
             ];
-            $priority = $priorityMap[$validated['priority_level']] ?? 'normal';
+            $priority = $validated['priority'] ?? ($priorityMap[$validated['priority_level'] ?? ''] ?? 'normal');
+
+            $serviceType = trim((string) ($validated['service_type'] ?? ''));
+            if ($serviceType === '' && !empty($validated['services']) && is_array($validated['services'])) {
+                $serviceType = collect($validated['services'])
+                    ->map(fn ($service) => ucfirst(strtolower((string) $service)))
+                    ->implode(', ');
+            }
+            if ($serviceType === '') {
+                $serviceType = 'Other';
+            }
+
+            $serviceAddress = $validated['service_address']
+                ?? $validated['calibration_site_address']
+                ?? $customer->address
+                ?? 'N/A';
+
+            $requestDate = !empty($validated['date']) ? \Illuminate\Support\Carbon::parse($validated['date']) : now();
+
+            $notes = $validated['notes'] ?? $validated['remarks'] ?? null;
+
+            $marketingPdfOverrides = array_filter([
+                'company_name' => trim((string) ($validated['company_name'] ?? '')),
+                'company_tin' => trim((string) ($validated['company_tin'] ?? '')),
+                'address' => trim((string) ($validated['address'] ?? '')),
+                'contact_no' => trim((string) ($validated['contact_no'] ?? '')),
+            ], fn ($value) => $value !== '');
 
             // Create job order
             $jobOrder = \App\Models\JobOrder::create([
                 'job_order_number' => $jobOrderNumber,
                 'customer_id' => $customer->id,
-                'service_type' => $validated['service_type'],
-                'service_description' => $validated['service_description'],
+                'service_type' => $serviceType,
+                'service_description' => $validated['service_description'] ?? ($notes ?: 'Manual job order created by marketing'),
                 'expected_start_date' => $validated['expected_start_date'] ?? null,
                 'expected_completion_date' => $validated['expected_completion_date'] ?? null,
-                'service_address' => $validated['service_address'],
+                'service_address' => $serviceAddress,
                 'city' => $validated['city'] ?? null,
                 'province' => $validated['province'] ?? null,
                 'postal_code' => $validated['postal_code'] ?? null,
-                'requested_by' => $validated['contact_person'] ?? $customer->name,
-                'request_date' => now(),
+                'requested_by' => $validated['requested_by'] ?? $validated['contact_person'] ?? $customer->contact_person ?? $customer->name,
+                'client_po_ctrl_no' => $validated['client_po_ctrl_no'] ?? null,
+                'terms' => $validated['terms'] ?? null,
+                'service_invoice_number' => $validated['service_invoice_number'] ?? null,
+                'other_details' => $validated['others'] ?? null,
+                'request_date' => $requestDate,
                 'required_date' => $validated['expected_completion_date'] ?? null,
                 'priority' => $priority,
-                'status' => 'approved',
-                'approved_by' => auth()->id() ?? 1,
-                'approved_at' => now(),
+                'status' => 'for_accounting_approval',
+                'approved_by' => null,
+                'approved_at' => null,
+                'notes' => $notes,
+                'special_instructions' => !empty($marketingPdfOverrides)
+                    ? json_encode(['marketing_pdf_overrides' => $marketingPdfOverrides], JSON_UNESCAPED_UNICODE)
+                    : null,
                 'created_by' => auth()->id() ?? 1, // Use auth user or default to 1
             ]);
 
+            if (!empty($validated['items']) && is_array($validated['items'])) {
+                foreach ($validated['items'] as $index => $item) {
+                    $equipmentName = trim((string) ($item['equipment_name'] ?? ''));
+                    if ($equipmentName === '') {
+                        continue;
+                    }
+
+                    DB::table('job_order_items')->insert([
+                        'job_order_id' => $jobOrder->id,
+                        'item_number' => (int) ($item['item_no'] ?? ($index + 1)),
+                        'equipment_type' => $equipmentName,
+                        'manufacturer' => null,
+                        'model' => $item['model'] ?? null,
+                        'serial_number' => $item['serial_no'] ?? null,
+                        'id_number' => null,
+                        'range' => $item['capacity'] ?? null,
+                        'resolution' => null,
+                        'accuracy' => null,
+                        'calibration_type' => null,
+                        'calibration_points' => null,
+                        'quantity' => (int) ($item['qty'] ?? 1),
+                        'unit_price' => null,
+                        'total_price' => null,
+                        'remarks' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            $pdfGenerated = true;
+            try {
+                app(\App\Services\MarketingJobOrderPdfService::class)->generate($jobOrder->fresh(['customer', 'items']));
+            } catch (\Throwable $e) {
+                $pdfGenerated = false;
+                \Log::warning('Manual marketing JO PDF generation failed: ' . $e->getMessage(), [
+                    'job_order_id' => $jobOrder->id,
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Job Order created successfully!',
-                'job_order_id' => $jobOrder->id
+                'message' => $pdfGenerated
+                    ? 'Job Order created successfully!'
+                    : 'Job Order created successfully, but PDF generation failed. Please retry download from Job Orders.',
+                'job_order_id' => $jobOrder->id,
+                'pdf_generated' => $pdfGenerated,
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -400,6 +879,88 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
     
     // Timeline route for Marketing
     Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
+});
+
+// Accounting Routes
+Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')->name('accounting.')->group(function () {
+    Route::get('/dashboard', function (Illuminate\Http\Request $request) {
+        $search = trim($request->string('q')->toString());
+
+        $query = \App\Models\JobOrder::with(['customer', 'creator'])
+            ->where('status', 'for_accounting_approval')
+            ->latest();
+
+        if ($search !== '') {
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('job_order_number', 'like', "%{$search}%")
+                    ->orWhere('service_type', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $pendingApprovals = $query->paginate(10)->appends($request->only(['q']));
+
+        return view('accounting.dashboard', compact('pendingApprovals', 'search'));
+    })->name('dashboard');
+
+    Route::patch('/job-orders/{jobOrder}/approve', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
+        if ($jobOrder->status !== 'for_accounting_approval') {
+            return back()->withErrors(['error' => 'Only job orders waiting for accounting approval can be approved.']);
+        }
+
+        $jobOrder->update([
+            'status' => 'approved',
+            'approved_by' => $request->user()->id,
+            'approved_at' => now(),
+            'rejected_by' => null,
+            'rejected_at' => null,
+            'rejection_reason' => null,
+        ]);
+
+        AuditLogHelper::log(
+            action: 'APPROVE',
+            modelType: 'JobOrder',
+            modelId: $jobOrder->id,
+            description: "Accounting approved job order {$jobOrder->job_order_number}",
+            newValues: [
+                'status' => 'approved',
+                'approved_by' => $request->user()->id,
+            ],
+            changedFields: ['status', 'approved_by', 'approved_at']
+        );
+
+        return back()->with('status', 'Job order approved and now available for Technical Head scheduling.');
+    })->name('job-orders.approve');
+
+    Route::patch('/job-orders/{jobOrder}/reject', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
+        if ($jobOrder->status !== 'for_accounting_approval') {
+            return back()->withErrors(['error' => 'Only job orders waiting for accounting approval can be returned.']);
+        }
+
+        $jobOrder->update([
+            'status' => 'rejected',
+            'rejected_by' => $request->user()->id,
+            'rejected_at' => now(),
+            'rejection_reason' => 'Returned by accounting for marketing revision',
+        ]);
+
+        AuditLogHelper::log(
+            action: 'REJECT',
+            modelType: 'JobOrder',
+            modelId: $jobOrder->id,
+            description: "Accounting returned job order {$jobOrder->job_order_number} to marketing",
+            newValues: [
+                'status' => 'rejected',
+                'rejection_reason' => 'Returned by accounting for marketing revision',
+            ],
+            changedFields: ['status', 'rejected_by', 'rejected_at', 'rejection_reason']
+        );
+
+        return back()->with('status', 'Job order returned to marketing for revision.');
+    })->name('job-orders.reject');
 });
 
 // Customer Routes

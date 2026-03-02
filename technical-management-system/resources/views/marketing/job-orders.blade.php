@@ -9,13 +9,25 @@
                 showJODetails: false,
                 selectedJO: null,
                 filterStatus: '{{ request("status") ?? "all" }}',
+                customerRequestFormUrlBase: '{{ url('/marketing/job-orders') }}',
                 init() {
                     window.addEventListener('keydown', (e) => {
                         if (e.key === 'Escape' && this.showJODetails) this.closeJODetails();
+                        if (e.key === 'Escape') {
+                            this.closeAllActionMenus();
+                        }
                     });
                 },
                 openJODetails(jo) {
-                    this.selectedJO = jo;
+                    this.closeAllActionMenus();
+                    const previewUrl = jo?.id
+                        ? `${this.customerRequestFormUrlBase}/${jo.id}/customer-request-form?t=${Date.now()}#page=1&zoom=page-width`
+                        : null;
+
+                    this.selectedJO = {
+                        ...jo,
+                        customer_request_form_url: previewUrl,
+                    };
                     this.showJODetails = true;
                     document.body.style.overflow = 'hidden';
                 },
@@ -24,10 +36,26 @@
                     this.selectedJO = null;
                     document.body.style.overflow = 'auto';
                 },
+                closeAllActionMenus() {
+                    document.querySelectorAll('.row-actions[open]').forEach((item) => {
+                        item.open = false;
+                    });
+                },
+                closeOtherActionMenus(currentElement) {
+                    document.querySelectorAll('.row-actions[open]').forEach((item) => {
+                        if (item !== currentElement) {
+                            item.open = false;
+                        }
+                    });
+                },
                 formatDate(d) {
                     if (!d) return 'N/A';
                     const dt = new Date(d);
                     return isNaN(dt) ? d : dt.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                },
+                formatStatus(status) {
+                    if (!status) return 'N/A';
+                    return status.replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase());
                 },
                 filterByStatus(status) {
                     const url = new URL(window.location);
@@ -78,6 +106,14 @@
         Job Orders
     </a>
 
+    <a href="{{ route('marketing.customer-request-forms') }}"
+       class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Request Forms
+    </a>
+
     <a href="{{ route('marketing.reports') }}"
        class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,9 +134,18 @@
 
 @section('content')
     <div x-data="jobOrdersPage()">
-        <div class="mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Job Orders</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">View and manage all job orders</p>
+        <div class="mb-6 flex items-center justify-between gap-3">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Job Orders</h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">View and manage all job orders</p>
+            </div>
+            <a href="{{ route('marketing.create-job-order') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Manual Create JO
+            </a>
         </div>
 
         <!-- Filters -->
@@ -110,6 +155,9 @@
             </button>
             <button @click="filterByStatus('pending')" :class="filterStatus === 'pending' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 Pending
+            </button>
+            <button @click="filterByStatus('for_accounting_approval')" :class="filterStatus === 'for_accounting_approval' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                For Accounting
             </button>
             <button @click="filterByStatus('approved')" :class="filterStatus === 'approved' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 Approved
@@ -122,13 +170,6 @@
             </button>
             <button @click="filterByStatus('rejected')" :class="filterStatus === 'rejected' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 Rejected
-            </button>
-            <button
-              @click="filterByStatus('cancelled')"
-              :class="filterStatus === 'cancelled' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'"
-              class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              Cancelled
             </button>
         </div>
 
@@ -202,6 +243,8 @@
                             <td class="px-6 py-4 whitespace-nowrap text-center align-middle">
                                 @if($jobOrder->status === 'pending')
                                     <span class="px-3 py-1 text-xs font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full">Pending</span>
+                                @elseif($jobOrder->status === 'for_accounting_approval')
+                                    <span class="px-3 py-1 text-xs font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full">For Accounting Approval</span>
                                 @elseif($jobOrder->status === 'approved')
                                     <span class="px-3 py-1 text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full">Approved</span>
                                 @elseif($jobOrder->status === 'in_progress')
@@ -215,8 +258,7 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-center align-middle">
-                                <div class="grid grid-cols-3 items-center justify-items-center gap-4 min-w-[220px]">
-                                    {{-- Slot 1: View --}}
+                                <div class="flex items-center justify-center gap-2 min-w-[180px]">
                                     <button
                                         @click='openJODetails(@json($jobOrder))'
                                         class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
@@ -224,40 +266,96 @@
                                         View
                                     </button>
 
-                                    {{-- Slot 2: Accept --}}
-                                    @if($isCustomerRequest && $jobOrder->status === 'pending')
-                                        <form method="POST" action="{{ route('marketing.job-orders.approve', $jobOrder) }}" class="m-0">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit" class="text-emerald-600 hover:text-emerald-700 font-semibold">
-                                                Accept
-                                            </button>
-                                        </form>
-                                    @else
-                                        <span class="invisible select-none">Accept</span>
-                                    @endif
+                                    <details class="row-actions relative text-left" @toggle="if ($el.open) closeOtherActionMenus($el)" @click.outside="$el.open = false">
+                                        <summary class="list-none cursor-pointer inline-flex items-center gap-1 text-slate-600 hover:text-slate-800 dark:text-gray-300 dark:hover:text-white font-medium">
+                                            Actions
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </summary>
 
-                                    {{-- Slot 3: Decline --}}
-                                    @if($isCustomerRequest && $jobOrder->status === 'pending')
-                                        <form method="POST" action="{{ route('marketing.job-orders.reject', $jobOrder) }}" class="m-0"
-                                              onsubmit="return confirm('Decline this customer request?');">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit" class="text-rose-600 hover:text-rose-700 font-semibold">
-                                                Decline
-                                            </button>
-                                        </form>
-                                    @else
-                                        <span class="invisible select-none">Decline</span>
-                                    @endif
+                                        @if($jobOrder->status === 'pending')
+                                            @if($isCustomerRequest)
+                                                <div class="absolute right-0 top-full mt-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-2 space-y-1 min-w-[170px] shadow-lg z-30">
+                                                    <form method="POST" action="{{ route('marketing.job-orders.approve', $jobOrder) }}" class="m-0">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="w-full text-left text-emerald-600 hover:text-emerald-700 font-semibold">
+                                                            Accept
+                                                        </button>
+                                                    </form>
 
-                                    {{-- Slot 4: Download PDF --}}
-                                    <a
-                                        href="{{ route('marketing.job-orders.download', $jobOrder) }}"
-                                        class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium"
-                                    >
-                                        Download PDF
-                                    </a>
+                                                    <form method="POST" action="{{ route('marketing.job-orders.reject', $jobOrder) }}" class="m-0"
+                                                          onsubmit="return confirm('Decline this customer request?');">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="w-full text-left text-rose-600 hover:text-rose-700 font-semibold">
+                                                            Decline
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            @else
+                                                <div class="absolute right-0 top-full mt-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-2 space-y-1 min-w-[190px] shadow-lg z-30">
+                                                    <a
+                                                        href="{{ route('marketing.job-orders.edit', $jobOrder) }}"
+                                                        class="block text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-medium"
+                                                    >
+                                                        Edit
+                                                    </a>
+                                                    <form method="POST" action="{{ route('marketing.job-orders.submit-accounting', $jobOrder) }}" class="m-0"
+                                                          onsubmit="return confirm('Submit this pending JO to accounting?');">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="w-full text-left text-emerald-600 hover:text-emerald-700 font-semibold">
+                                                            Submit to Accounting
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            @endif
+                                        @else
+                                            <div class="absolute right-0 top-full mt-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-2 space-y-1 min-w-[190px] shadow-lg z-30">
+                                                <a
+                                                    href="{{ route('marketing.job-orders.edit', $jobOrder) }}"
+                                                    class="block text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-medium"
+                                                >
+                                                    Edit
+                                                </a>
+
+                                                @if($jobOrder->pdf_filename)
+                                                    <a
+                                                        href="{{ route('marketing.job-orders.download', $jobOrder) }}"
+                                                        class="block text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium"
+                                                    >
+                                                        Download PDF
+                                                    </a>
+                                                @else
+                                                    <span class="block text-indigo-300 dark:text-indigo-500 font-medium cursor-not-allowed" title="No PDF available yet">
+                                                        Download PDF
+                                                    </span>
+                                                @endif
+
+                                                <form method="POST" action="{{ route('marketing.job-orders.destroy', $jobOrder) }}" class="m-0"
+                                                      onsubmit="return confirm('Delete this job order?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="w-full text-left text-rose-600 hover:text-rose-700 font-semibold">
+                                                        Delete
+                                                    </button>
+                                                </form>
+
+                                                @if(in_array($jobOrder->status, ['rejected', 'cancelled'], true))
+                                                    <form method="POST" action="{{ route('marketing.job-orders.submit-accounting', $jobOrder) }}" class="m-0"
+                                                          onsubmit="return confirm('Resubmit this job order to accounting?');">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="w-full text-left text-emerald-600 hover:text-emerald-700 font-semibold">
+                                                            Submit to Accounting
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </details>
                                 </div>
                             </td>
                         </tr>
@@ -305,7 +403,7 @@
                  x-transition:leave="ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                  class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-[95vw] max-w-7xl max-h-[92vh] overflow-y-auto">
 
                 <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
                     <div class="flex items-center justify-between">
@@ -328,12 +426,16 @@
                             <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full"
                                   :class="{
                                       'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300': selectedJO?.status === 'pending',
+                                      'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300': selectedJO?.status === 'for_accounting_approval',
                                       'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300': selectedJO?.status === 'approved',
                                       'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300': selectedJO?.status === 'in_progress',
                                       'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300': selectedJO?.status === 'completed',
                                       'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300': selectedJO?.status === 'rejected',
-                                      'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': !['pending','approved','in_progress','completed','rejected'].includes(selectedJO?.status)
+                                      'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': !['pending','for_accounting_approval','approved','in_progress','completed','rejected'].includes(selectedJO?.status)
                                   }" x-text="(selectedJO?.status || 'N/A').replace('_',' ')"></span>
+                            <p x-show="selectedJO?.status === 'for_accounting_approval'" class="mt-2 text-xs text-violet-700 dark:text-violet-300">
+                                Waiting for Accounting Approval
+                            </p>
                         </div>
                     </div>
 
@@ -345,6 +447,102 @@
                         <div>
                             <p class="text-sm text-gray-500 dark:text-gray-400">Created</p>
                             <p class="font-medium text-gray-900 dark:text-white" x-text="formatDate(selectedJO?.created_at)"></p>
+                        </div>
+                    </div>
+
+                    <div x-show="selectedJO?.status === 'pending'" x-cloak class="mt-2 rounded-xl border border-amber-200 dark:border-amber-700/40 bg-amber-50/60 dark:bg-amber-900/10 p-4 space-y-4">
+                        <h4 class="text-sm font-semibold text-amber-800 dark:text-amber-300">Customer Request Form</h4>
+
+                        <div class="rounded-lg border border-amber-200/80 dark:border-amber-700/40 bg-white dark:bg-gray-900 overflow-hidden">
+                            <div class="px-3 py-2 border-b border-amber-200/80 dark:border-amber-700/40 flex items-center justify-between">
+                                <p class="text-xs font-medium text-gray-600 dark:text-gray-300">Customer Request Form PDF Preview</p>
+                                <a :href="selectedJO?.customer_request_form_url"
+                                   target="_blank"
+                                   class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                >
+                                    Open PDF
+                                </a>
+                            </div>
+                            <iframe
+                                :src="selectedJO?.customer_request_form_url"
+                                class="w-full h-[520px] bg-white"
+                                title="Customer Request Form PDF Preview"
+                            ></iframe>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Requested By</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="selectedJO?.requested_by || 'N/A'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Priority</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="formatStatus(selectedJO?.priority)"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Expected Completion</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="formatDate(selectedJO?.expected_completion_date)"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Client PO Ctrl No</p>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="selectedJO?.client_po_ctrl_no || 'N/A'"></p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Service Address</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="selectedJO?.service_address || 'N/A'"></p>
+                        </div>
+
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Service Description</p>
+                            <p class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line" x-text="selectedJO?.service_description || 'N/A'"></p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Service Invoice Number</p>
+                                <p class="text-sm text-gray-800 dark:text-gray-200" x-text="selectedJO?.service_invoice_number || 'N/A'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Terms</p>
+                                <p class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line" x-text="selectedJO?.terms || 'N/A'"></p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Notes</p>
+                            <p class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line" x-text="selectedJO?.notes || 'N/A'"></p>
+                        </div>
+
+                        <div x-show="selectedJO?.items && selectedJO.items.length > 0" x-cloak>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Requested Items</p>
+                            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                                <table class="min-w-full text-xs">
+                                    <thead class="bg-white dark:bg-gray-800">
+                                        <tr>
+                                            <th class="px-3 py-2 text-left text-gray-600 dark:text-gray-300">#</th>
+                                            <th class="px-3 py-2 text-left text-gray-600 dark:text-gray-300">Equipment</th>
+                                            <th class="px-3 py-2 text-left text-gray-600 dark:text-gray-300">Model</th>
+                                            <th class="px-3 py-2 text-left text-gray-600 dark:text-gray-300">Serial</th>
+                                            <th class="px-3 py-2 text-left text-gray-600 dark:text-gray-300">Capacity</th>
+                                            <th class="px-3 py-2 text-left text-gray-600 dark:text-gray-300">Qty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="(item, idx) in (selectedJO?.items || [])" :key="item.id || idx">
+                                            <tr class="border-t border-gray-100 dark:border-gray-700">
+                                                <td class="px-3 py-2 text-gray-800 dark:text-gray-200" x-text="item.item_number || (idx + 1)"></td>
+                                                <td class="px-3 py-2 text-gray-800 dark:text-gray-200" x-text="item.equipment_type || 'N/A'"></td>
+                                                <td class="px-3 py-2 text-gray-800 dark:text-gray-200" x-text="item.model || 'N/A'"></td>
+                                                <td class="px-3 py-2 text-gray-800 dark:text-gray-200" x-text="item.serial_number || 'N/A'"></td>
+                                                <td class="px-3 py-2 text-gray-800 dark:text-gray-200" x-text="item.range || 'N/A'"></td>
+                                                <td class="px-3 py-2 text-gray-800 dark:text-gray-200" x-text="item.quantity || 1"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

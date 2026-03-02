@@ -22,6 +22,7 @@
             @php
                 $statusStyles = [
                     'pending' => 'bg-amber-100 text-amber-700',
+                    'for_accounting_approval' => 'bg-violet-100 text-violet-700',
                     'approved' => 'bg-emerald-100 text-emerald-700',
                     'in_progress' => 'bg-blue-100 text-blue-700',
                     'completed' => 'bg-emerald-100 text-emerald-700',
@@ -43,8 +44,14 @@
             </span>
 
             <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full {{ $statusClass }}">
-                {{ ucfirst(str_replace('_', ' ', $jobOrder->status)) }}
+                {{ $jobOrder->status === 'for_accounting_approval' ? 'Waiting for Accounting Approval' : ucfirst(str_replace('_', ' ', $jobOrder->status)) }}
             </span>
+
+            @if($jobOrder->status === 'for_accounting_approval')
+                <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-violet-50 text-violet-700 border border-violet-200">
+                    Your request is currently under Accounting review.
+                </span>
+            @endif
 
             @if($jobOrder->pdf_filename)
                 <a href="{{ asset('storage/generated/' . $jobOrder->pdf_filename) }}"

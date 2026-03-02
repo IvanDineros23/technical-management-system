@@ -40,14 +40,14 @@ class CustomerPortalController extends Controller
 
         $stats = [
             'total_requests' => (clone $jobOrdersQuery)->count(),
-            'pending_requests' => (clone $jobOrdersQuery)->where('status', 'pending')->count(),
+            'pending_requests' => (clone $jobOrdersQuery)->whereIn('status', ['pending', 'for_accounting_approval'])->count(),
             'total_certificates' => (clone $certificatesQuery)->count(),
             'pending_certificates' => (clone $certificatesQuery)->whereNull('released_at')->count(),
             'released_certificates' => (clone $certificatesQuery)->whereNotNull('released_at')->count(),
         ];
 
         $pendingRequests = (clone $jobOrdersQuery)
-            ->where('status', 'pending')
+            ->whereIn('status', ['pending', 'for_accounting_approval'])
             ->take(5)
             ->get();
 
