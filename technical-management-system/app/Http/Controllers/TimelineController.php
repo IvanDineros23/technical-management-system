@@ -241,37 +241,70 @@ class TimelineController extends Controller
      */
     private function getAccountingTimeline(array $filters = []): array
     {
-        $timelines = JobOrder::with(['customer'])
-            ->whereNotNull('grand_total')
-            ->latest('created_at')
+        $status = $filters['status'] ?? null;
+        $search = $filters['search'] ?? null;
+
+        $query = JobOrder::with(['customer', 'creator']);
+
+        if ($status === 'pending') {
+            $query->whereIn('status', ['for_accounting_approval', 'pending', 'rejected']);
+        } elseif ($status === 'in_progress') {
+            $query->whereIn('status', ['approved', 'assigned', 'in_progress', 'on_hold']);
+        } elseif ($status === 'completed') {
+            $query->where('status', 'completed');
+        }
+
+        if ($search) {
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('job_order_number', 'like', "%{$search}%")
+                    ->orWhere('service_description', 'like', "%{$search}%")
+                    ->orWhere('service_type', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $timelines = $query
+            ->latest('updated_at')
             ->limit(50)
             ->get()
             ->map(function ($job) {
+                $normalizedStatus = match (true) {
+                    in_array($job->status, ['completed']) => 'completed',
+                    in_array($job->status, ['approved', 'assigned', 'in_progress', 'on_hold']) => 'in_progress',
+                    default => 'pending',
+                };
+
+                $title = match (true) {
+                    $job->status === 'for_accounting_approval' => "New Request: JO #{$job->job_order_number}",
+                    $normalizedStatus === 'completed' => "Completed JO #{$job->job_order_number}",
+                    $normalizedStatus === 'in_progress' => "Ongoing JO #{$job->job_order_number}",
+                    default => "Job Order #{$job->job_order_number}",
+                };
+
                 return [
                     'id' => $job->id,
-                    'type' => 'financial',
-                    'title' => "Invoice for JO #{$job->job_order_number}",
-                    'description' => $job->customer?->name ?? 'N/A',
+                    'type' => 'accounting_workflow',
+                    'title' => $title,
+                    'description' => $job->service_description ?: ($job->service_type ?: 'Job order update'),
                     'customer' => $job->customer?->name ?? 'N/A',
-                    'status' => $job->status === 'completed' ? 'billable' : 'pending',
+                    'status' => $normalizedStatus,
                     'priority' => $job->priority_level ?? 'normal',
-                    'date' => $job->created_at,
+                    'date' => $job->updated_at,
                     'metadata' => [
-                        'grand_total' => $job->grand_total,
                         'service_type' => $job->service_type,
-                        'payment_status' => 'unpaid' // Placeholder
+                        'workflow_status' => $job->status,
+                        'submitted_by' => $job->creator?->name,
                     ]
                 ];
             });
-        
-        $totalRevenue = JobOrder::sum('grand_total');
-        $pendingBilling = JobOrder::where('status', 'completed')->sum('grand_total');
-        
+
         $stats = [
-            'total_revenue' => $totalRevenue,
-            'pending_billing' => JobOrder::where('status', 'completed')->count(),
-            'paid_invoices' => 0, // Placeholder
-            'pending_amount' => $pendingBilling,
+            'total_jobs' => JobOrder::count(),
+            'pending' => JobOrder::whereIn('status', ['for_accounting_approval', 'pending', 'rejected'])->count(),
+            'in_progress' => JobOrder::whereIn('status', ['approved', 'assigned', 'in_progress', 'on_hold'])->count(),
+            'completed' => JobOrder::where('status', 'completed')->count(),
         ];
         
         return ['timelines' => $timelines, 'stats' => $stats];

@@ -16,6 +16,12 @@
         $technicians = $technicians ?? collect([]);
         $availableTechnicians = $availableTechnicians ?? 0;
         $technicianSchedules = $technicianSchedules ?? collect([]);
+        $unscheduledAssignments = $technicianSchedules
+            ->pluck('assignments')
+            ->flatten(1)
+            ->filter(fn($assignment) => is_null($assignment->scheduled_date))
+            ->sortByDesc(fn($assignment) => optional($assignment->created_at)->timestamp ?? 0)
+            ->values();
         
         // Sample summary data - replace with actual backend calculations
         $summary = [
@@ -170,8 +176,8 @@
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Technician Schedules</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">All technicians with their weekly assignments</p>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Technician Assignments</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Active assigned work orders per technician</p>
                 </div>
                 <span class="text-xs px-3 py-1.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 font-semibold">
                     {{ $technicianSchedules->count() }} Technicians
@@ -191,7 +197,7 @@
                                 <p class="text-xs text-gray-500 dark:text-gray-400">{{ $tech->email }}</p>
                             </div>
                             <span class="text-xs px-2.5 py-1 rounded-full {{ $items->count() ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' }} font-semibold">
-                                {{ $items->count() }} {{ $items->count() === 1 ? 'schedule' : 'schedules' }}
+                                {{ $items->count() }} {{ $items->count() === 1 ? 'assigned job' : 'assigned jobs' }}
                             </span>
                         </div>
 
@@ -200,7 +206,7 @@
                                 @php
                                     $displayDate = ($assignment->effective_due_date ?? $assignment->scheduled_date)
                                         ? ($assignment->effective_due_date ?? $assignment->scheduled_date)->setTimezone('Asia/Manila')->format('M d')
-                                        : 'TBD';
+                                        : 'Unscheduled';
                                 @endphp
                                 <div class="flex items-start justify-between rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2">
                                     <div>
@@ -223,13 +229,13 @@
                                 </div>
                             @empty
                                 <div class="text-center py-4 text-xs text-gray-500 dark:text-gray-400">
-                                    No schedules this week
+                                    No active assigned jobs
                                 </div>
                             @endforelse
                         </div>
 
                         @if($items->count() > 4)
-                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">+{{ $items->count() - 4 }} more scheduled jobs</p>
+                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">+{{ $items->count() - 4 }} more assigned jobs</p>
                         @endif
                     </div>
                 @empty
@@ -518,6 +524,54 @@
                                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">All jobs assigned!</p>
                             </div>
                         @endforelse
+                    </div>
+
+                    <div class="mt-5 pt-5 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-sm font-bold text-gray-900 dark:text-white">Unscheduled</h4>
+                            <span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200 text-xs font-bold">
+                                {{ $unscheduledAssignments->count() }}
+                            </span>
+                        </div>
+
+                        <div class="space-y-3 max-h-[300px] overflow-y-auto">
+                            @forelse($unscheduledAssignments as $assignment)
+                                <div class="border border-rose-200 dark:border-rose-700/50 rounded-lg p-4 bg-rose-50/40 dark:bg-rose-900/10">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <div class="flex-1">
+                                            <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $assignment->jobOrder->job_order_number ?? 'N/A' }}</p>
+                                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{{ $assignment->jobOrder->customer->name ?? 'N/A' }}</p>
+                                        </div>
+                                        <span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                                            {{ ucfirst(str_replace('_', ' ', $assignment->status ?? 'assigned')) }}
+                                        </span>
+                                    </div>
+
+                                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                        <p><span class="font-semibold">Technician:</span> {{ $assignment->assignedTo->name ?? 'N/A' }}</p>
+                                        <p><span class="font-semibold">Service:</span> {{ $assignment->jobOrder->service_type ?? 'N/A' }}</p>
+                                    </div>
+
+                                    <button
+                                        @click.stop="openMoveModal({{ $assignment->id }}, {{ json_encode([
+                                            'wo_number' => $assignment->jobOrder->job_order_number ?? 'N/A',
+                                            'current_date' => null,
+                                            'current_time' => null
+                                        ]) }})"
+                                        class="w-full px-3 py-2 bg-gradient-to-r from-rose-600 to-rose-700 text-white rounded-lg text-xs font-semibold hover:from-rose-700 hover:to-rose-800 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-1"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                        Set Schedule
+                                    </button>
+                                </div>
+                            @empty
+                                <div class="text-center py-6 text-sm text-gray-500 dark:text-gray-400">
+                                    No unscheduled assignments.
+                                </div>
+                            @endforelse
+                        </div>
                     </div>
                 </div>
             </div>
@@ -854,9 +908,8 @@
                             </button>
                         </div>
 
-                        <form :action="'/tech-head/assignments/' + selectedJobId + '/reschedule'" method="POST" class="space-y-4">
+                        <form :action="'/tech-head/assignments/' + selectedJobId + '/schedule'" method="POST" class="space-y-4">
                             @csrf
-                            @method('PATCH')
                             
                             <div class="grid grid-cols-2 gap-4">
                                 <div>

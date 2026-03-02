@@ -903,8 +903,17 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
 
         $pendingApprovals = $query->paginate(10)->appends($request->only(['q']));
 
-        return view('accounting.dashboard', compact('pendingApprovals', 'search'));
+        $stats = [
+            'new_requests' => \App\Models\JobOrder::where('status', 'for_accounting_approval')->count(),
+            'approved' => \App\Models\JobOrder::where('status', 'approved')->count(),
+            'ongoing' => \App\Models\JobOrder::whereIn('status', ['assigned', 'in_progress', 'on_hold'])->count(),
+            'completed' => \App\Models\JobOrder::where('status', 'completed')->count(),
+        ];
+
+        return view('accounting.dashboard', compact('pendingApprovals', 'search', 'stats'));
     })->name('dashboard');
+
+    Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
 
     Route::patch('/job-orders/{jobOrder}/approve', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
         if ($jobOrder->status !== 'for_accounting_approval') {
@@ -2628,16 +2637,43 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         $data = $request->validate([
             'job_order_id' => 'required|exists:job_orders,id',
             'assigned_to' => 'required|exists:users,id',
-            'scheduled_date' => 'nullable|date',
+            'scheduled_date' => 'required|date',
             'scheduled_time' => 'nullable|date_format:H:i',
             'priority' => 'nullable|in:low,normal,high,urgent',
             'notes' => 'nullable|string',
         ]);
-        Assignment::create(array_merge($data, [
+
+        $isApprovedJobOrder = JobOrder::whereKey($data['job_order_id'])
+            ->whereNotNull('approved_by')
+            ->where('status', 'approved')
+            ->exists();
+
+        if (! $isApprovedJobOrder) {
+            return redirect()->route('tech-head.schedule')
+                ->withErrors(['job_order_id' => 'Only approved job orders can be scheduled.']);
+        }
+
+        $payload = array_merge($data, [
             'assigned_by' => auth()->id(),
             'status' => 'assigned',
-        ]));
-        return redirect()->route('tech-head.work-orders')->with('status', 'Assignment created');
+        ]);
+
+        $existingPendingAssignment = Assignment::where('job_order_id', $data['job_order_id'])
+            ->where(function ($query) {
+                $query->whereNull('assigned_to')
+                    ->orWhere('status', 'pending');
+            })
+            ->latest('id')
+            ->first();
+
+        if ($existingPendingAssignment) {
+            $existingPendingAssignment->update($payload);
+            return redirect()->route('tech-head.schedule')->with('status', 'Schedule updated');
+        }
+
+        Assignment::create($payload);
+
+        return redirect()->route('tech-head.schedule')->with('status', 'Schedule created');
     })->name('assignments.store');
 
     Route::post('/assignments/{assignment}/reassign', function (\Illuminate\Http\Request $request, Assignment $assignment) {
@@ -2657,7 +2693,7 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             'scheduled_time' => 'nullable|date_format:H:i',
         ]);
         $assignment->update($data);
-        return redirect()->route('tech-head.assignments')->with('status', 'Assignment scheduled');
+        return redirect()->route('tech-head.schedule')->with('status', 'Assignment scheduled');
     })->name('assignments.schedule');
     
     Route::get('/reports', function (\Illuminate\Http\Request $request) {
@@ -2912,14 +2948,13 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
                 return $assignment->effective_due_date->format('Y-m-d');
             });
         
-        // Get unassigned jobs (jobs without assignments or with null assigned_to)
+        // Get approved jobs that still need technician assignment
         $unassignedJobs = JobOrder::with('customer')
-            ->where($applyWorkOrderScope)
-            ->where(function ($query) {
-                $query->whereDoesntHave('assignments')
-                    ->orWhereHas('assignments', function ($q) {
-                        $q->whereNull('assigned_to');
-                    });
+            ->whereNotNull('approved_by')
+            ->where('status', 'approved')
+            ->whereDoesntHave('assignments', function ($assignmentQuery) {
+                $assignmentQuery->whereNotNull('assigned_to')
+                    ->whereIn('status', ['assigned', 'in_progress']);
             })
             ->orderBy('created_at', 'desc')
             ->get();
@@ -2931,7 +2966,34 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             ->orderBy('name')
             ->get();
 
-        $assignmentsByTechnician = $assignments->groupBy('assigned_to');
+        $activeAssignmentsQuery = Assignment::with(['jobOrder.customer', 'assignedTo'])
+            ->whereHas('jobOrder', function ($jobFilter) use ($applyWorkOrderScope) {
+                $applyWorkOrderScope($jobFilter);
+            })
+            ->whereNotNull('assigned_to')
+            ->whereIn('status', ['assigned', 'in_progress'])
+            ->orderByRaw('scheduled_date IS NULL, scheduled_date ASC')
+            ->orderBy('scheduled_time');
+
+        if (request('technician')) {
+            $activeAssignmentsQuery->where('assigned_to', request('technician'));
+        }
+        if (request('status')) {
+            $activeAssignmentsQuery->where('status', request('status'));
+        }
+        if (request('priority')) {
+            $activeAssignmentsQuery->where('priority', request('priority'));
+        }
+
+        $activeAssignments = $activeAssignmentsQuery->get()->map(function ($assignment) {
+            $assignment->effective_due_date = $assignment->scheduled_date
+                ?? $assignment->jobOrder?->required_date
+                ?? $assignment->jobOrder?->expected_completion_date;
+
+            return $assignment;
+        });
+
+        $assignmentsByTechnician = $activeAssignments->groupBy('assigned_to');
         $technicianSchedules = $technicians->map(function ($technician) use ($assignmentsByTechnician) {
             $items = $assignmentsByTechnician->get($technician->id, collect())->values();
 
