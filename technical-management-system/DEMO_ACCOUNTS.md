@@ -38,7 +38,14 @@ All demo accounts use the password: **password**
 - **Department**: Management
 - **Permissions**: Approve job orders, view reports
 
-### 6. Customer
+### 6. Accounting
+- **Email**: accounting@gemarcph.com
+- **Name**: Accounting User
+- **Role**: Accounting
+- **Department**: Accounting
+- **Permissions**: Review and approve job orders submitted by marketing
+
+### 7. Customer
 - **Email**: customer@gemarcph.com
 - **Name**: CUSTOMER
 - **Role**: Customer

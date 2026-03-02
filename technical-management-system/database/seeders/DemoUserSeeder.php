@@ -67,8 +67,23 @@ class DemoUserSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'name' => 'Accounting User',
+                'email' => 'accounting@gemarcph.com',
+                'password' => Hash::make('password'),
+                'role_id' => $roles['accounting'],
+                'department' => 'Accounting',
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ];
 
-        DB::table('users')->insert($users);
+        foreach ($users as $user) {
+            DB::table('users')->updateOrInsert(
+                ['email' => $user['email']],
+                $user
+            );
+        }
     }
 }

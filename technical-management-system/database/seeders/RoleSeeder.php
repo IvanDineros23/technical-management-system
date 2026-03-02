@@ -91,6 +91,21 @@ class RoleSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'name' => 'Accounting',
+                'slug' => 'accounting',
+                'description' => 'Review and approve job orders for accounting clearance',
+                'permissions' => json_encode([
+                    'view_pending_approvals',
+                    'approve_job_orders',
+                    'reject_job_orders',
+                    'view_all_jobs',
+                    'view_accounting_dashboard'
+                ]),
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
                 'name' => 'Customer',
                 'slug' => 'customer',
                 'description' => 'View own job requests and certificates',

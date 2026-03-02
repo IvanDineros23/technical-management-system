@@ -49,6 +49,11 @@
                             <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->creator->name ?? 'N/A' }}</td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
+                                    <a href="{{ route('accounting.job-orders.customer-request-form', $jobOrder) }}" target="_blank"
+                                       class="text-blue-600 hover:text-blue-700 font-semibold">
+                                        View
+                                    </a>
+
                                     <form method="POST" action="{{ route('accounting.job-orders.approve', $jobOrder) }}">
                                         @csrf
                                         @method('PATCH')

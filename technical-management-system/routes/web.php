@@ -961,6 +961,30 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
 
         return back()->with('status', 'Job order returned to marketing for revision.');
     })->name('job-orders.reject');
+
+    Route::get('/job-orders/{jobOrder}/customer-request-form', function (\App\Models\JobOrder $jobOrder) {
+        try {
+            if (empty($jobOrder->pdf_path) || !file_exists($jobOrder->pdf_path)) {
+                app(\App\Services\JobOrderPdfService::class)->generate($jobOrder->fresh(['customer', 'customer.contacts', 'items']));
+                $jobOrder->refresh();
+            }
+
+            if (empty($jobOrder->pdf_path) || !file_exists($jobOrder->pdf_path)) {
+                return response('Customer request form PDF is not available yet.', 404);
+            }
+
+            return response()->file($jobOrder->pdf_path, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . basename($jobOrder->pdf_path) . '"',
+            ]);
+        } catch (\Throwable $e) {
+            \Log::warning('Accounting customer request PDF preview failed: ' . $e->getMessage(), [
+                'job_order_id' => $jobOrder->id,
+            ]);
+
+            return response('Unable to load customer request form PDF right now.', 500);
+        }
+    })->name('job-orders.customer-request-form');
 });
 
 // Customer Routes
