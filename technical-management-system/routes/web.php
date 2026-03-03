@@ -1522,8 +1522,11 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         $job = \App\Models\JobOrder::findOrFail($jobId);
         
         if ($request->hasFile('files')) {
+            $uploadedFileNames = [];
+
             foreach ($request->file('files') as $file) {
                 $path = $file->store('job-attachments/' . $jobId, 'public');
+                $uploadedFileNames[] = $file->getClientOriginalName();
                 
                 $job->attachments()->create([
                     'file_name' => $file->getClientOriginalName(),
@@ -1538,10 +1541,14 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
                 'CREATE',
                 'JobAttachment',
                 $jobId,
-                auth()->id(),
                 "Technician uploaded " . count($request->file('files')) . " attachment(s) for Job Order {$job->job_order_number}",
                 null,
-                null
+                [
+                    'job_order_id' => $jobId,
+                    'uploaded_count' => count($request->file('files')),
+                    'file_names' => $uploadedFileNames,
+                ],
+                ['uploaded_count', 'file_names']
             );
             
             return redirect()->back()->with('success', 'Files uploaded successfully.');
@@ -2593,6 +2600,22 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
                 'added_by' => auth()->id(),
             ]);
 
+            $member = $job->crewMembers()->latest('id')->first();
+            $memberName = optional($member->user)->name;
+            AuditLogHelper::log(
+                'CREATE',
+                'JobOrderCrewMember',
+                $member?->id,
+                "Tech Head added '{$memberName}' to field team for Job Order {$job->job_order_number}",
+                null,
+                [
+                    'job_order_id' => $job->id,
+                    'user_id' => $member?->user_id,
+                    'name' => $memberName,
+                ],
+                ['user_id', 'name']
+            );
+
             return redirect()->back()->with('status', 'Field team member added.');
         }
 
@@ -2605,15 +2628,29 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             return redirect()->back()->with('error', 'Manual crew member name already exists for this job.');
         }
 
-        $job->crewMembers()->create([
+        $member = $job->crewMembers()->create([
             'name' => $crewName,
             'added_by' => auth()->id(),
         ]);
+
+        AuditLogHelper::log(
+            'CREATE',
+            'JobOrderCrewMember',
+            $member->id,
+            "Tech Head added manual crew member '{$crewName}' to Job Order {$job->job_order_number}",
+            null,
+            [
+                'job_order_id' => $job->id,
+                'name' => $crewName,
+            ],
+            ['name']
+        );
 
         return redirect()->back()->with('status', 'Field team member added.');
     })->name('job.crew-members.store');
 
     Route::delete('/crew-members/{member}', function (\App\Models\JobOrderCrewMember $member) {
+        $member->load('jobOrder', 'user');
         $assignment = \App\Models\Assignment::where('job_order_id', $member->job_order_id)
             ->first();
 
@@ -2621,7 +2658,25 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             return redirect()->back()->with('error', 'Assigned technician is fixed and cannot be removed from field team.');
         }
 
+        $memberName = $member->user ? $member->user->name : $member->name;
+        $snapshot = [
+            'id' => $member->id,
+            'job_order_id' => $member->job_order_id,
+            'user_id' => $member->user_id,
+            'name' => $member->name,
+        ];
+
         $member->delete();
+
+        AuditLogHelper::log(
+            'DELETE',
+            'JobOrderCrewMember',
+            $snapshot['id'],
+            "Tech Head removed '{$memberName}' from field team for Job Order {$member->jobOrder->job_order_number}",
+            $snapshot,
+            null,
+            ['user_id', 'name']
+        );
 
         return redirect()->back()->with('status', 'Field team member removed.');
     })->name('crew-members.delete');
@@ -2637,8 +2692,11 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             return redirect()->back()->with('error', 'No files were uploaded.');
         }
 
+        $uploadedFileNames = [];
+
         foreach ($request->file('files') as $file) {
             $path = $file->store('job-attachments/' . $jobId, 'public');
+            $uploadedFileNames[] = $file->getClientOriginalName();
 
             $job->attachments()->create([
                 'file_name' => $file->getClientOriginalName(),
@@ -2650,15 +2708,51 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             ]);
         }
 
+        AuditLogHelper::log(
+            'CREATE',
+            'JobAttachment',
+            $jobId,
+            "Tech Head uploaded " . count($uploadedFileNames) . " attachment(s) for Job Order {$job->job_order_number}",
+            null,
+            [
+                'job_order_id' => $jobId,
+                'uploaded_count' => count($uploadedFileNames),
+                'file_names' => $uploadedFileNames,
+            ],
+            ['uploaded_count', 'file_names']
+        );
+
         return redirect()->back()->with('status', 'Attachment(s) uploaded successfully.');
     })->name('job.attachments.upload');
 
     Route::delete('/attachments/{attachment}', function (\App\Models\JobOrderAttachment $attachment) {
+        $attachment->load('jobOrder');
+        $snapshot = [
+            'id' => $attachment->id,
+            'job_order_id' => $attachment->job_order_id,
+            'file_name' => $attachment->file_name,
+            'file_path' => $attachment->file_path,
+        ];
+        $fileDeleted = false;
+
         if ($attachment->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($attachment->file_path)) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($attachment->file_path);
+            $fileDeleted = true;
         }
 
         $attachment->delete();
+
+        AuditLogHelper::log(
+            'DELETE',
+            'JobAttachment',
+            $snapshot['id'],
+            "Tech Head removed attachment '{$snapshot['file_name']}' from Job Order {$attachment->jobOrder->job_order_number}",
+            $snapshot,
+            [
+                'file_deleted_from_storage' => $fileDeleted,
+            ],
+            ['file_name', 'file_path']
+        );
 
         return redirect()->back()->with('status', 'Attachment removed successfully.');
     })->name('attachments.delete');

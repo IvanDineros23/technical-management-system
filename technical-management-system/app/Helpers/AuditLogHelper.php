@@ -22,6 +22,10 @@ class AuditLogHelper
      */
     public static function log($action, $modelType, $modelId = null, $description = null, $oldValues = null, $newValues = null, $changedFields = null)
     {
+        if (app()->bound('request')) {
+            request()->attributes->set('audit.explicit_logged', true);
+        }
+
         $user = Auth::user();
         AuditLog::create([
             'user_id' => $user ? $user->id : null,
