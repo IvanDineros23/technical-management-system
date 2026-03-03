@@ -10,7 +10,7 @@
 @endsection
 
 @section('content')
-    <div x-data="{ showEdit: false }" x-cloak>
+    <div x-data="{ showEdit: false, showAddCrew: false, showAddAttachment: false }" x-cloak>
         <div class="mb-6">
             <a href="{{ route('tech-head.work-orders') }}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm mb-2 inline-block">
                 ← Back to Work Orders
@@ -87,9 +87,64 @@
                     @endif
                 </div>
 
+                <!-- Technician Report (Counter-check) -->
+                <div class="bg-white dark:bg-gray-800 rounded-[16px] shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Technician Report (Counter-check)</h3>
+                        <a href="{{ route('tech-head.reports') }}" class="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                            Open Reports Review
+                        </a>
+                    </div>
+
+                    @if($assignment && $assignment->report)
+                        <div class="space-y-4">
+                            <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/40">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Work Summary</p>
+                                <p class="text-sm text-gray-900 dark:text-white whitespace-pre-line">{{ $assignment->report->work_summary }}</p>
+                            </div>
+
+                            <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/40">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Parts Used</p>
+                                <p class="text-sm text-gray-900 dark:text-white whitespace-pre-line">{{ $assignment->report->parts_used ?: 'No parts listed.' }}</p>
+                            </div>
+
+                            <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/40">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Additional Remarks / Raw Data Notes</p>
+                                <p class="text-sm text-gray-900 dark:text-white whitespace-pre-line">{{ $assignment->report->remarks ?: 'No remarks provided.' }}</p>
+                            </div>
+
+                            <div class="text-xs text-gray-500 dark:text-gray-400 pt-1">
+                                <span>Status: <span class="font-medium text-gray-700 dark:text-gray-200">{{ ucfirst($assignment->report->status) }}</span></span>
+                                @if($assignment->report->submittedBy)
+                                    <span class="ml-2">• Submitted by: <span class="font-medium text-gray-700 dark:text-gray-200">{{ $assignment->report->submittedBy->name }}</span></span>
+                                @endif
+                                <span class="ml-2">• Last updated: <span class="font-medium text-gray-700 dark:text-gray-200">{{ $assignment->report->updated_at->format('M d, Y H:i') }}</span></span>
+                            </div>
+                        </div>
+                    @else
+                        <p class="text-sm text-gray-500 dark:text-gray-400">No submitted technician report yet. Counter-check details will appear here after submission.</p>
+                    @endif
+                </div>
+
                 <!-- Attachments -->
                 <div class="bg-white dark:bg-gray-800 rounded-[16px] shadow-md border border-gray-200 dark:border-gray-700 p-5">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Attachments</h3>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Attachments</h3>
+                        <button @click="showAddAttachment = !showAddAttachment" type="button" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                            Add
+                        </button>
+                    </div>
+
+                    <div x-show="showAddAttachment" x-cloak class="mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600">
+                        <form action="{{ route('tech-head.job.attachments.upload', $job->id) }}" method="POST" enctype="multipart/form-data" class="space-y-2">
+                            @csrf
+                            <input type="file" name="files[]" multiple accept="image/*,.xls,.xlsx" required
+                                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Allowed: images, XLS, XLSX (max 10MB/file)</p>
+                            <button type="submit" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">Upload</button>
+                        </form>
+                    </div>
+
                     @if($job->attachments->count() > 0)
                     <div class="space-y-2">
                         @foreach($job->attachments as $attachment)
@@ -109,10 +164,17 @@
                                     </p>
                                 </div>
                             </div>
-                            <a href="{{ Storage::url($attachment->file_path) }}" target="_blank" 
-                               class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
-                                Download
-                            </a>
+                            <div class="flex items-center gap-2">
+                                <a href="{{ Storage::url($attachment->file_path) }}" target="_blank" 
+                                   class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
+                                    Download
+                                </a>
+                                <form action="{{ route('tech-head.attachments.delete', $attachment->id) }}" method="POST">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200">Remove</button>
+                                </form>
+                            </div>
                         </div>
                         @endforeach
                     </div>
@@ -145,12 +207,60 @@
 
                 <!-- Field Team -->
                 <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Field Team</h3>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Field Team</h3>
+                        <button @click="showAddCrew = !showAddCrew" type="button" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                            Add
+                        </button>
+                    </div>
+
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Assigned technician is fixed by default and cannot be removed or added again.</p>
+
+                    <div x-show="showAddCrew" x-cloak class="mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600">
+                        <form action="{{ route('tech-head.job.crew-members.store', $job->id) }}" method="POST" class="flex items-end gap-2">
+                            @csrf
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Technician</label>
+                                <select name="crew_user_id" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Select technician</option>
+                                    @foreach($technicians as $technician)
+                                        <option value="{{ $technician->id }}">{{ $technician->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <button type="submit" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">Add</button>
+                        </form>
+
+                        <div class="my-3 border-t border-gray-200 dark:border-gray-600"></div>
+
+                        <form action="{{ route('tech-head.job.crew-members.store', $job->id) }}" method="POST" class="flex items-end gap-2">
+                            @csrf
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Manual Name (No Account)</label>
+                                <input type="text" name="crew_name" placeholder="Enter full name" required
+                                       class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <button type="submit" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">Add</button>
+                        </form>
+                    </div>
+
                     @if(count($crewMembers) > 0)
                         <div class="space-y-2">
                             @foreach($crewMembers as $member)
+                                @php
+                                    $isFixedAssigned = $assignment && $assignment->assigned_to && (int) $member['user_id'] === (int) $assignment->assigned_to;
+                                @endphp
                                 <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/40 rounded-lg">
                                     <p class="text-sm text-gray-900 dark:text-white">{{ $member['name'] }}</p>
+                                    @if($isFixedAssigned)
+                                        <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">Fixed (Assigned)</span>
+                                    @else
+                                        <form action="{{ route('tech-head.crew-members.delete', $member['id']) }}" method="POST">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200">Remove</button>
+                                        </form>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>

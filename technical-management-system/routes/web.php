@@ -2511,9 +2511,24 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             'crewMembers.addedBy'
         ])->findOrFail($id);
         
-        $assignment = \App\Models\Assignment::with('report')
+        $assignment = \App\Models\Assignment::with(['report.submittedBy', 'assignedTo'])
             ->where('job_order_id', $id)
             ->first();
+
+        if ($assignment && $assignment->assigned_to) {
+            $isAssignedTechInCrew = $job->crewMembers()
+                ->where('user_id', $assignment->assigned_to)
+                ->exists();
+
+            if (! $isAssignedTechInCrew) {
+                $job->crewMembers()->create([
+                    'user_id' => $assignment->assigned_to,
+                    'added_by' => auth()->id(),
+                ]);
+            }
+
+            $job->load('crewMembers.user', 'crewMembers.addedBy');
+        }
         
         $checklistItems = $job->checklistItems->map(function ($item) {
             return [
@@ -2536,7 +2551,12 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         })->values();
 
         $technicianRoleId = \App\Models\Role::where('slug', 'tech_personnel')->value('id');
+        $existingCrewUserIds = $job->crewMembers()
+            ->whereNotNull('user_id')
+            ->pluck('user_id');
+
         $technicians = \App\Models\User::where('role_id', $technicianRoleId)
+            ->whereNotIn('id', $existingCrewUserIds)
             ->orderBy('name')
             ->get(['id', 'name']);
 
@@ -2544,6 +2564,104 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
 
         return view('tech-head.job-details', compact('job', 'assignment', 'checklistItems', 'crewMembers', 'technicians', 'customers'));
     })->name('job-details');
+
+    Route::post('/job/{jobId}/crew-members', function (\Illuminate\Http\Request $request, $jobId) {
+        $job = \App\Models\JobOrder::findOrFail($jobId);
+
+        $data = $request->validate([
+            'crew_user_id' => 'nullable|exists:users,id',
+            'crew_name' => 'nullable|string|max:255',
+        ]);
+
+        $crewName = trim((string) ($data['crew_name'] ?? ''));
+
+        if (empty($data['crew_user_id']) && $crewName === '') {
+            return redirect()->back()->with('error', 'Select a technician account or enter a manual name.');
+        }
+
+        if (! empty($data['crew_user_id'])) {
+            $existing = \App\Models\JobOrderCrewMember::where('job_order_id', $job->id)
+                ->where('user_id', $data['crew_user_id'])
+                ->exists();
+
+            if ($existing) {
+                return redirect()->back()->with('error', 'Technician is already part of the field team.');
+            }
+
+            $job->crewMembers()->create([
+                'user_id' => $data['crew_user_id'],
+                'added_by' => auth()->id(),
+            ]);
+
+            return redirect()->back()->with('status', 'Field team member added.');
+        }
+
+        $existingName = \App\Models\JobOrderCrewMember::where('job_order_id', $job->id)
+            ->whereNull('user_id')
+            ->whereRaw('LOWER(name) = ?', [strtolower($crewName)])
+            ->exists();
+
+        if ($existingName) {
+            return redirect()->back()->with('error', 'Manual crew member name already exists for this job.');
+        }
+
+        $job->crewMembers()->create([
+            'name' => $crewName,
+            'added_by' => auth()->id(),
+        ]);
+
+        return redirect()->back()->with('status', 'Field team member added.');
+    })->name('job.crew-members.store');
+
+    Route::delete('/crew-members/{member}', function (\App\Models\JobOrderCrewMember $member) {
+        $assignment = \App\Models\Assignment::where('job_order_id', $member->job_order_id)
+            ->first();
+
+        if ($assignment && $member->user_id && $member->user_id === $assignment->assigned_to) {
+            return redirect()->back()->with('error', 'Assigned technician is fixed and cannot be removed from field team.');
+        }
+
+        $member->delete();
+
+        return redirect()->back()->with('status', 'Field team member removed.');
+    })->name('crew-members.delete');
+
+    Route::post('/job/{jobId}/attachments', function ($jobId, \Illuminate\Http\Request $request) {
+        $request->validate([
+            'files.*' => 'required|file|mimes:jpg,jpeg,png,gif,webp,xls,xlsx|max:10240',
+        ]);
+
+        $job = \App\Models\JobOrder::findOrFail($jobId);
+
+        if (! $request->hasFile('files')) {
+            return redirect()->back()->with('error', 'No files were uploaded.');
+        }
+
+        foreach ($request->file('files') as $file) {
+            $path = $file->store('job-attachments/' . $jobId, 'public');
+
+            $job->attachments()->create([
+                'file_name' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'file_type' => $file->getClientMimeType(),
+                'file_size' => $file->getSize(),
+                'uploaded_by' => auth()->id(),
+                'uploaded_at' => now(),
+            ]);
+        }
+
+        return redirect()->back()->with('status', 'Attachment(s) uploaded successfully.');
+    })->name('job.attachments.upload');
+
+    Route::delete('/attachments/{attachment}', function (\App\Models\JobOrderAttachment $attachment) {
+        if ($attachment->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($attachment->file_path)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($attachment->file_path);
+        }
+
+        $attachment->delete();
+
+        return redirect()->back()->with('status', 'Attachment removed successfully.');
+    })->name('attachments.delete');
 
     // Technicians management
     Route::post('/technicians', function (\Illuminate\Http\Request $request) {
