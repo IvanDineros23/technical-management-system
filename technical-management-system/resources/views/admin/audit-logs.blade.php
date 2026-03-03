@@ -28,47 +28,56 @@
 
     <!-- Filters -->
     <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
-        <form method="GET" action="{{ route('admin.audit-logs.index') }}" class="grid grid-cols-1 gap-4 sm:grid-cols-5">
+        <form id="auditLogFiltersForm" method="GET" action="{{ route('admin.audit-logs.index') }}" class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">User</label>
-                <select name="user_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="">All Users</option>
-                    @foreach(\App\Models\User::orderBy('name')->get() as $user)
-                        <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
-                    @endforeach
-                </select>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Search</label>
+                <div class="relative">
+                    <div class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-gray-400 dark:text-gray-300">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <input id="auditLogSearchInput" type="text" name="search" value="{{ request('search') }}" placeholder="Search user, action, or details..." class="w-full h-12 pl-12 pr-4 border border-gray-300 dark:border-gray-600 rounded-2xl bg-gray-50 dark:bg-gray-700/80 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Action Type</label>
-                <select name="action" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="">All Actions</option>
-                    <option value="create" {{ request('action') == 'create' ? 'selected' : '' }}>Create</option>
-                    <option value="update" {{ request('action') == 'update' ? 'selected' : '' }}>Update</option>
-                    <option value="delete" {{ request('action') == 'delete' ? 'selected' : '' }}>Delete</option>
-                    <option value="login" {{ request('action') == 'login' ? 'selected' : '' }}>Login</option>
-                    <option value="logout" {{ request('action') == 'logout' ? 'selected' : '' }}>Logout</option>
-                    <option value="calibrate" {{ request('action') == 'calibrate' ? 'selected' : '' }}>Calibrate</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Module</label>
-                <select name="model_type" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="">All Modules</option>
-                    <option value="User" {{ request('model_type') == 'User' ? 'selected' : '' }}>User</option>
-                    <option value="Profile" {{ request('model_type') == 'Profile' ? 'selected' : '' }}>Profile</option>
-                    <option value="Invoice" {{ request('model_type') == 'Invoice' ? 'selected' : '' }}>Invoice</option>
-                    <option value="Inventory" {{ request('model_type') == 'Inventory' ? 'selected' : '' }}>Inventory</option>
-                    <option value="InventoryRequest" {{ request('model_type') == 'InventoryRequest' ? 'selected' : '' }}>Inventory Request</option>
-                    <option value="Equipment" {{ request('model_type') == 'Equipment' ? 'selected' : '' }}>Equipment</option>
-                    <option value="JobOrder" {{ request('model_type') == 'JobOrder' ? 'selected' : '' }}>Job Order</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date Range</label>
-                <input type="date" name="date_from" value="{{ request('date_from') }}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            </div>
-            <div class="flex items-end">
-                <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Filter</button>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+                <div class="lg:col-span-3">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Department</label>
+                    <div>
+                        <select name="department" class="w-full h-12 px-4 border border-gray-300 dark:border-gray-600 rounded-2xl bg-gray-50 dark:bg-gray-700/80 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                            <option value="">All Departments</option>
+                            @foreach($departments as $department)
+                                <option value="{{ $department }}" {{ request('department') == $department ? 'selected' : '' }}>{{ $department }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-3">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Action Type</label>
+                    <select name="action" class="w-full h-12 px-4 border border-gray-300 dark:border-gray-600 rounded-2xl bg-gray-50 dark:bg-gray-700/80 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                        <option value="">All Actions</option>
+                        <option value="create" {{ request('action') == 'create' ? 'selected' : '' }}>Create</option>
+                        <option value="update" {{ request('action') == 'update' ? 'selected' : '' }}>Update</option>
+                        <option value="delete" {{ request('action') == 'delete' ? 'selected' : '' }}>Delete</option>
+                        <option value="login" {{ request('action') == 'login' ? 'selected' : '' }}>Login</option>
+                        <option value="logout" {{ request('action') == 'logout' ? 'selected' : '' }}>Logout</option>
+                        <option value="calibrate" {{ request('action') == 'calibrate' ? 'selected' : '' }}>Calibrate</option>
+                    </select>
+                </div>
+
+                <div class="lg:col-span-3">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Date Range</label>
+                    <input type="date" name="date_from" value="{{ request('date_from') }}" class="w-full h-12 px-4 border border-gray-300 dark:border-gray-600 rounded-2xl bg-gray-50 dark:bg-gray-700/80 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                </div>
+
+                <div class="lg:col-span-3 flex items-center justify-end gap-2 whitespace-nowrap">
+                    <a href="{{ route('admin.audit-logs.index') }}" class="h-12 inline-flex items-center justify-center px-5 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors text-center font-medium">
+                        Reset
+                    </a>
+                    <button type="submit" class="h-12 inline-flex items-center justify-center px-5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium">Filter</button>
+                </div>
             </div>
         </form>
     </div>
@@ -76,26 +85,25 @@
     <!-- Audit Log Table -->
     <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="w-full table-fixed">
                 <thead>
                     <tr class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Timestamp</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">User</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Action</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Module</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Details</th>
+                        <th class="w-1/5 px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">Timestamp</th>
+                        <th class="w-1/6 px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">User</th>
+                        <th class="w-1/6 px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">Action</th>
+                        <th class="w-1/2 px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">Details</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($auditLogs as $log)
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        <td class="px-6 py-4 text-center align-middle text-sm text-gray-600 dark:text-gray-400">
                             {{ $log->created_at?->timezone('Asia/Manila')->format('M d, Y h:i A') ?? 'N/A' }}
                         </td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                        <td class="px-6 py-4 text-center align-middle text-sm font-medium text-gray-900 dark:text-white">
                             {{ $log->user?->name ?? 'System' }}
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-4 text-center align-middle">
                             @php
                                 $action = strtoupper($log->action);
                                 $actionClasses = [
@@ -115,10 +123,7 @@
                                 {{ ucfirst(strtolower($log->action)) }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                            {{ $log->model_type ?? 'System' }}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        <td class="px-6 py-4 text-center align-middle text-sm text-gray-600 dark:text-gray-400">
                             @php
                                 $actor = $log->user?->name ?? 'System';
                                 $action = strtoupper((string) $log->action);
@@ -162,7 +167,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                             No audit logs found
                         </td>
                     </tr>
@@ -177,4 +182,26 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const filterForm = document.getElementById('auditLogFiltersForm');
+        const searchInput = document.getElementById('auditLogSearchInput');
+
+        if (!filterForm || !searchInput) {
+            return;
+        }
+
+        let searchDebounce;
+
+        searchInput.addEventListener('input', function () {
+            clearTimeout(searchDebounce);
+            searchDebounce = setTimeout(function () {
+                filterForm.submit();
+            }, 350);
+        });
+    });
+</script>
 @endsection

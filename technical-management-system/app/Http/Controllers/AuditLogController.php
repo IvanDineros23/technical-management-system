@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\AuditLogHelper;
 use App\Models\AuditLog;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
@@ -13,9 +14,11 @@ class AuditLogController extends Controller
     {
         $query = AuditLog::with('user')->latest('created_at');
 
-        // Filter by user
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
+        // Filter by department
+        if ($request->filled('department')) {
+            $query->whereHas('user', function ($userQuery) use ($request) {
+                $userQuery->where('department', $request->department);
+            });
         }
 
         // Filter by action
@@ -23,9 +26,17 @@ class AuditLogController extends Controller
             $query->where('action', strtoupper($request->action));
         }
 
-        // Filter by model type
-        if ($request->filled('model_type')) {
-            $query->where('model_type', $request->model_type);
+        // Search logs
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('description', 'like', '%' . $search . '%')
+                    ->orWhere('action', 'like', '%' . $search . '%')
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('department', 'like', '%' . $search . '%');
+                    });
+            });
         }
 
         // Filter by date range
@@ -37,9 +48,14 @@ class AuditLogController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $auditLogs = $query->paginate(20);
+        $auditLogs = $query->paginate(12);
+        $departments = User::whereNotNull('department')
+            ->where('department', '!=', '')
+            ->distinct()
+            ->orderBy('department')
+            ->pluck('department');
 
-        return view('admin.audit-logs', compact('auditLogs'));
+        return view('admin.audit-logs', compact('auditLogs', 'departments'));
     }
 
     public function export(Request $request)
@@ -47,16 +63,26 @@ class AuditLogController extends Controller
         $query = AuditLog::with('user')->latest('created_at');
 
         // Apply same filters as index
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
+        if ($request->filled('department')) {
+            $query->whereHas('user', function ($userQuery) use ($request) {
+                $userQuery->where('department', $request->department);
+            });
         }
 
         if ($request->filled('action')) {
             $query->where('action', strtoupper($request->action));
         }
 
-        if ($request->filled('model_type')) {
-            $query->where('model_type', $request->model_type);
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('description', 'like', '%' . $search . '%')
+                    ->orWhere('action', 'like', '%' . $search . '%')
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('department', 'like', '%' . $search . '%');
+                    });
+            });
         }
 
         if ($request->filled('date_from')) {
@@ -72,9 +98,9 @@ class AuditLogController extends Controller
 
         // Log the export action for security tracking
         $filters = [];
-        if ($request->filled('user_id')) $filters['user_id'] = $request->user_id;
+        if ($request->filled('department')) $filters['department'] = $request->department;
         if ($request->filled('action')) $filters['action'] = $request->action;
-        if ($request->filled('model_type')) $filters['model_type'] = $request->model_type;
+        if ($request->filled('search')) $filters['search'] = $request->search;
         if ($request->filled('date_from')) $filters['date_from'] = $request->date_from;
         if ($request->filled('date_to')) $filters['date_to'] = $request->date_to;
         
