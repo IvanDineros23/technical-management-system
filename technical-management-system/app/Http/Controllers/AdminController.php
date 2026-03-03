@@ -212,6 +212,9 @@ class AdminController extends Controller
             'password' => 'nullable|string|min:6|confirmed',
         ]);
 
+        $oldName = $user->name;
+        $oldEmail = $user->email;
+
         // Capture old values for audit log
         $oldValues = [
             'name' => $user->name,
@@ -243,14 +246,26 @@ class AdminController extends Controller
         if (!empty($validated['password'])) {
             $user->update(['password' => Hash::make($validated['password'])]);
             $changedFields[] = 'password';
+            $newValues['password'] = '[UPDATED]';
         }
+
+        $changeDescriptions = [];
+        foreach ($changedFields as $field) {
+            $old = $field === 'password' ? '[HIDDEN]' : ($oldValues[$field] ?? null);
+            $new = $field === 'password' ? '[UPDATED]' : ($newValues[$field] ?? null);
+            $changeDescriptions[] = "{$field}: " . var_export($old, true) . " -> " . var_export($new, true);
+        }
+
+        $description = empty($changeDescriptions)
+            ? "Admin saved user '{$validated['name']}' with no field changes"
+            : "Admin updated user '{$oldName}' -> '{$validated['name']}' ({$oldEmail} -> {$validated['email']}); changes: " . implode('; ', $changeDescriptions);
 
         // Log the user update
         AuditLogHelper::log(
             action: 'UPDATE',
             modelType: 'User',
             modelId: $user->id,
-            description: "Admin updated user: {$validated['name']} ({$validated['email']})",
+            description: $description,
             oldValues: $oldValues,
             newValues: $newValues,
             changedFields: $changedFields

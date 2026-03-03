@@ -119,7 +119,45 @@
                             {{ $log->model_type ?? 'System' }}
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                            {{ $log->description ?? 'N/A' }}
+                            @php
+                                $actor = $log->user?->name ?? 'System';
+                                $action = strtoupper((string) $log->action);
+                                $model = (string) ($log->model_type ?? 'Record');
+                                $oldValues = is_array($log->old_values) ? $log->old_values : [];
+                                $newValues = is_array($log->new_values) ? $log->new_values : [];
+                                $changedFields = is_array($log->changed_fields) ? $log->changed_fields : [];
+                                $targetUser = ($model === 'User' && !empty($log->model_id)) ? \App\Models\User::find($log->model_id) : null;
+                                $department = $newValues['department'] ?? $oldValues['department'] ?? ($targetUser?->department ?? null);
+                                $departmentLabel = $department ?: 'Unassigned Department';
+
+                                $summary = $log->description ?: "{$actor} performed {$action}";
+
+                                if ($model === 'User' && $action === 'UPDATE') {
+                                    if (in_array('name', $changedFields, true) && isset($newValues['name'])) {
+                                        $summary = "{$actor} changed name to {$newValues['name']} for this user (Department: {$departmentLabel}).";
+                                    } elseif (in_array('email', $changedFields, true) && isset($newValues['email'])) {
+                                        $summary = "{$actor} changed email to {$newValues['email']} for this user (Department: {$departmentLabel}).";
+                                    } elseif (in_array('role_id', $changedFields, true) && isset($newValues['role_id'])) {
+                                        $summary = "{$actor} changed role for this user (Department: {$departmentLabel}).";
+                                    } elseif (in_array('is_active', $changedFields, true)) {
+                                        $isActive = (bool) ($newValues['is_active'] ?? false);
+                                        $summary = $isActive
+                                            ? "{$actor} activated this user account (Department: {$departmentLabel})."
+                                            : "{$actor} deactivated this user account (Department: {$departmentLabel}).";
+                                    } else {
+                                        $summary = "{$actor} updated this user account (Department: {$departmentLabel}).";
+                                    }
+                                }
+
+                                if ($model === 'User' && $action === 'CREATE') {
+                                    $summary = "{$actor} created a user account (Department: {$departmentLabel}).";
+                                }
+
+                                if ($model === 'User' && $action === 'DELETE') {
+                                    $summary = "{$actor} deleted a user account (Department: {$departmentLabel}).";
+                                }
+                            @endphp
+                            {{ $summary }}
                         </td>
                     </tr>
                     @empty

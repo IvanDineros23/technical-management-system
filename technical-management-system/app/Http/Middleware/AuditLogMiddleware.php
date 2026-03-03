@@ -84,6 +84,16 @@ class AuditLogMiddleware
             default => 'ACTION',
         };
 
+        $changedFields = array_keys($payload);
+        $humanFields = empty($changedFields) ? 'no payload fields' : implode(', ', $changedFields);
+        $description = sprintf(
+            '%s on %s via %s (fields: %s)',
+            $action,
+            $routeUri,
+            $routeName,
+            $humanFields
+        );
+
         AuditLog::create([
             'user_id' => auth()->id(),
             'action' => $action,
@@ -95,13 +105,13 @@ class AuditLogMiddleware
                 'status_code' => $statusCode,
                 'payload' => $payload,
             ],
-            'changed_fields' => array_keys($payload),
+            'changed_fields' => $changedFields,
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
             'session_id' => $request->hasSession() ? $request->session()->getId() : null,
             'url' => $request->fullUrl(),
             'method' => $request->method(),
-            'description' => "Auto-audit: {$request->method()} {$routeUri} ({$routeName})",
+            'description' => $description,
         ]);
 
         return $response;
