@@ -24,7 +24,6 @@
 
                 <h1 class="text-2xl md:text-3xl font-semibold text-slate-900 flex items-center gap-2">
                     Forgot Password
-                    <span class="text-2xl">🔑</span>
                 </h1>
                 <p class="mt-2 text-sm text-slate-500">
                     No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.
