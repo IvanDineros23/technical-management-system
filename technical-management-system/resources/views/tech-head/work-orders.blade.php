@@ -244,7 +244,6 @@
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">Work Order List</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Latest first</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full">
