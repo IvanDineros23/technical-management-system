@@ -135,12 +135,40 @@
                         </button>
                     </div>
 
+                    @if(session('status'))
+                        <div class="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-sm text-green-700">
+                            {{ session('status') }}
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if($errors->has('files') || $errors->has('files.*'))
+                        <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                            <p class="font-semibold mb-1">Upload failed:</p>
+                            <ul class="list-disc pl-5 space-y-0.5">
+                                @foreach($errors->get('files') as $message)
+                                    <li>{{ $message }}</li>
+                                @endforeach
+                                @foreach($errors->get('files.*') as $messages)
+                                    @foreach($messages as $message)
+                                        <li>{{ $message }}</li>
+                                    @endforeach
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <div x-show="showAddAttachment" x-cloak class="mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600">
                         <form action="{{ route('tech-head.job.attachments.upload', $job->id) }}" method="POST" enctype="multipart/form-data" class="space-y-2">
                             @csrf
                             <input type="file" name="files[]" multiple accept="image/*,.xls,.xlsx" required
                                    class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Allowed: images, XLS, XLSX (max 10MB/file)</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Required: exactly 1 Excel (XLS/XLSX) + 2-3 images (max 10MB/file)</p>
                             <button type="submit" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">Upload</button>
                         </form>
                     </div>

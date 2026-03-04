@@ -1515,9 +1515,49 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     
     // Attachments upload route
     Route::post('/job/{jobId}/attachments', function ($jobId, \Illuminate\Http\Request $request) {
-        $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'files' => 'required|array|min:3|max:4',
             'files.*' => 'required|file|mimes:jpg,jpeg,png,gif,webp,xls,xlsx|max:10240', // 10MB max
+        ], [
+            'files.required' => 'Please upload files.',
+            'files.array' => 'Invalid files payload.',
+            'files.min' => 'Upload must include exactly 1 Excel file and 2-3 image files (minimum 3 files).',
+            'files.max' => 'Upload must include exactly 1 Excel file and 2-3 image files (maximum 4 files).',
+            'files.*.mimes' => 'Allowed file types are JPG, JPEG, PNG, GIF, WEBP, XLS, and XLSX only.',
+            'files.*.max' => 'Each file must not exceed 10MB.',
         ]);
+
+        $validator->after(function ($validator) use ($request) {
+            $files = $request->file('files', []);
+            $excelExtensions = ['xls', 'xlsx'];
+            $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+            $excelCount = 0;
+            $imageCount = 0;
+
+            foreach ($files as $file) {
+                $extension = strtolower($file->getClientOriginalExtension());
+
+                if (in_array($extension, $excelExtensions, true)) {
+                    $excelCount++;
+                    continue;
+                }
+
+                if (in_array($extension, $imageExtensions, true)) {
+                    $imageCount++;
+                }
+            }
+
+            if ($excelCount !== 1) {
+                $validator->errors()->add('files', 'Upload must contain exactly 1 Excel file (XLS or XLSX).');
+            }
+
+            if ($imageCount < 2 || $imageCount > 3) {
+                $validator->errors()->add('files', 'Upload must contain 2 to 3 image raw data files.');
+            }
+        });
+
+        $validator->validate();
         
         $job = \App\Models\JobOrder::findOrFail($jobId);
         
@@ -2682,9 +2722,49 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
     })->name('crew-members.delete');
 
     Route::post('/job/{jobId}/attachments', function ($jobId, \Illuminate\Http\Request $request) {
-        $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'files' => 'required|array|min:3|max:4',
             'files.*' => 'required|file|mimes:jpg,jpeg,png,gif,webp,xls,xlsx|max:10240',
+        ], [
+            'files.required' => 'Please upload files.',
+            'files.array' => 'Invalid files payload.',
+            'files.min' => 'Upload must include exactly 1 Excel file and 2-3 image files (minimum 3 files).',
+            'files.max' => 'Upload must include exactly 1 Excel file and 2-3 image files (maximum 4 files).',
+            'files.*.mimes' => 'Allowed file types are JPG, JPEG, PNG, GIF, WEBP, XLS, and XLSX only.',
+            'files.*.max' => 'Each file must not exceed 10MB.',
         ]);
+
+        $validator->after(function ($validator) use ($request) {
+            $files = $request->file('files', []);
+            $excelExtensions = ['xls', 'xlsx'];
+            $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+            $excelCount = 0;
+            $imageCount = 0;
+
+            foreach ($files as $file) {
+                $extension = strtolower($file->getClientOriginalExtension());
+
+                if (in_array($extension, $excelExtensions, true)) {
+                    $excelCount++;
+                    continue;
+                }
+
+                if (in_array($extension, $imageExtensions, true)) {
+                    $imageCount++;
+                }
+            }
+
+            if ($excelCount !== 1) {
+                $validator->errors()->add('files', 'Upload must contain exactly 1 Excel file (XLS or XLSX).');
+            }
+
+            if ($imageCount < 2 || $imageCount > 3) {
+                $validator->errors()->add('files', 'Upload must contain 2 to 3 image raw data files.');
+            }
+        });
+
+        $validator->validate();
 
         $job = \App\Models\JobOrder::findOrFail($jobId);
 

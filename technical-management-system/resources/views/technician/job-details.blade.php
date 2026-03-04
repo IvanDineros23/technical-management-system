@@ -454,6 +454,34 @@
                 <!-- Attachments -->
                 <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Attachments</h3>
+
+                    @if(session('success'))
+                        <div class="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-sm text-green-700">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if($errors->has('files') || $errors->has('files.*'))
+                        <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                            <p class="font-semibold mb-1">Upload failed:</p>
+                            <ul class="list-disc pl-5 space-y-0.5">
+                                @foreach($errors->get('files') as $message)
+                                    <li>{{ $message }}</li>
+                                @endforeach
+                                @foreach($errors->get('files.*') as $messages)
+                                    @foreach($messages as $message)
+                                        <li>{{ $message }}</li>
+                                    @endforeach
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
                     
                     <!-- Upload Form -->
                     <form action="{{ route('technician.job.attachments.upload', $job->id) }}" method="POST" enctype="multipart/form-data" class="mb-6">
@@ -463,7 +491,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                             </svg>
-                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Upload photos or Excel raw data (max 10MB per file)</p>
+                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Upload exactly 1 Excel file + 2-3 raw data photos (max 10MB per file)</p>
                             <input type="file" name="files[]" multiple accept="image/*,.xls,.xlsx" 
                                    class="hidden" id="fileInput" onchange="this.form.querySelector('.file-name').textContent = Array.from(this.files).map(f => f.name).join(', ')">
                             <button type="button" onclick="document.getElementById('fileInput').click()"
