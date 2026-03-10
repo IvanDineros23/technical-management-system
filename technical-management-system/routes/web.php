@@ -1600,45 +1600,45 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     // Job status update routes
     Route::post('/job/{jobId}/start', function ($jobId) {
         $job = \App\Models\JobOrder::findOrFail($jobId);
-        
+        $previousStatus = $job->status;
+
         // Update job status to in_progress
         $job->update([
             'status' => 'in_progress',
-            'started_at' => now()
         ]);
-        
+
         \App\Helpers\AuditLogHelper::log(
             'UPDATE',
             'JobOrder',
             $jobId,
-            auth()->id(),
             "Technician started work on Job Order {$job->job_order_number}",
-            ['status' => 'assigned'],
-            ['status' => 'in_progress']
+            ['status' => $previousStatus],
+            ['status' => 'in_progress'],
+            ['status']
         );
-        
+
         return response()->json(['success' => true, 'message' => 'Job started successfully']);
     })->name('job.start');
-    
+
     Route::post('/job/{jobId}/pause', function ($jobId) {
         $job = \App\Models\JobOrder::findOrFail($jobId);
-        
+        $previousStatus = $job->status;
+
         // Update job status to on_hold
         $job->update([
             'status' => 'on_hold',
-            'paused_at' => now()
         ]);
-        
+
         \App\Helpers\AuditLogHelper::log(
             'UPDATE',
             'JobOrder',
             $jobId,
-            auth()->id(),
             "Technician paused Job Order {$job->job_order_number}",
-            ['status' => $job->getOriginal('status')],
-            ['status' => 'on_hold']
+            ['status' => $previousStatus],
+            ['status' => 'on_hold'],
+            ['status']
         );
-        
+
         return response()->json(['success' => true, 'message' => 'Job paused successfully']);
     })->name('job.pause');
     
@@ -3388,11 +3388,6 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::put('/inventory/{inventoryItem}', [InventoryController::class, 'update'])->name('inventory.update');
     Route::delete('/inventory/{inventoryItem}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
     Route::patch('/inventory/requests/{inventoryRequest}', [InventoryController::class, 'updateRequestStatus'])->name('inventory.requests.update');
-    
-    Route::get('/accounting', [\App\Http\Controllers\InvoiceController::class, 'index'])->name('accounting.index');
-    Route::post('/accounting/invoices', [\App\Http\Controllers\InvoiceController::class, 'store'])->name('invoices.store');
-    Route::patch('/accounting/invoices/{invoice}/pay', [\App\Http\Controllers\InvoiceController::class, 'markAsPaid'])->name('invoices.pay');
-    Route::delete('/accounting/invoices/{invoice}', [\App\Http\Controllers\InvoiceController::class, 'destroy'])->name('invoices.destroy');
     
     Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings/general', [\App\Http\Controllers\SettingsController::class, 'updateGeneral'])->name('settings.general.update');

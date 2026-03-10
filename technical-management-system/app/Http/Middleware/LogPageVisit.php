@@ -17,7 +17,6 @@ class LogPageVisit
         'admin.users.index' => 'Users',
         'admin.equipment.index' => 'Equipment',
         'admin.inventory.index' => 'Inventory',
-        'admin.accounting.index' => 'Accounting',
         'admin.audit-logs.index' => 'Audit Logs',
         'tech-head.dashboard' => 'Dashboard',
         'tech-head.inventory.index' => 'Inventory',

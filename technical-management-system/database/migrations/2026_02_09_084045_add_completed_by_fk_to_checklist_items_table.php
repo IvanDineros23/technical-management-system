@@ -10,6 +10,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement('ALTER TABLE checklist_items MODIFY completed_by BIGINT UNSIGNED NULL');
         DB::statement('ALTER TABLE checklist_items ADD CONSTRAINT checklist_items_completed_by_foreign FOREIGN KEY (completed_by) REFERENCES users(id)');
     }
@@ -19,6 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement('ALTER TABLE checklist_items DROP FOREIGN KEY checklist_items_completed_by_foreign');
         DB::statement('ALTER TABLE checklist_items MODIFY completed_by VARCHAR(255) NULL');
     }
