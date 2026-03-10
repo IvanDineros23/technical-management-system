@@ -150,28 +150,28 @@
                 <table class="w-full">
                     <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">JO Number</th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Customer</th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Requested By</th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Date Created</th>
-                            <th class="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Action</th>
+                            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">JO Number</th>
+                            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+                            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Requested By</th>
+                            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Date Created</th>
+                            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                         @forelse($pendingRequests as $jobOrder)
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $jobOrder->job_order_number }}</div>
                                     <div class="text-xs text-orange-600 dark:text-orange-300">Pending</div>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-6 py-4 text-center">
                                     <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $jobOrder->customer->name ?? 'N/A' }}</div>
                                     <div class="text-xs text-gray-500 dark:text-gray-400">{{ $jobOrder->customer->email ?? 'No email' }}</div>
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->requested_by ?? $jobOrder->creator->name ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</td>
-                                <td class="px-6 py-4 text-right">
-                                    <div class="flex items-center justify-end gap-2">
+                                <td class="px-6 py-4 text-center text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->requested_by ?? $jobOrder->creator->name ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-center text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</td>
+                                <td class="px-6 py-4 text-center">
+                                    <div class="flex items-center justify-center gap-2">
                                         <form method="POST" action="{{ route('marketing.job-orders.generate-customer-request-form', $jobOrder) }}">
                                             @csrf
                                             <button type="submit"
@@ -214,28 +214,28 @@
                     <table class="w-full">
                         <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                             <tr>
-                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">JO Number</th>
-                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Customer</th>
-                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Requested By</th>
-                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Generated/Updated</th>
-                                <th class="px-6 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Action</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">JO Number</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Requested By</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Generated/Updated</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                             @forelse($generatedRequests as $jobOrder)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
                                         <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $jobOrder->job_order_number }}</div>
                                         <div class="text-xs text-emerald-600 dark:text-emerald-300">Generated</div>
                                     </td>
-                                    <td class="px-6 py-4">
+                                    <td class="px-6 py-4 text-center">
                                         <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $jobOrder->customer->name ?? 'N/A' }}</div>
                                         <div class="text-xs text-gray-500 dark:text-gray-400">{{ $jobOrder->customer->email ?? 'No email' }}</div>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->requested_by ?? $jobOrder->creator->name ?? 'N/A' }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{{ optional($jobOrder->updated_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</td>
-                                    <td class="px-6 py-4 text-right">
-                                        <div class="inline-flex items-center gap-2">
+                                    <td class="px-6 py-4 text-center text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->requested_by ?? $jobOrder->creator->name ?? 'N/A' }}</td>
+                                    <td class="px-6 py-4 text-center text-sm text-gray-700 dark:text-gray-300">{{ optional($jobOrder->updated_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="inline-flex items-center justify-center gap-2">
                                             <a href="{{ route('marketing.job-orders.customer-request-form', $jobOrder) }}" target="_blank"
                                                class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
                                                 View Form

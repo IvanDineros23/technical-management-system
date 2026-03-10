@@ -105,7 +105,7 @@ class JobOrderPdfService
             ])),
             'Name and Signature' => $marketingReceiverName,
             'Date_2' => $overrides['date_2'] ?? ($jobOrder->request_date ? $jobOrder->request_date->format('m/d/Y') : now()->format('m/d/Y')),
-            'Name and Signature_2' => $overrides['name_signature_2'] ?? '',
+            'Name and Signature2' => $overrides['name_signature_2'] ?? '',
             'Date_3' => $overrides['date_3'] ?? '',
             'Noted by' => $overrides['noted_by'] ?? '',
             'Date_4' => $overrides['date_4'] ?? '',
@@ -177,19 +177,14 @@ class JobOrderPdfService
 
     private function resolveMarketingReceiverName(JobOrder $jobOrder, ?User $generatedByUser = null): string
     {
+        // Route is behind role:marketing middleware, so any passed user is a marketing user
         if ($generatedByUser) {
-            $generatedByUser->loadMissing('role');
-            if ($generatedByUser->hasRole('marketing')) {
-                return (string) ($generatedByUser->name ?? '');
-            }
+            return (string) ($generatedByUser->name ?? '');
         }
 
         $creator = $jobOrder->creator;
         if ($creator) {
-            $creator->loadMissing('role');
-            if ($creator->hasRole('marketing')) {
-                return (string) ($creator->name ?? '');
-            }
+            return (string) ($creator->name ?? '');
         }
 
         return '';
