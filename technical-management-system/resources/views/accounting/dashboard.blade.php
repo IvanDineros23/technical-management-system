@@ -152,70 +152,38 @@
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Job Orders for Approval</h2>
-
-            <form method="GET" action="{{ route('accounting.dashboard') }}" class="w-full sm:w-80">
-                <div class="relative">
-                    <input name="q" value="{{ $search }}" type="text" placeholder="Search JO / customer / service"
-                           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 pl-3 pr-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <a href="{{ route('accounting.approvals') }}"
+           class="group flex items-center justify-between p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-400 dark:hover:border-amber-500 hover:shadow-md transition-all">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center
+                    {{ $pendingApprovals->total() > 0 ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-gray-100 dark:bg-gray-700' }}">
+                    <svg class="w-6 h-6 {{ $pendingApprovals->total() > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400' }}"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0"/>
+                    </svg>
                 </div>
-            </form>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">JO Number</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Customer</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Service</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Submitted By</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($pendingApprovals as $jobOrder)
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $jobOrder->job_order_number }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-200">{{ $jobOrder->customer->name ?? 'N/A' }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->service_type ?? 'N/A' }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->creator->name ?? 'N/A' }}</td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <a href="{{ route('accounting.job-orders.customer-request-form', $jobOrder) }}" target="_blank"
-                                       class="text-blue-600 hover:text-blue-700 font-semibold">
-                                        View
-                                    </a>
-
-                                    <form method="POST" action="{{ route('accounting.job-orders.approve', $jobOrder) }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" class="text-emerald-600 hover:text-emerald-700 font-semibold">Approve</button>
-                                    </form>
-
-                                    <form method="POST" action="{{ route('accounting.job-orders.reject', $jobOrder) }}"
-                                          onsubmit="return confirm('Return this JO to marketing for revision?');">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" class="text-rose-600 hover:text-rose-700 font-semibold">Return</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="px-6 py-10 text-center text-gray-500 dark:text-gray-400">No job orders waiting for accounting approval.</td>
-                        </tr>
-                    @endforelse
-                    </tbody>
-                </table>
+                <div>
+                    <p class="text-base font-bold text-gray-900 dark:text-white">Pending Approvals</p>
+                    @if($pendingApprovals->total() > 0)
+                        <p class="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                            {{ $pendingApprovals->total() }} job {{ Str::plural('order', $pendingApprovals->total()) }} waiting for your review
+                        </p>
+                    @else
+                        <p class="text-sm text-gray-500 dark:text-gray-400">No pending job orders — all clear!</p>
+                    @endif
+                </div>
             </div>
-
-            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                {{ $pendingApprovals->links() }}
+            <div class="flex items-center gap-3">
+                @if($pendingApprovals->total() > 0)
+                    <span class="inline-flex items-center justify-center min-w-[28px] h-7 px-2 text-sm font-bold rounded-full bg-amber-500 text-white">
+                        {{ $pendingApprovals->total() }}
+                    </span>
+                @endif
+                <svg class="w-5 h-5 text-gray-400 group-hover:text-amber-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
             </div>
-        </div>
+        </a>
     </div>
 @endsection

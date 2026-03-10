@@ -87,11 +87,11 @@ class MarketingJobOrderPdfService
             'Client PO Ctrl No 1' => $jobOrder->client_po_ctrl_no ?? '',
             'Client PO Ctrl No 2' => $jobOrder->terms ?? '',
             'Client PO Ctrl No 3' => $preparedBy,
-            'Rcvd by' => '',
-            'Rcvd by_2' => '',
+            'Rcvd by' => $preparedBy,
+            'Rcvd by_2' => $jobOrder->approver?->name ?? '',
             'undefined' => $preparedBy,
-            'Approved by' => $jobOrder->approver?->name ?? '',
-            'Approved by_2' => '',
+            'Approved by' => '',
+            'Approved by_2' => $jobOrder->approver?->name ?? '',
         ];
 
         $items = $jobOrder->items()->orderBy('item_number')->limit(10)->get();

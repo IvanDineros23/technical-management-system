@@ -78,7 +78,7 @@ Route::get('/dashboard', function () {
 // Marketing Routes
 Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->name('marketing.')->group(function () {
     Route::get('/dashboard', function () {
-        $totalJobOrders = \App\Models\JobOrder::count();
+        $totalJobOrders = \App\Models\JobOrder::whereNotIn('status', ['cancelled', 'rejected'])->count();
         $pendingJobOrders = \App\Models\JobOrder::where('status', 'pending')->count();
         $inProgressJobOrders = \App\Models\JobOrder::where('status', 'in_progress')->count();
         $completedJobOrders = \App\Models\JobOrder::where('status', 'completed')->count();
@@ -106,8 +106,6 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
         $allowedStatuses = ['pending', 'for_accounting_approval', 'approved', 'in_progress', 'completed', 'rejected'];
         if (in_array($status, $allowedStatuses, true)) {
             $query->where('status', $status);
-        } else {
-            $query->where('status', '!=', 'pending');
         }
 
         $search = trim($request->string('q')->toString());
@@ -884,24 +882,7 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
 // Accounting Routes
 Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')->name('accounting.')->group(function () {
     Route::get('/dashboard', function (Illuminate\Http\Request $request) {
-        $search = trim($request->string('q')->toString());
-
-        $query = \App\Models\JobOrder::with(['customer', 'creator'])
-            ->where('status', 'for_accounting_approval')
-            ->latest();
-
-        if ($search !== '') {
-            $query->where(function ($subQuery) use ($search) {
-                $subQuery->where('job_order_number', 'like', "%{$search}%")
-                    ->orWhere('service_type', 'like', "%{$search}%")
-                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
-                        $customerQuery->where('name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        $pendingApprovals = $query->paginate(10)->appends($request->only(['q']));
+        $pendingApprovals = \App\Models\JobOrder::where('status', 'for_accounting_approval')->latest()->paginate(1);
 
         $stats = [
             'new_requests' => \App\Models\JobOrder::where('status', 'for_accounting_approval')->count(),
@@ -910,10 +891,51 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
             'completed' => \App\Models\JobOrder::where('status', 'completed')->count(),
         ];
 
-        return view('accounting.dashboard', compact('pendingApprovals', 'search', 'stats'));
+        return view('accounting.dashboard', compact('pendingApprovals', 'stats'));
     })->name('dashboard');
 
     Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
+
+    Route::get('/approvals', function (Illuminate\Http\Request $request) {
+        $search   = trim($request->string('q')->toString());
+        $priority = $request->string('priority')->toString();
+        $dateFrom = trim($request->string('date_from')->toString());
+        $dateTo   = trim($request->string('date_to')->toString());
+
+        $query = \App\Models\JobOrder::with(['customer', 'creator'])
+            ->where('status', 'for_accounting_approval')
+            ->latest();
+
+        if ($search !== '') {
+            $query->where(function ($sub) use ($search) {
+                $sub->where('job_order_number', 'like', "%{$search}%")
+                    ->orWhere('service_type', 'like', "%{$search}%")
+                    ->orWhere('requested_by', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($cq) use ($search) {
+                        $cq->where('name', 'like', "%{$search}%")
+                           ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $allowedPriorities = ['normal', 'high', 'urgent'];
+        if (in_array($priority, $allowedPriorities, true)) {
+            $query->where('priority', $priority);
+        }
+
+        if ($dateFrom !== '') {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo !== '') {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        $jobOrders = $query->paginate(15)->appends($request->only(['q', 'priority', 'date_from', 'date_to']));
+
+        $totalPending = \App\Models\JobOrder::where('status', 'for_accounting_approval')->count();
+
+        return view('accounting.approvals', compact('jobOrders', 'search', 'priority', 'dateFrom', 'dateTo', 'totalPending'));
+    })->name('approvals');
 
     Route::patch('/job-orders/{jobOrder}/approve', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
         if ($jobOrder->status !== 'for_accounting_approval') {
