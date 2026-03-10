@@ -32,8 +32,13 @@ class AuditLogMiddleware
         }
 
         $route = $request->route();
-        $routeName = $route?->getName() ?? 'unnamed.route';
         $routeUri = $route?->uri() ?? $request->path();
+        $routeName = $route?->getName() ?? $routeUri;
+
+        // Login/logout are already handled with explicit audit entries.
+        if ($request->is('login') || $request->is('logout')) {
+            return $response;
+        }
 
         $payload = $request->except([
             '_token',

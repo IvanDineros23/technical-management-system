@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Helpers\AuditLogHelper;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -42,6 +43,19 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+            AuditLogHelper::log(
+                action: 'LOGIN_FAILED',
+                modelType: 'Auth',
+                modelId: 0,
+                description: 'Failed login attempt (Invalid credentials)',
+                oldValues: null,
+                newValues: [
+                    'attempted_email' => $this->string('email')->toString(),
+                    'reason' => 'invalid_credentials',
+                ],
+                changedFields: ['email']
+            );
+
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

@@ -8,8 +8,12 @@ class RoleController extends Controller
 {
     public function index()
     {
-        $roles = Role::withCount('users')->get();
-        
+        $roles = Role::with([
+            'users' => function ($query) {
+                $query->select('id', 'role_id', 'name', 'email', 'is_active')->orderBy('name');
+            },
+        ])->withCount('users')->get();
+
         // Define all available modules/processes in the system
         $modules = [
             'View Job Orders' => 'view_job_orders',
