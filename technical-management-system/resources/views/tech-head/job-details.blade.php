@@ -62,23 +62,48 @@
                     </div>
                 </div>
 
-                <!-- Task Checklist (Read-only) -->
+                <!-- Task Checklist -->
                 <div class="bg-white dark:bg-gray-800 rounded-[16px] shadow-md border border-gray-200 dark:border-gray-700 p-5">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">Task Checklist</h3>
+
+                    @if($errors->has('description'))
+                        <div class="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                            @foreach($errors->get('description') as $message)
+                                <p>{{ $message }}</p>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    <form action="{{ route('tech-head.job.checklist.store', $job->id) }}" method="POST" class="mb-4 flex flex-col gap-2 sm:flex-row">
+                        @csrf
+                        <input type="text" name="description" value="{{ old('description') }}" placeholder="Add a checklist item..." required
+                               class="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                            Add Item
+                        </button>
+                    </form>
+
                     @if($checklistItems && count($checklistItems) > 0)
                         <div class="space-y-2">
                             @foreach($checklistItems as $item)
                                 <div class="flex items-center gap-3 p-3 rounded-lg {{ $item['is_completed'] ? 'bg-green-50 dark:bg-green-900/20' : 'bg-gray-50 dark:bg-gray-700/40' }}">
                                     <input type="checkbox" {{ $item['is_completed'] ? 'checked' : '' }} disabled
                                            class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-not-allowed">
-                                    <span class="{{ $item['is_completed'] ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white' }} text-sm">
+                                    <span class="flex-1 {{ $item['is_completed'] ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white' }} text-sm">
                                         {{ $item['description'] }}
                                     </span>
                                     @if($item['is_completed'])
-                                        <span class="ml-auto text-xs text-gray-500 dark:text-gray-400">
+                                        <span class="text-xs text-gray-500 dark:text-gray-400">
                                             ✓ {{ $item['completed_by'] ?? 'Completed' }}
                                         </span>
                                     @endif
+                                    <form action="{{ route('tech-head.checklist.delete', $item['id']) }}" method="POST" onsubmit="return confirm('Delete this checklist item?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200">
+                                            Delete
+                                        </button>
+                                    </form>
                                 </div>
                             @endforeach
                         </div>
@@ -147,17 +172,12 @@
                         </div>
                     @endif
 
-                    @if($errors->has('files') || $errors->has('files.*'))
+                    @if($errors->has('file'))
                         <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
                             <p class="font-semibold mb-1">Upload failed:</p>
                             <ul class="list-disc pl-5 space-y-0.5">
-                                @foreach($errors->get('files') as $message)
+                                @foreach($errors->get('file') as $message)
                                     <li>{{ $message }}</li>
-                                @endforeach
-                                @foreach($errors->get('files.*') as $messages)
-                                    @foreach($messages as $message)
-                                        <li>{{ $message }}</li>
-                                    @endforeach
                                 @endforeach
                             </ul>
                         </div>
@@ -166,9 +186,9 @@
                     <div x-show="showAddAttachment" x-cloak class="mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600">
                         <form action="{{ route('tech-head.job.attachments.upload', $job->id) }}" method="POST" enctype="multipart/form-data" class="space-y-2">
                             @csrf
-                            <input type="file" name="files[]" multiple accept="image/*,.xls,.xlsx" required
+                            <input type="file" name="file" accept=".jpg,.jpeg,.png,.xls,.xlsx,.xlsm,.xlsb" required
                                    class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Required: exactly 1 Excel (XLS/XLSX) + 2-3 images (max 10MB/file)</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">One file at a time — Excel (XLS/XLSX/XLSM/XLSB) or image (JPG, JPEG, PNG) — max 10MB</p>
                             <button type="submit" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">Upload</button>
                         </form>
                     </div>

@@ -1537,86 +1537,48 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     
     // Attachments upload route
     Route::post('/job/{jobId}/attachments', function ($jobId, \Illuminate\Http\Request $request) {
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'files' => 'required|array|min:3|max:4',
-            'files.*' => 'required|file|mimes:jpg,jpeg,png,gif,webp,xls,xlsx|max:10240', // 10MB max
+        $request->validate([
+            'file' => 'required|file|max:10240',
         ], [
-            'files.required' => 'Please upload files.',
-            'files.array' => 'Invalid files payload.',
-            'files.min' => 'Upload must include exactly 1 Excel file and 2-3 image files (minimum 3 files).',
-            'files.max' => 'Upload must include exactly 1 Excel file and 2-3 image files (maximum 4 files).',
-            'files.*.mimes' => 'Allowed file types are JPG, JPEG, PNG, GIF, WEBP, XLS, and XLSX only.',
-            'files.*.max' => 'Each file must not exceed 10MB.',
+            'file.required' => 'Please select a file to upload.',
+            'file.max' => 'File must not exceed 10MB.',
         ]);
 
-        $validator->after(function ($validator) use ($request) {
-            $files = $request->file('files', []);
-            $excelExtensions = ['xls', 'xlsx'];
-            $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-
-            $excelCount = 0;
-            $imageCount = 0;
-
-            foreach ($files as $file) {
-                $extension = strtolower($file->getClientOriginalExtension());
-
-                if (in_array($extension, $excelExtensions, true)) {
-                    $excelCount++;
-                    continue;
-                }
-
-                if (in_array($extension, $imageExtensions, true)) {
-                    $imageCount++;
-                }
-            }
-
-            if ($excelCount !== 1) {
-                $validator->errors()->add('files', 'Upload must contain exactly 1 Excel file (XLS or XLSX).');
-            }
-
-            if ($imageCount < 2 || $imageCount > 3) {
-                $validator->errors()->add('files', 'Upload must contain 2 to 3 image raw data files.');
-            }
-        });
-
-        $validator->validate();
-        
         $job = \App\Models\JobOrder::findOrFail($jobId);
-        
-        if ($request->hasFile('files')) {
-            $uploadedFileNames = [];
+        $file = $request->file('file');
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'xls', 'xlsx', 'xlsm', 'xlsb'];
+        $extension = strtolower((string) $file->getClientOriginalExtension());
 
-            foreach ($request->file('files') as $file) {
-                $path = $file->store('job-attachments/' . $jobId, 'public');
-                $uploadedFileNames[] = $file->getClientOriginalName();
-                
-                $job->attachments()->create([
-                    'file_name' => $file->getClientOriginalName(),
-                    'file_path' => $path,
-                    'file_type' => $file->getClientMimeType(),
-                    'file_size' => $file->getSize(),
-                    'uploaded_by' => auth()->id(),
-                ]);
-            }
-            
-            \App\Helpers\AuditLogHelper::log(
-                'CREATE',
-                'JobAttachment',
-                $jobId,
-                "Technician uploaded " . count($request->file('files')) . " attachment(s) for Job Order {$job->job_order_number}",
-                null,
-                [
-                    'job_order_id' => $jobId,
-                    'uploaded_count' => count($request->file('files')),
-                    'file_names' => $uploadedFileNames,
-                ],
-                ['uploaded_count', 'file_names']
-            );
-            
-            return redirect()->back()->with('success', 'Files uploaded successfully.');
+        if (! in_array($extension, $allowedExtensions, true)) {
+            return redirect()->back()->withErrors([
+                'file' => 'Allowed file types are JPG, JPEG, PNG, XLS, XLSX, XLSM, and XLSB only.',
+            ])->withInput();
         }
-        
-        return redirect()->back()->with('error', 'No files were uploaded.');
+
+        $path = $file->store('job-attachments/' . $jobId, 'public');
+
+        $job->attachments()->create([
+            'file_name' => $file->getClientOriginalName(),
+            'file_path' => $path,
+            'file_type' => $file->getClientMimeType(),
+            'file_size' => $file->getSize(),
+            'uploaded_by' => auth()->id(),
+        ]);
+
+        \App\Helpers\AuditLogHelper::log(
+            'CREATE',
+            'JobAttachment',
+            $jobId,
+            "Technician uploaded attachment for Job Order {$job->job_order_number}",
+            null,
+            [
+                'job_order_id' => $jobId,
+                'file_name' => $file->getClientOriginalName(),
+            ],
+            ['file_name']
+        );
+
+        return redirect()->back()->with('success', 'File uploaded successfully.');
     })->name('job.attachments.upload');
     
     // Job status update routes
@@ -2743,88 +2705,100 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         return redirect()->back()->with('status', 'Field team member removed.');
     })->name('crew-members.delete');
 
-    Route::post('/job/{jobId}/attachments', function ($jobId, \Illuminate\Http\Request $request) {
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'files' => 'required|array|min:3|max:4',
-            'files.*' => 'required|file|mimes:jpg,jpeg,png,gif,webp,xls,xlsx|max:10240',
-        ], [
-            'files.required' => 'Please upload files.',
-            'files.array' => 'Invalid files payload.',
-            'files.min' => 'Upload must include exactly 1 Excel file and 2-3 image files (minimum 3 files).',
-            'files.max' => 'Upload must include exactly 1 Excel file and 2-3 image files (maximum 4 files).',
-            'files.*.mimes' => 'Allowed file types are JPG, JPEG, PNG, GIF, WEBP, XLS, and XLSX only.',
-            'files.*.max' => 'Each file must not exceed 10MB.',
-        ]);
-
-        $validator->after(function ($validator) use ($request) {
-            $files = $request->file('files', []);
-            $excelExtensions = ['xls', 'xlsx'];
-            $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-
-            $excelCount = 0;
-            $imageCount = 0;
-
-            foreach ($files as $file) {
-                $extension = strtolower($file->getClientOriginalExtension());
-
-                if (in_array($extension, $excelExtensions, true)) {
-                    $excelCount++;
-                    continue;
-                }
-
-                if (in_array($extension, $imageExtensions, true)) {
-                    $imageCount++;
-                }
-            }
-
-            if ($excelCount !== 1) {
-                $validator->errors()->add('files', 'Upload must contain exactly 1 Excel file (XLS or XLSX).');
-            }
-
-            if ($imageCount < 2 || $imageCount > 3) {
-                $validator->errors()->add('files', 'Upload must contain 2 to 3 image raw data files.');
-            }
-        });
-
-        $validator->validate();
-
+    Route::post('/job/{jobId}/checklist', function (\Illuminate\Http\Request $request, $jobId) {
         $job = \App\Models\JobOrder::findOrFail($jobId);
 
-        if (! $request->hasFile('files')) {
-            return redirect()->back()->with('error', 'No files were uploaded.');
+        $data = $request->validate([
+            'description' => 'required|string|max:1000',
+        ]);
+
+        $item = $job->checklistItems()->create([
+            'description' => $data['description'],
+            'is_completed' => false,
+            'created_by' => auth()->id(),
+        ]);
+
+        AuditLogHelper::log(
+            'CREATE',
+            'ChecklistItem',
+            $item->id,
+            "Tech Head added checklist item for Job Order {$job->job_order_number}",
+            null,
+            [
+                'job_order_id' => $job->id,
+                'description' => $item->description,
+                'is_completed' => false,
+            ],
+            ['description', 'is_completed']
+        );
+
+        return redirect()->back()->with('status', 'Checklist item added.');
+    })->name('job.checklist.store');
+
+    Route::delete('/checklist-items/{item}', function (\App\Models\ChecklistItem $item) {
+        $item->load('jobOrder');
+        $snapshot = $item->toArray();
+        $jobOrderNumber = optional($item->jobOrder)->job_order_number;
+
+        $item->delete();
+
+        AuditLogHelper::log(
+            'DELETE',
+            'ChecklistItem',
+            $snapshot['id'] ?? null,
+            "Tech Head removed checklist item from Job Order {$jobOrderNumber}",
+            $snapshot,
+            null,
+            ['description', 'is_completed']
+        );
+
+        return redirect()->back()->with('status', 'Checklist item removed.');
+    })->name('checklist.delete');
+
+    Route::post('/job/{jobId}/attachments', function ($jobId, \Illuminate\Http\Request $request) {
+        $request->validate([
+            'file' => 'required|file|max:10240',
+        ], [
+            'file.required' => 'Please select a file to upload.',
+            'file.max' => 'File must not exceed 10MB.',
+        ]);
+
+        $job = \App\Models\JobOrder::findOrFail($jobId);
+        $file = $request->file('file');
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'xls', 'xlsx', 'xlsm', 'xlsb'];
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+
+        if (! in_array($extension, $allowedExtensions, true)) {
+            return redirect()->back()->withErrors([
+                'file' => 'Allowed file types are JPG, JPEG, PNG, XLS, XLSX, XLSM, and XLSB only.',
+            ])->withInput();
         }
 
-        $uploadedFileNames = [];
+        $path = $file->store('job-attachments/' . $jobId, 'public');
 
-        foreach ($request->file('files') as $file) {
-            $path = $file->store('job-attachments/' . $jobId, 'public');
-            $uploadedFileNames[] = $file->getClientOriginalName();
-
-            $job->attachments()->create([
-                'file_name' => $file->getClientOriginalName(),
-                'file_path' => $path,
-                'file_type' => $file->getClientMimeType(),
-                'file_size' => $file->getSize(),
-                'uploaded_by' => auth()->id(),
-                'uploaded_at' => now(),
-            ]);
-        }
+        $job->attachments()->create([
+            'file_name' => $file->getClientOriginalName(),
+            'file_path' => $path,
+            'file_type' => $file->getClientMimeType(),
+            'file_size' => $file->getSize(),
+            'uploaded_by' => auth()->id(),
+            'uploaded_at' => now(),
+        ]);
 
         AuditLogHelper::log(
             'CREATE',
             'JobAttachment',
             $jobId,
-            "Tech Head uploaded " . count($uploadedFileNames) . " attachment(s) for Job Order {$job->job_order_number}",
+            "Tech Head uploaded attachment for Job Order {$job->job_order_number}",
             null,
             [
                 'job_order_id' => $jobId,
-                'uploaded_count' => count($uploadedFileNames),
-                'file_names' => $uploadedFileNames,
+                'file_name' => $file->getClientOriginalName(),
             ],
-            ['uploaded_count', 'file_names']
+            ['file_name']
         );
 
-        return redirect()->back()->with('status', 'Attachment(s) uploaded successfully.');
+        return redirect()->back()->with('status', 'File uploaded successfully.');
     })->name('job.attachments.upload');
 
     Route::delete('/attachments/{attachment}', function (\App\Models\JobOrderAttachment $attachment) {

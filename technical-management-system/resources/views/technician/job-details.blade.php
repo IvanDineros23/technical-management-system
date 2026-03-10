@@ -467,17 +467,12 @@
                         </div>
                     @endif
 
-                    @if($errors->has('files') || $errors->has('files.*'))
+                    @if($errors->has('file'))
                         <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
                             <p class="font-semibold mb-1">Upload failed:</p>
                             <ul class="list-disc pl-5 space-y-0.5">
-                                @foreach($errors->get('files') as $message)
+                                @foreach($errors->get('file') as $message)
                                     <li>{{ $message }}</li>
-                                @endforeach
-                                @foreach($errors->get('files.*') as $messages)
-                                    @foreach($messages as $message)
-                                        <li>{{ $message }}</li>
-                                    @endforeach
                                 @endforeach
                             </ul>
                         </div>
@@ -491,16 +486,16 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                             </svg>
-                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Upload exactly 1 Excel file + 2-3 raw data photos (max 10MB per file)</p>
-                            <input type="file" name="files[]" multiple accept="image/*,.xls,.xlsx" 
-                                   class="hidden" id="fileInput" onchange="this.form.querySelector('.file-name').textContent = Array.from(this.files).map(f => f.name).join(', ')">
+                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Upload one file at a time — Excel (XLS/XLSX/XLSM/XLSB) or image (JPG, JPEG, PNG) — max 10MB</p>
+                            <input type="file" name="file" accept=".jpg,.jpeg,.png,.xls,.xlsx,.xlsm,.xlsb"
+                                   class="hidden" id="fileInput" onchange="this.form.querySelector('.file-name').textContent = this.files[0] ? this.files[0].name : ''">
                             <button type="button" onclick="document.getElementById('fileInput').click()"
                                     class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
-                                Choose Files
+                                Choose File
                             </button>
                             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 file-name"></p>
                             <button type="submit" class="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
-                                Upload Files
+                                Upload File
                             </button>
                         </div>
                     </form>
