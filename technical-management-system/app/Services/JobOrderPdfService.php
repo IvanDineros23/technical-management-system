@@ -76,6 +76,7 @@ class JobOrderPdfService
         $customer = $jobOrder->customer;
         $overrides = $this->extractCustomerRequestOverrides($jobOrder);
         $marketingReceiverName = $overrides['name_signature'] ?? $this->resolveMarketingReceiverName($jobOrder, $generatedByUser);
+        $hasMarketingReceiver = trim($marketingReceiverName) !== '';
 
         $contact = $customer?->contacts?->first();
 
@@ -104,7 +105,7 @@ class JobOrderPdfService
                 $jobOrder->notes,
             ])),
             'Name and Signature' => $marketingReceiverName,
-            'Date_2' => $overrides['date_2'] ?? ($jobOrder->request_date ? $jobOrder->request_date->format('m/d/Y') : now()->format('m/d/Y')),
+            'Date_2' => $overrides['date_2'] ?? ($hasMarketingReceiver ? ($jobOrder->request_date ? $jobOrder->request_date->format('m/d/Y') : now()->format('m/d/Y')) : ''),
             'Name and Signature2' => $overrides['name_signature_2'] ?? '',
             'Date_3' => $overrides['date_3'] ?? '',
             'Noted by' => $overrides['noted_by'] ?? '',
@@ -177,13 +178,13 @@ class JobOrderPdfService
 
     private function resolveMarketingReceiverName(JobOrder $jobOrder, ?User $generatedByUser = null): string
     {
-        // Route is behind role:marketing middleware, so any passed user is a marketing user
-        if ($generatedByUser) {
+        // Only marketing users should appear in the "FOR GEI - MARKETING ONLY" signature field.
+        if ($generatedByUser && optional($generatedByUser->role)->slug === 'marketing') {
             return (string) ($generatedByUser->name ?? '');
         }
 
         $creator = $jobOrder->creator;
-        if ($creator) {
+        if ($creator && optional($creator->role)->slug === 'marketing') {
             return (string) ($creator->name ?? '');
         }
 

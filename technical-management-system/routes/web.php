@@ -102,6 +102,13 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
         // Hide cancelled job orders from marketing listing
         $query->where('status', '!=', 'cancelled');
 
+        // Keep customer request forms separate from the main Job Orders page.
+        $query->where(function ($separateQuery) {
+            $separateQuery->where('status', '!=', 'pending')
+                ->orWhereNull('pdf_path')
+                ->orWhereRaw("TRIM(pdf_path) = ''");
+        });
+
         $status = $request->string('status')->toString();
         $allowedStatuses = ['pending', 'for_accounting_approval', 'approved', 'in_progress', 'completed', 'rejected'];
         if (in_array($status, $allowedStatuses, true)) {
@@ -130,7 +137,7 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
     })->name('job-orders');
 
     Route::get('/job-orders/{jobOrder}/edit', function (\App\Models\JobOrder $jobOrder) {
-        $jobOrder->load(['customer', 'creator.role']);
+        $jobOrder->load(['customer', 'creator.role', 'items']);
         return view('marketing.edit-job-order', compact('jobOrder'));
     })->name('job-orders.edit');
 
@@ -150,7 +157,56 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
             'others' => 'nullable|string|max:255',
             'expected_completion_date' => 'nullable|date',
             'notes' => 'nullable|string',
+            'company_name' => 'nullable|string|max:255',
+            'address_1' => 'nullable|string|max:500',
+            'company_tin' => 'nullable|string|max:255',
+            'contact_person' => 'nullable|string|max:255',
+            'email_address' => 'nullable|email|max:255',
+            'contact_number' => 'nullable|string|max:255',
+            'request_date' => 'nullable|date',
+            'calibration_site_address_1' => 'nullable|string|max:500',
+            'request_type' => 'nullable|string|max:255',
+            'remarks_override' => 'nullable|string',
+            'items' => 'nullable|array|max:8',
+            'items.*.qty' => 'nullable|integer|min:1|max:9999',
+            'items.*.equipment_name' => 'nullable|string|max:255',
+            'items.*.model' => 'nullable|string|max:255',
+            'items.*.serial_no' => 'nullable|string|max:255',
+            'items.*.capacity' => 'nullable|string|max:255',
         ]);
+
+        $existingSpecialInstructions = [];
+        if (is_string($jobOrder->special_instructions) && trim($jobOrder->special_instructions) !== '') {
+            $decodedSpecialInstructions = json_decode($jobOrder->special_instructions, true);
+            if (is_array($decodedSpecialInstructions)) {
+                $existingSpecialInstructions = $decodedSpecialInstructions;
+            }
+        }
+
+        $customerRequestOverrides = [
+            'company_name' => trim((string) ($validated['company_name'] ?? ($jobOrder->customer->name ?? ''))),
+            'address_1' => trim((string) ($validated['address_1'] ?? ($jobOrder->service_address ?? ''))),
+            'company_tin' => trim((string) ($validated['company_tin'] ?? '')),
+            'contact_person' => trim((string) ($validated['contact_person'] ?? ($validated['requested_by'] ?? $jobOrder->requested_by ?? ''))),
+            'email_address' => trim((string) ($validated['email_address'] ?? ($jobOrder->customer->email ?? ''))),
+            'contact_number' => trim((string) ($validated['contact_number'] ?? ($jobOrder->customer->phone ?? ''))),
+            'request_date' => !empty($validated['request_date'])
+                ? \Illuminate\Support\Carbon::parse($validated['request_date'])->format('m/d/Y')
+                : ($jobOrder->request_date ? $jobOrder->request_date->format('m/d/Y') : now()->format('m/d/Y')),
+            'calibration_site_address_1' => trim((string) ($validated['calibration_site_address_1'] ?? ($validated['service_address'] ?? $jobOrder->service_address ?? ''))),
+            'others' => trim((string) ($validated['request_type'] ?? ($validated['others'] ?? $jobOrder->service_type ?? ''))),
+            'remarks' => trim((string) ($validated['remarks_override'] ?? ($validated['notes'] ?? $jobOrder->notes ?? ''))),
+        ];
+
+        $customerRequestOverrides = array_filter($customerRequestOverrides, fn ($value) => $value !== '');
+
+        if (!empty($customerRequestOverrides)) {
+            $existingSpecialInstructions['customer_request_pdf_overrides'] = $customerRequestOverrides;
+        }
+
+        $specialInstructionsPayload = !empty($existingSpecialInstructions)
+            ? json_encode($existingSpecialInstructions, JSON_UNESCAPED_UNICODE)
+            : null;
 
         $jobOrder->update([
             'service_type' => $validated['service_type'],
@@ -168,7 +224,46 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
             'expected_completion_date' => $validated['expected_completion_date'] ?? null,
             'required_date' => $validated['expected_completion_date'] ?? $jobOrder->required_date,
             'notes' => $validated['notes'] ?? null,
+            'request_date' => !empty($validated['request_date']) ? \Illuminate\Support\Carbon::parse($validated['request_date']) : $jobOrder->request_date,
+            'special_instructions' => $specialInstructionsPayload,
         ]);
+
+        DB::table('job_order_items')->where('job_order_id', $jobOrder->id)->delete();
+
+        if (!empty($validated['items']) && is_array($validated['items'])) {
+            foreach ($validated['items'] as $index => $item) {
+                $equipmentName = trim((string) ($item['equipment_name'] ?? ''));
+                $model = trim((string) ($item['model'] ?? ''));
+                $serialNo = trim((string) ($item['serial_no'] ?? ''));
+                $capacity = trim((string) ($item['capacity'] ?? ''));
+                $hasAnyValue = $equipmentName !== '' || $model !== '' || $serialNo !== '' || $capacity !== '';
+
+                if (!$hasAnyValue) {
+                    continue;
+                }
+
+                DB::table('job_order_items')->insert([
+                    'job_order_id' => $jobOrder->id,
+                    'item_number' => $index + 1,
+                    'equipment_type' => $equipmentName,
+                    'manufacturer' => null,
+                    'model' => $model !== '' ? $model : null,
+                    'serial_number' => $serialNo !== '' ? $serialNo : null,
+                    'id_number' => null,
+                    'range' => $capacity !== '' ? $capacity : null,
+                    'resolution' => null,
+                    'accuracy' => null,
+                    'calibration_type' => null,
+                    'calibration_points' => null,
+                    'quantity' => (int) ($item['qty'] ?? 1),
+                    'unit_price' => null,
+                    'total_price' => null,
+                    'remarks' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
 
         AuditLogHelper::log(
             action: 'UPDATE',
@@ -179,7 +274,7 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
                 'service_type' => $validated['service_type'],
                 'priority' => $validated['priority'],
             ],
-            changedFields: ['service_type', 'priority', 'service_description', 'service_address', 'city', 'province', 'postal_code', 'requested_by', 'client_po_ctrl_no', 'terms', 'service_invoice_number', 'other_details', 'expected_completion_date', 'required_date', 'notes']
+            changedFields: ['service_type', 'priority', 'service_description', 'service_address', 'city', 'province', 'postal_code', 'requested_by', 'client_po_ctrl_no', 'terms', 'service_invoice_number', 'other_details', 'expected_completion_date', 'required_date', 'notes', 'request_date', 'special_instructions']
         );
 
         $statusMessage = "Job order {$jobOrder->job_order_number} updated successfully.";
@@ -333,24 +428,57 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
         }
     })->name('job-orders.customer-request-form');
 
-    Route::get('/customer-request-forms', function () {
-        $pendingRequests = \App\Models\JobOrder::with(['customer', 'creator.role'])
-            ->where('status', 'pending')
-            ->where(function ($query) {
-                $query->whereNull('pdf_path')
-                    ->orWhereRaw("TRIM(pdf_path) = ''");
-            })
-            ->latest()
-            ->paginate(10, ['*'], 'pending_page');
+    Route::get('/customer-request-forms', function (Illuminate\Http\Request $request) {
+        $search = trim($request->string('q')->toString());
+        $statusFilter = $request->string('status_filter')->toString();
+        $processedStatuses = ['for_accounting_approval', 'approved', 'in_progress', 'completed', 'rejected'];
 
         $generatedRequests = \App\Models\JobOrder::with(['customer', 'creator.role'])
             ->where('status', 'pending')
             ->whereNotNull('pdf_path')
-            ->whereRaw("TRIM(pdf_path) <> ''")
-            ->latest('updated_at')
-            ->paginate(10, ['*'], 'generated_page');
+            ->whereRaw("TRIM(pdf_path) <> ''");
 
-        return view('marketing.customer-request-forms', compact('pendingRequests', 'generatedRequests'));
+        $processedRequests = \App\Models\JobOrder::with(['customer', 'creator.role'])
+            ->whereIn('status', $processedStatuses)
+            ->whereNotNull('pdf_path')
+            ->whereRaw("TRIM(pdf_path) <> ''");
+
+        if ($search !== '') {
+            $applySearch = function ($query) use ($search) {
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('job_order_number', 'like', "%{$search}%")
+                        ->orWhere('service_type', 'like', "%{$search}%")
+                        ->orWhere('requested_by', 'like', "%{$search}%")
+                        ->orWhere('status', 'like', "%{$search}%")
+                        ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                            $customerQuery->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%");
+                        });
+                });
+            };
+
+            $applySearch($generatedRequests);
+            $applySearch($processedRequests);
+        }
+
+        if ($statusFilter === 'generated') {
+            $processedRequests->whereRaw('1 = 0');
+        } elseif (in_array($statusFilter, $processedStatuses, true)) {
+            $generatedRequests->whereRaw('1 = 0');
+            $processedRequests->where('status', $statusFilter);
+        }
+
+        $generatedRequests = $generatedRequests
+            ->latest('updated_at')
+            ->paginate(10, ['*'], 'generated_page')
+            ->appends($request->only(['q', 'status_filter']));
+
+        $processedRequests = $processedRequests
+            ->latest('updated_at')
+            ->paginate(10, ['*'], 'processed_page')
+            ->appends($request->only(['q', 'status_filter']));
+
+        return view('marketing.customer-request-forms', compact('generatedRequests', 'processedRequests'));
     })->name('customer-request-forms');
 
     Route::post('/customer-request-forms/manual', function (Illuminate\Http\Request $request) {
@@ -1022,7 +1150,9 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
 Route::middleware(['auth', 'verified', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/dashboard', [CustomerPortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/requests', [CustomerPortalController::class, 'requests'])->name('requests');
+    Route::get('/requests/{jobOrder}/edit', [CustomerPortalController::class, 'editRequest'])->name('requests.edit');
     Route::post('/requests', [CustomerPortalController::class, 'storeRequest'])->name('requests.store');
+    Route::patch('/requests/{jobOrder}', [CustomerPortalController::class, 'updateRequest'])->name('requests.update');
     Route::patch('/requests/{jobOrder}/cancel', [CustomerPortalController::class, 'cancelRequest'])->name('requests.cancel');
     Route::get('/certificates', [CustomerPortalController::class, 'certificates'])->name('certificates');
 });

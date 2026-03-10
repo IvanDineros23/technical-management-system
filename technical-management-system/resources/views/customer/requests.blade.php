@@ -51,6 +51,17 @@
             </div>
         @endif
 
+        @if($errors->any())
+            <div class="mb-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-900">
+                <p class="text-sm font-semibold">Unable to submit service request.</p>
+                <ul class="mt-2 list-disc pl-5 text-xs space-y-1">
+                    @foreach($errors->all() as $message)
+                        <li>{{ $message }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         @if(session('status'))
             <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
                 <div class="flex items-start gap-3">
@@ -60,28 +71,29 @@
                     <div class="flex-1">
                         <p class="text-sm font-semibold">{{ session('status') }}</p>
                         @if(session('pdf_url'))
-                            <p class="text-xs mt-2">
-                                <a href="{{ session('pdf_url') }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-semibold">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                    </svg>
-                                    View your PDF form
-                                </a>
-                            </p>
+                            <p class="text-xs mt-2 text-emerald-700">PDF form has been generated and is available for in-app preview.</p>
                         @endif
                     </div>
                 </div>
             </div>
         @endif
 
+        @php
+            $initialCreateItems = old('items', [
+                ['qty' => 1, 'equipment_name' => '', 'model' => '', 'serial_no' => '', 'capacity' => ''],
+                ['qty' => 1, 'equipment_name' => '', 'model' => '', 'serial_no' => '', 'capacity' => ''],
+            ]);
+        @endphp
+
         <div
             x-data="{
-                showCreateModal: false,
+                showCreateModal: @json($errors->any() || old('service_type') || old('service_description') || old('service_address') || old('city') || old('province') || old('postal_code') || old('expected_completion_date') || old('notes')),
                 showViewModal: false,
                 showPdfLoader: false,
                 viewDelayMs: 2000,
                 viewTimer: null,
                 selectedOrder: null,
+                createItems: @js($initialCreateItems),
                 search: '',
                 openView(order) {
                     if (this.viewTimer) {
@@ -126,6 +138,20 @@
                 priorityLabel(p) {
                     if (!p) return 'Normal';
                     return p.replace(/\b\w/g, c => c.toUpperCase());
+                },
+                addCreateItem() {
+                    if (this.createItems.length >= 8) {
+                        return;
+                    }
+
+                    this.createItems.push({ qty: 1, equipment_name: '', model: '', serial_no: '', capacity: '' });
+                },
+                removeCreateItem(index) {
+                    if (this.createItems.length <= 2) {
+                        return;
+                    }
+
+                    this.createItems.splice(index, 1);
                 }
             }"
             class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6"
@@ -255,7 +281,7 @@
                                                 type="button"
                                                 @click="openView({
                                                     job_order_number: @js($order->job_order_number),
-                                                    pdf_url: @js(asset('storage/generated/' . $order->pdf_filename)),
+                                                    pdf_url: @js(asset('storage/generated/' . $order->pdf_filename) . '#toolbar=0&navpanes=0'),
                                                 })"
                                                 class="inline-flex items-center justify-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-slate-700 hover:text-slate-900 dark:text-gray-200 dark:hover:text-white"
                                                 title="View PDF form"
@@ -281,6 +307,10 @@
                                         @endif
 
                                         @if($order->status === 'pending')
+                                            <a href="{{ route('customer.requests.edit', $order) }}"
+                                               class="inline-flex items-center justify-center h-8 px-3 rounded-md text-xs font-semibold text-blue-600 hover:text-blue-700">
+                                                Edit
+                                            </a>
                                             <form method="POST"
                                                   action="{{ route('customer.requests.cancel', $order) }}{{ $status !== '' ? '?status=' . $status : '' }}"
                                                   onsubmit="return confirm('Cancel this request?');"
@@ -409,8 +439,12 @@
                         </button>
                     </div>
 
-                    <form method="POST" action="{{ route('customer.requests.store') }}" class="p-6 space-y-4">
+                    <form method="POST" action="{{ route('customer.requests.store') }}" class="p-6 space-y-5">
                         @csrf
+
+                        <div class="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800">
+                            Fill in your service details below. Add equipment rows so the request portion of your PDF form will be complete.
+                        </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -418,12 +452,12 @@
                                 <select name="service_type" required
                                         class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
                                     <option value="">Select service type</option>
-                                    <option value="Calibration">Calibration</option>
-                                    <option value="Repair">Repair</option>
-                                    <option value="Maintenance">Maintenance</option>
-                                    <option value="Installation">Installation</option>
-                                    <option value="Consultation">Consultation</option>
-                                    <option value="Other">Other</option>
+                                    <option value="Calibration" {{ old('service_type') === 'Calibration' ? 'selected' : '' }}>Calibration</option>
+                                    <option value="Repair" {{ old('service_type') === 'Repair' ? 'selected' : '' }}>Repair</option>
+                                    <option value="Maintenance" {{ old('service_type') === 'Maintenance' ? 'selected' : '' }}>Maintenance</option>
+                                    <option value="Installation" {{ old('service_type') === 'Installation' ? 'selected' : '' }}>Installation</option>
+                                    <option value="Consultation" {{ old('service_type') === 'Consultation' ? 'selected' : '' }}>Consultation</option>
+                                    <option value="Other" {{ old('service_type') === 'Other' ? 'selected' : '' }}>Other</option>
                                 </select>
                             </div>
 
@@ -431,9 +465,9 @@
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Priority Level *</label>
                                 <select name="priority" required
                                         class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
-                                    <option value="normal">Normal</option>
-                                    <option value="high">High</option>
-                                    <option value="urgent">Urgent</option>
+                                    <option value="normal" {{ old('priority', 'normal') === 'normal' ? 'selected' : '' }}>Normal</option>
+                                    <option value="high" {{ old('priority') === 'high' ? 'selected' : '' }}>High</option>
+                                    <option value="urgent" {{ old('priority') === 'urgent' ? 'selected' : '' }}>Urgent</option>
                                 </select>
                             </div>
                         </div>
@@ -442,13 +476,14 @@
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Service Description *</label>
                             <textarea name="service_description" rows="4" required
                                     placeholder="Describe what you need..."
-                                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm"></textarea>
+                                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">{{ old('service_description') }}</textarea>
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Service Address *</label>
                             <input type="text" name="service_address" required
                                 placeholder="Where will the service be performed?"
+                                value="{{ old('service_address') }}"
                                 class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
                         </div>
 
@@ -456,16 +491,19 @@
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">City</label>
                                 <input type="text" name="city"
+                                    value="{{ old('city') }}"
                                     class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Province</label>
                                 <input type="text" name="province"
+                                    value="{{ old('province') }}"
                                     class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Postal Code</label>
                                 <input type="text" name="postal_code"
+                                    value="{{ old('postal_code') }}"
                                     class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
                             </div>
                         </div>
@@ -473,6 +511,7 @@
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Expected Completion Date</label>
                             <input type="date" name="expected_completion_date"
+                                value="{{ old('expected_completion_date') }}"
                                 class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
                         </div>
 
@@ -480,7 +519,61 @@
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Special Instructions</label>
                             <textarea name="notes" rows="3"
                                     placeholder="Any special requirements or notes..."
-                                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm"></textarea>
+                                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">{{ old('notes') }}</textarea>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Request Equipment Details (PDF Rows 1-8)</h4>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Default: 2 rows</span>
+                                    <button type="button" @click="addCreateItem()" :disabled="createItems.length >= 8" class="inline-flex items-center px-2.5 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        Add Row
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                                <table class="w-full min-w-[900px]">
+                                    <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                                        <tr>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">#</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Qty</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Equipment Name</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Model</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Serial No</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Capacity</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                        <template x-for="(row, index) in createItems" :key="index">
+                                            <tr>
+                                                <td class="px-3 py-2 text-sm text-gray-700 dark:text-gray-300" x-text="index + 1"></td>
+                                                <td class="px-3 py-2">
+                                                    <input type="number" min="1" x-bind:name="`items[${index}][qty]`" x-model="row.qty" class="w-20 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm">
+                                                </td>
+                                                <td class="px-3 py-2">
+                                                    <input type="text" x-bind:name="`items[${index}][equipment_name]`" x-model="row.equipment_name" class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm">
+                                                </td>
+                                                <td class="px-3 py-2">
+                                                    <input type="text" x-bind:name="`items[${index}][model]`" x-model="row.model" class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm">
+                                                </td>
+                                                <td class="px-3 py-2">
+                                                    <input type="text" x-bind:name="`items[${index}][serial_no]`" x-model="row.serial_no" class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm">
+                                                </td>
+                                                <td class="px-3 py-2">
+                                                    <div class="flex items-center gap-2">
+                                                        <input type="text" x-bind:name="`items[${index}][capacity]`" x-model="row.capacity" class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm">
+                                                        <button type="button" @click="removeCreateItem(index)" x-show="createItems.length > 2" class="inline-flex items-center px-2 py-1.5 text-xs font-semibold rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600">
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         <div class="flex gap-3 pt-4">

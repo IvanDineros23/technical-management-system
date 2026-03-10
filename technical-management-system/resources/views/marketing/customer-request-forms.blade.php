@@ -141,73 +141,46 @@
             </button>
         </div>
 
-        <div>
-            <div class="mb-3">
-                <h3 class="text-base font-bold text-gray-900 dark:text-white">Pending Requests (Not Yet Generated)</h3>
-            </div>
-            <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                        <tr>
-                            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">JO Number</th>
-                            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Customer</th>
-                            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Requested By</th>
-                            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Date Created</th>
-                            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                        @forelse($pendingRequests as $jobOrder)
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
-                                    <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $jobOrder->job_order_number }}</div>
-                                    <div class="text-xs text-orange-600 dark:text-orange-300">Pending</div>
-                                </td>
-                                <td class="px-6 py-4 text-center">
-                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $jobOrder->customer->name ?? 'N/A' }}</div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $jobOrder->customer->email ?? 'No email' }}</div>
-                                </td>
-                                <td class="px-6 py-4 text-center text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->requested_by ?? $jobOrder->creator->name ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 text-center text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</td>
-                                <td class="px-6 py-4 text-center">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <form method="POST" action="{{ route('marketing.job-orders.generate-customer-request-form', $jobOrder) }}">
-                                            @csrf
-                                            <button type="submit"
-                                                    class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                                Generate Form
-                                            </button>
-                                        </form>
-                                        <a href="{{ route('marketing.job-orders.edit', $jobOrder) }}"
-                                           class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                                            Edit JO
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                    No pending requests found.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            @if($pendingRequests->hasPages())
-                <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
-                    {{ $pendingRequests->links() }}
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <form method="GET" action="{{ route('marketing.customer-request-forms') }}" class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="relative w-full lg:max-w-md">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18.0a7.5 7.5 0 006.15-3.35z"/>
+                    </svg>
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ request('q') }}"
+                        placeholder="Search JO / customer / email / requester / status..."
+                        class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
                 </div>
-            @endif
-            </div>
+
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <select name="status_filter" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-200">
+                        <option value="all" {{ request('status_filter', 'all') === 'all' ? 'selected' : '' }}>All Statuses</option>
+                        <option value="generated" {{ request('status_filter') === 'generated' ? 'selected' : '' }}>Generated (Pending)</option>
+                        <option value="for_accounting_approval" {{ request('status_filter') === 'for_accounting_approval' ? 'selected' : '' }}>For Accounting Approval</option>
+                        <option value="approved" {{ request('status_filter') === 'approved' ? 'selected' : '' }}>Approved</option>
+                        <option value="in_progress" {{ request('status_filter') === 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                        <option value="completed" {{ request('status_filter') === 'completed' ? 'selected' : '' }}>Completed</option>
+                        <option value="rejected" {{ request('status_filter') === 'rejected' ? 'selected' : '' }}>Rejected</option>
+                    </select>
+
+                    <div class="flex items-center gap-2">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                            Apply
+                        </button>
+                        <a href="{{ route('marketing.customer-request-forms') }}" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-semibold rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                            Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
         </div>
 
         <div>
-            <div class="mb-3 mt-2">
-                <h3 class="text-base font-bold text-gray-900 dark:text-white">Generated Customer Request Forms</h3>
+            <div class="mb-3">
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div class="overflow-x-auto">
@@ -241,6 +214,11 @@
                                                 View Form
                                             </a>
 
+                                            <a href="{{ route('marketing.job-orders.edit', $jobOrder) }}"
+                                               class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                                Edit JO
+                                            </a>
+
                                             <form method="POST" action="{{ route('marketing.job-orders.submit-accounting', $jobOrder) }}" class="inline"
                                                   onsubmit="return confirm('Convert this generated customer request form to Job Order and submit to accounting?');">
                                                 @csrf
@@ -267,6 +245,69 @@
                 @if($generatedRequests->hasPages())
                     <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
                         {{ $generatedRequests->links() }}
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <div>
+            <div class="mb-3">
+                <h3 class="text-base font-bold text-gray-900 dark:text-white">Converted / Processed Customer Requests</h3>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                            <tr>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">JO Number</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Requested By</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Updated</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            @forelse($processedRequests as $jobOrder)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $jobOrder->job_order_number }}</div>
+                                        <div class="text-xs text-slate-600 dark:text-slate-300">Processed</div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $jobOrder->customer->name ?? 'N/A' }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $jobOrder->customer->email ?? 'No email' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center text-sm text-gray-700 dark:text-gray-300">{{ $jobOrder->requested_by ?? $jobOrder->creator->name ?? 'N/A' }}</td>
+                                    <td class="px-6 py-4 text-center text-sm text-gray-700 dark:text-gray-300">{{ ucfirst(str_replace('_', ' ', $jobOrder->status)) }}</td>
+                                    <td class="px-6 py-4 text-center text-sm text-gray-700 dark:text-gray-300">{{ optional($jobOrder->updated_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="inline-flex items-center justify-center gap-2">
+                                            <a href="{{ route('marketing.job-orders.customer-request-form', $jobOrder) }}" target="_blank"
+                                               class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                                                View Form
+                                            </a>
+                                            <a href="{{ route('marketing.job-orders.edit', $jobOrder) }}"
+                                               class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                                Edit JO
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                        No converted or processed customer requests yet.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if($processedRequests->hasPages())
+                    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                        {{ $processedRequests->links() }}
                     </div>
                 @endif
             </div>

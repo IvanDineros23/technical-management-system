@@ -69,7 +69,36 @@
 @endsection
 
 @section('content')
-    <div class="max-w-4xl mx-auto">
+    @php
+        $decodedSpecialInstructions = [];
+        if (is_string($jobOrder->special_instructions) && trim($jobOrder->special_instructions) !== '') {
+            $decodedCandidate = json_decode($jobOrder->special_instructions, true);
+            if (is_array($decodedCandidate)) {
+                $decodedSpecialInstructions = $decodedCandidate;
+            }
+        }
+
+        $requestOverrides = $decodedSpecialInstructions['customer_request_pdf_overrides'] ?? [];
+
+        $initialEquipmentRows = old('items', $jobOrder->items->sortBy('item_number')->map(function ($item) {
+            return [
+                'qty' => (int) ($item->quantity ?? 1),
+                'equipment_name' => (string) ($item->equipment_type ?? ''),
+                'model' => (string) ($item->model ?? ''),
+                'serial_no' => (string) ($item->serial_number ?? ''),
+                'capacity' => (string) ($item->range ?? ''),
+            ];
+        })->values()->all());
+
+        if (empty($initialEquipmentRows)) {
+            $initialEquipmentRows = [
+                ['qty' => 1, 'equipment_name' => '', 'model' => '', 'serial_no' => '', 'capacity' => ''],
+                ['qty' => 1, 'equipment_name' => '', 'model' => '', 'serial_no' => '', 'capacity' => ''],
+            ];
+        }
+    @endphp
+
+    <div class="max-w-4xl mx-auto" x-data="{ equipmentRows: @js($initialEquipmentRows), addEquipmentRow() { if (this.equipmentRows.length < 8) this.equipmentRows.push({ qty: 1, equipment_name: '', model: '', serial_no: '', capacity: '' }); }, removeEquipmentRow(index) { if (this.equipmentRows.length > 2) this.equipmentRows.splice(index, 1); } }">
         <div class="mb-4 flex items-center justify-between">
             <div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ $jobOrder->job_order_number }}</h3>
@@ -123,6 +152,74 @@
                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Requested By</label>
                 <input type="text" name="requested_by" value="{{ old('requested_by', $jobOrder->requested_by) }}"
                        class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
+            </div>
+
+            <div class="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800">
+                Customer request form details below are used for PDF fields in the request section.
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Company Name (PDF)</label>
+                    <input type="text" name="company_name" value="{{ old('company_name', $requestOverrides['company_name'] ?? ($jobOrder->customer->name ?? '')) }}"
+                           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Request Date (PDF)</label>
+                    <input type="date" name="request_date" value="{{ old('request_date', optional($jobOrder->request_date)->format('Y-m-d')) }}"
+                           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Company TIN (PDF)</label>
+                    <input type="text" name="company_tin" value="{{ old('company_tin', $requestOverrides['company_tin'] ?? '') }}"
+                           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Contact Person (PDF)</label>
+                    <input type="text" name="contact_person" value="{{ old('contact_person', $requestOverrides['contact_person'] ?? ($jobOrder->requested_by ?? '')) }}"
+                           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Email Address (PDF)</label>
+                    <input type="email" name="email_address" value="{{ old('email_address', $requestOverrides['email_address'] ?? ($jobOrder->customer->email ?? '')) }}"
+                           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Contact Number (PDF)</label>
+                    <input type="text" name="contact_number" value="{{ old('contact_number', $requestOverrides['contact_number'] ?? ($jobOrder->customer->phone ?? '')) }}"
+                           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Address Line 1 (PDF)</label>
+                <input type="text" name="address_1" value="{{ old('address_1', $requestOverrides['address_1'] ?? ($jobOrder->service_address ?? '')) }}"
+                       class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Calibration Site Address (PDF)</label>
+                <input type="text" name="calibration_site_address_1" value="{{ old('calibration_site_address_1', $requestOverrides['calibration_site_address_1'] ?? ($jobOrder->service_address ?? '')) }}"
+                       class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Request Type (PDF Others)</label>
+                    <input type="text" name="request_type" value="{{ old('request_type', $requestOverrides['others'] ?? ($jobOrder->service_type ?? '')) }}"
+                           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Remarks Override (PDF)</label>
+                    <input type="text" name="remarks_override" value="{{ old('remarks_override', $requestOverrides['remarks'] ?? ($jobOrder->notes ?? '')) }}"
+                           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">
+                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -190,6 +287,56 @@
                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Notes</label>
                 <textarea name="notes" rows="3"
                           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm">{{ old('notes', $jobOrder->notes) }}</textarea>
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Request Equipment Details (PDF Rows 1-8)</h4>
+                    <button type="button" @click="addEquipmentRow()" :disabled="equipmentRows.length >= 8" class="inline-flex items-center px-2.5 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Add Row
+                    </button>
+                </div>
+                <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <table class="w-full min-w-[900px]">
+                        <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                            <tr>
+                                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">#</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Qty</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Equipment Name</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Model</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Serial No</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Capacity</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <template x-for="(row, index) in equipmentRows" :key="index">
+                                <tr>
+                                    <td class="px-3 py-2 text-sm text-gray-700 dark:text-gray-300" x-text="index + 1"></td>
+                                    <td class="px-3 py-2">
+                                        <input type="number" min="1" x-bind:name="`items[${index}][qty]`" x-model="row.qty" class="w-20 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm">
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <input type="text" x-bind:name="`items[${index}][equipment_name]`" x-model="row.equipment_name" class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm">
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <input type="text" x-bind:name="`items[${index}][model]`" x-model="row.model" class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm">
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <input type="text" x-bind:name="`items[${index}][serial_no]`" x-model="row.serial_no" class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm">
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" x-bind:name="`items[${index}][capacity]`" x-model="row.capacity" class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm">
+                                            <button type="button" @click="removeEquipmentRow(index)" x-show="equipmentRows.length > 2" class="inline-flex items-center px-2 py-1.5 text-xs font-semibold rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600">
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="pt-2 flex items-center gap-3">

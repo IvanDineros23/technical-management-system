@@ -54,11 +54,9 @@
             @endif
 
             @if($jobOrder->pdf_filename)
-                <a href="{{ asset('storage/generated/' . $jobOrder->pdf_filename) }}"
-                   download
-                   class="inline-flex items-center justify-center h-9 px-4 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">
-                    Download PDF
-                </a>
+                <span class="inline-flex items-center justify-center h-9 px-4 rounded-lg bg-blue-50 text-blue-700 text-sm font-semibold border border-blue-200">
+                    PDF Available (View Only)
+                </span>
             @endif
         </div>
     </div>

@@ -80,7 +80,7 @@ class CustomerPortalController extends Controller
 
         $status = $request->string('status')->toString();
         $minutesToShowCancelled = 60; // Change to 30 if you want 30 mins
-        $query = JobOrder::with('customer')
+        $query = JobOrder::with(['customer', 'items'])
             ->where('customer_id', $customer->id)
             ->latest();
 
@@ -166,13 +166,18 @@ class CustomerPortalController extends Controller
             'postal_code' => 'nullable|string|max:20',
             'expected_completion_date' => 'nullable|date|after_or_equal:today',
             'notes' => 'nullable|string',
+            'items' => 'nullable|array|max:8',
+            'items.*.qty' => 'nullable|integer|min:1|max:9999',
+            'items.*.equipment_name' => 'nullable|string|max:255',
+            'items.*.model' => 'nullable|string|max:255',
+            'items.*.serial_no' => 'nullable|string|max:255',
+            'items.*.capacity' => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
         try {
-            // Generate job order number
-            $lastJobOrder = JobOrder::latest('id')->first();
-            $nextNumber = $lastJobOrder ? (intval(substr($lastJobOrder->job_order_number, 3)) + 1) : 1;
+            // Generate job order number from numeric id sequence to avoid format-parsing collisions.
+            $nextNumber = ((int) JobOrder::max('id')) + 1;
             $jobOrderNumber = 'JO-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
 
             // Create job order
@@ -194,6 +199,41 @@ class CustomerPortalController extends Controller
                 'notes' => $validated['notes'] ?? null,
                 'created_by' => $user->id,
             ]);
+
+            if (!empty($validated['items']) && is_array($validated['items'])) {
+                foreach ($validated['items'] as $index => $item) {
+                    $equipmentName = trim((string) ($item['equipment_name'] ?? ''));
+                    $model = trim((string) ($item['model'] ?? ''));
+                    $serialNo = trim((string) ($item['serial_no'] ?? ''));
+                    $capacity = trim((string) ($item['capacity'] ?? ''));
+                    $hasAnyValue = $equipmentName !== '' || $model !== '' || $serialNo !== '' || $capacity !== '';
+
+                    if (!$hasAnyValue) {
+                        continue;
+                    }
+
+                    DB::table('job_order_items')->insert([
+                        'job_order_id' => $jobOrder->id,
+                        'item_number' => $index + 1,
+                        'equipment_type' => $equipmentName,
+                        'manufacturer' => null,
+                        'model' => $model !== '' ? $model : null,
+                        'serial_number' => $serialNo !== '' ? $serialNo : null,
+                        'id_number' => null,
+                        'range' => $capacity !== '' ? $capacity : null,
+                        'resolution' => null,
+                        'accuracy' => null,
+                        'calibration_type' => null,
+                        'calibration_points' => null,
+                        'quantity' => (int) ($item['qty'] ?? 1),
+                        'unit_price' => null,
+                        'total_price' => null,
+                        'remarks' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
 
             // Log the action
             AuditLogHelper::log(
@@ -229,7 +269,9 @@ class CustomerPortalController extends Controller
                 ->with('pdf_url', $pdfUrl);
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Failed to submit request: ' . $e->getMessage()])->withInput();
+            return back()
+                ->withErrors(['error' => 'Failed to submit request: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
@@ -279,6 +321,140 @@ class CustomerPortalController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Failed to cancel request: ' . $e->getMessage()]);
+        }
+    }
+
+    public function editRequest(Request $request, JobOrder $jobOrder)
+    {
+        $user = $request->user();
+        $customer = $user->customer;
+
+        if (!$customer) {
+            return back()->withErrors(['error' => 'No customer profile linked to your account. Please contact support.']);
+        }
+
+        if ($jobOrder->customer_id !== $customer->id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if ($jobOrder->status !== 'pending') {
+            return redirect()->route('customer.requests')->withErrors(['error' => 'Only pending requests can be edited.']);
+        }
+
+        $jobOrder->load('items');
+
+        return view('customer.requests-edit', compact('customer', 'jobOrder'));
+    }
+
+    public function updateRequest(Request $request, JobOrder $jobOrder)
+    {
+        $user = $request->user();
+        $customer = $user->customer;
+
+        if (!$customer) {
+            return back()->withErrors(['error' => 'No customer profile linked to your account. Please contact support.']);
+        }
+
+        if ($jobOrder->customer_id !== $customer->id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if ($jobOrder->status !== 'pending') {
+            return back()->withErrors(['error' => 'Only pending requests can be edited.']);
+        }
+
+        $validated = $request->validate([
+            'service_type' => 'required|string|max:255',
+            'priority' => 'required|in:normal,high,urgent',
+            'service_description' => 'required|string',
+            'service_address' => 'required|string',
+            'city' => 'nullable|string|max:100',
+            'province' => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
+            'expected_completion_date' => 'nullable|date|after_or_equal:today',
+            'notes' => 'nullable|string',
+            'items' => 'nullable|array|max:8',
+            'items.*.qty' => 'nullable|integer|min:1|max:9999',
+            'items.*.equipment_name' => 'nullable|string|max:255',
+            'items.*.model' => 'nullable|string|max:255',
+            'items.*.serial_no' => 'nullable|string|max:255',
+            'items.*.capacity' => 'nullable|string|max:255',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $jobOrder->update([
+                'service_type' => $validated['service_type'],
+                'service_description' => $validated['service_description'],
+                'service_address' => $validated['service_address'],
+                'city' => $validated['city'] ?? null,
+                'province' => $validated['province'] ?? null,
+                'postal_code' => $validated['postal_code'] ?? null,
+                'required_date' => $validated['expected_completion_date'] ?? null,
+                'expected_completion_date' => $validated['expected_completion_date'] ?? null,
+                'priority' => $validated['priority'],
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            DB::table('job_order_items')->where('job_order_id', $jobOrder->id)->delete();
+
+            if (!empty($validated['items']) && is_array($validated['items'])) {
+                foreach ($validated['items'] as $index => $item) {
+                    $equipmentName = trim((string) ($item['equipment_name'] ?? ''));
+                    $model = trim((string) ($item['model'] ?? ''));
+                    $serialNo = trim((string) ($item['serial_no'] ?? ''));
+                    $capacity = trim((string) ($item['capacity'] ?? ''));
+                    $hasAnyValue = $equipmentName !== '' || $model !== '' || $serialNo !== '' || $capacity !== '';
+
+                    if (!$hasAnyValue) {
+                        continue;
+                    }
+
+                    DB::table('job_order_items')->insert([
+                        'job_order_id' => $jobOrder->id,
+                        'item_number' => $index + 1,
+                        'equipment_type' => $equipmentName,
+                        'manufacturer' => null,
+                        'model' => $model !== '' ? $model : null,
+                        'serial_number' => $serialNo !== '' ? $serialNo : null,
+                        'id_number' => null,
+                        'range' => $capacity !== '' ? $capacity : null,
+                        'resolution' => null,
+                        'accuracy' => null,
+                        'calibration_type' => null,
+                        'calibration_points' => null,
+                        'quantity' => (int) ($item['qty'] ?? 1),
+                        'unit_price' => null,
+                        'total_price' => null,
+                        'remarks' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            app(JobOrderPdfService::class)->generate($jobOrder->fresh(['customer', 'customer.contacts', 'items']));
+
+            AuditLogHelper::log(
+                action: 'UPDATE',
+                modelType: 'JobOrder',
+                modelId: $jobOrder->id,
+                description: "Customer {$user->name} updated service request {$jobOrder->job_order_number}",
+                newValues: [
+                    'job_order_number' => $jobOrder->job_order_number,
+                    'service_type' => $validated['service_type'],
+                    'status' => $jobOrder->status,
+                ],
+                changedFields: ['service_type', 'service_description', 'service_address', 'city', 'province', 'postal_code', 'priority', 'notes', 'pdf_filename', 'pdf_path']
+            );
+
+            DB::commit();
+
+            return redirect()->route('customer.requests')
+                ->with('status', 'Your request has been updated successfully. PDF details were refreshed.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Failed to update request: ' . $e->getMessage()])->withInput();
         }
     }
 }
