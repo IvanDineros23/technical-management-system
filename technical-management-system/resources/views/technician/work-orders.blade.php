@@ -115,6 +115,18 @@
 
 @section('content')
     <div x-data="workOrdersPage()">
+        @if(session('status'))
+            <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {{ session('error') }}
+            </div>
+        @endif
+
         <!-- Header -->
         <div class="mb-6">
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Work Orders</h2>
@@ -192,10 +204,21 @@
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{{ $order->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                                 </td>
                                 <td class="py-3">
-                                    <a href="{{ route('technician.job-details', $order->id) }}" 
-                                       class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
-                                        View
-                                    </a>
+                                    <div class="flex items-center gap-3">
+                                        @if($order->status === 'pending')
+                                            <form method="POST" action="{{ route('technician.work-orders.assign-to-me', $order) }}" class="m-0">
+                                                @csrf
+                                                <button type="submit" class="text-emerald-600 dark:text-emerald-400 hover:underline text-sm font-semibold">
+                                                    Assign to Me
+                                                </button>
+                                            </form>
+                                        @endif
+
+                                        <a href="{{ route('technician.job-details', $order->id) }}" 
+                                           class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
+                                            View
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             @endforeach

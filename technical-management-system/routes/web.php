@@ -1260,6 +1260,58 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             ->paginate(20);
         return view('technician.work-orders', compact('workOrders'));
     })->name('work-orders');
+
+    Route::post('/work-orders/{jobOrder}/assign-to-me', function (\App\Models\JobOrder $jobOrder) {
+        $currentUser = auth()->user();
+
+        if ($jobOrder->status !== 'pending') {
+            return back()->with('error', 'This work order is no longer available for self-assignment.');
+        }
+
+        $activeAssignment = \App\Models\Assignment::where('job_order_id', $jobOrder->id)
+            ->whereIn('status', ['assigned', 'in_progress', 'on_hold'])
+            ->latest('id')
+            ->first();
+
+        if ($activeAssignment && (int) $activeAssignment->assigned_to !== (int) $currentUser->id) {
+            return back()->with('error', 'This work order is already assigned to another technician.');
+        }
+
+        if ($activeAssignment && (int) $activeAssignment->assigned_to === (int) $currentUser->id) {
+            return back()->with('status', 'This work order is already assigned to you.');
+        }
+
+        \App\Models\Assignment::create([
+            'job_order_id' => $jobOrder->id,
+            'assigned_to' => $currentUser->id,
+            'assigned_by' => $currentUser->id,
+            'priority' => $jobOrder->priority ?? 'normal',
+            'status' => 'assigned',
+            'location' => $jobOrder->service_address,
+            'notes' => 'Self-assigned by technician from Work Orders page.',
+        ]);
+
+        $jobOrder->update([
+            'status' => 'assigned',
+        ]);
+
+        \App\Helpers\AuditLogHelper::log(
+            'ASSIGN',
+            'Assignment',
+            $jobOrder->id,
+            "Technician {$currentUser->name} self-assigned Job Order {$jobOrder->job_order_number}",
+            null,
+            [
+                'job_order_id' => $jobOrder->id,
+                'assigned_to' => $currentUser->id,
+                'assigned_by' => $currentUser->id,
+                'status' => 'assigned',
+            ],
+            ['assigned_to', 'assigned_by', 'status']
+        );
+
+        return back()->with('status', 'Work order assigned to you successfully.');
+    })->name('work-orders.assign-to-me');
     
     Route::get('/job-details/{id}', function ($id) {
         $job = \App\Models\JobOrder::with([
