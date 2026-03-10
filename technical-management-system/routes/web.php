@@ -1808,25 +1808,6 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         return response()->json(['success' => true, 'message' => 'Job paused successfully']);
     })->name('job.pause');
     
-    Route::get('/maintenance', function () {
-        $maintenanceTasks = \App\Models\EquipmentMaintenance::with('equipment')
-            ->latest('next_maintenance_date')
-            ->paginate(20);
-        
-        // Calculate stats
-        $today = now();
-        $stats = [
-            'scheduled_today' => \App\Models\EquipmentMaintenance::whereDate('next_maintenance_date', $today)->count(),
-            'overdue' => \App\Models\EquipmentMaintenance::where('next_maintenance_date', '<', $today)
-                ->where('status', '!=', 'completed')
-                ->count(),
-            'this_week' => \App\Models\EquipmentMaintenance::whereBetween('next_maintenance_date', [$today->startOfWeek(), $today->endOfWeek()])->count(),
-            'completed' => \App\Models\EquipmentMaintenance::where('status', 'completed')->count(),
-        ];
-        
-        return view('technician.maintenance', compact('maintenanceTasks', 'stats'));
-    })->name('maintenance');
-    
     Route::get('/equipment', function () {
         $equipment = Equipment::latest()->paginate(20);
         $equipmentStats = [
@@ -3326,44 +3307,6 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         $equipment->update(['location' => $data['location']]);
         return redirect()->route('tech-head.equipment')->with('status', 'Location updated');
     })->name('equipment.location');
-    
-    Route::get('/maintenance', function () {
-        $maintenanceTasks = Equipment::where('status', 'maintenance')
-            ->orWhere('calibration_required', true)
-            ->with(['maintenanceRecords' => function($query) {
-                $query->latest()->limit(5);
-            }])
-            ->paginate(20);
-        
-        // Additional stats
-        $recentRecords = DB::table('equipment_maintenance')
-            ->whereMonth('performed_at', now()->month)
-            ->whereYear('performed_at', now()->year)
-            ->count();
-            
-        $overdueCount = Equipment::where('status', 'maintenance')
-            ->where('next_maintenance', '<', now())
-            ->count();
-        
-        return view('tech-head.maintenance', compact('maintenanceTasks', 'recentRecords', 'overdueCount'));
-    })->name('maintenance');
-
-    // Maintenance records
-    Route::post('/maintenance', function (\Illuminate\Http\Request $request) {
-        $data = $request->validate([
-            'equipment_id' => 'required|exists:equipment,id',
-            'maintenance_type' => 'nullable|in:preventive,corrective,calibration,repair',
-            'performed_at' => 'required|date',
-            'description' => 'nullable|string',
-        ]);
-        DB::table('equipment_maintenance')->insert(array_merge($data, [
-            'performed_by' => auth()->id(),
-            'status' => 'completed',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]));
-        return redirect()->route('tech-head.maintenance')->with('status', 'Maintenance record added');
-    })->name('maintenance.store');
     
     Route::get('/schedule', function () {
         $today = now();
