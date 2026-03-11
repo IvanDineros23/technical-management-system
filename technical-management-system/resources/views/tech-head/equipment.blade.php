@@ -10,7 +10,7 @@
 @endsection
 
 @section('content')
-    <div x-data="{ showAdd:false, showEdit:false, showStatus:false, showLocation:false, selectedId:null, selectedEquipment:null }" class="space-y-6">
+    <div x-data="{ showAdd:false, showEdit:false, showStatus:false, showLocation:false, showRequests:false, selectedId:null, selectedEquipment:null }" class="space-y-6">
         
         <!-- Stats -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -32,17 +32,37 @@
             </div>
         </div>
 
-        <div class="flex justify-end">
+        <div class="flex justify-end gap-3">
+            @php $pendingCount = isset($equipmentRequests) ? $equipmentRequests->where('status','pending')->count() : 0; @endphp
+            <button @click="showRequests=true" class="relative flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                Equipment Requests
+                @if($pendingCount > 0)
+                <span class="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-red-500 text-white rounded-full">{{ $pendingCount }}</span>
+                @endif
+            </button>
             <button @click="showAdd=true" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Add Equipment</button>
         </div>
 
         <!-- Table -->
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center justify-between gap-4 mb-6">
                 <div>
                     <h3 class="text-base font-bold text-slate-900 dark:text-white">Equipment Inventory</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Complete list of all equipment</p>
                 </div>
+                <form method="GET" action="{{ route('tech-head.equipment') }}" class="flex items-center gap-2">
+                    <div class="relative">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search equipment..." class="pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 w-56">
+                    </div>
+                    @if(!empty($search))
+                    <a href="{{ route('tech-head.equipment') }}" class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Clear</a>
+                    @endif
+                </form>
             </div>
             
             @if($equipment->count() > 0)
@@ -51,12 +71,12 @@
                     <thead class="border-b border-gray-200 dark:border-gray-700">
                         <tr class="text-left">
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Name</th>
-                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Code</th>
-                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Status</th>
-                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Category</th>
-                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Location</th>
-                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Updated</th>
-                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-right">Actions</th>
+                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Code</th>
+                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Status</th>
+                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Category</th>
+                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Location</th>
+                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Updated</th>
+                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -65,8 +85,8 @@
                                 <td class="py-3">
                                     <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $item->name ?? 'N/A' }}</p>
                                 </td>
-                                <td class="py-3"><p class="text-sm text-gray-700 dark:text-gray-300">{{ $item->equipment_code ?? 'N/A' }}</p></td>
-                                <td class="py-3">
+                                <td class="py-3 text-center"><p class="text-sm text-gray-700 dark:text-gray-300">{{ $item->equipment_code ?? 'N/A' }}</p></td>
+                                <td class="py-3 text-center">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full
                                         {{ ($item->status ?? '') === 'available' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' : '' }}
                                         {{ ($item->status ?? '') === 'in_use' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' : '' }}
@@ -75,11 +95,11 @@
                                         {{ ucfirst($item->status ?? 'unknown') }}
                                     </span>
                                 </td>
-                                <td class="py-3"><p class="text-sm text-gray-700 dark:text-gray-300">{{ $item->category ?? 'N/A' }}</p></td>
-                                <td class="py-3"><p class="text-sm text-gray-700 dark:text-gray-300">{{ $item->location ?? '-' }}</p></td>
-                                <td class="py-3"><p class="text-sm text-gray-700 dark:text-gray-300">{{ optional($item->updated_at)->setTimezone('Asia/Manila')->format('M d, Y') }}</p></td>
+                                <td class="py-3 text-center"><p class="text-sm text-gray-700 dark:text-gray-300">{{ $item->category ?? 'N/A' }}</p></td>
+                                <td class="py-3 text-center"><p class="text-sm text-gray-700 dark:text-gray-300">{{ $item->location ?? '-' }}</p></td>
+                                <td class="py-3 text-center"><p class="text-sm text-gray-700 dark:text-gray-300">{{ optional($item->updated_at)->setTimezone('Asia/Manila')->format('M d, Y') }}</p></td>
                                 <td class="py-3">
-                                    <div class="flex gap-2 justify-end">
+                                    <div class="flex gap-2 justify-center">
                                         <button @click="selectedId={{ $item->id }}; showEdit=true;" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">Edit</button>
                                         <button @click="selectedId={{ $item->id }}; showStatus=true;" class="text-amber-600 dark:text-amber-400 hover:underline text-xs font-medium">Status</button>
                                         <form method="POST" action="{{ route('tech-head.equipment.destroy', $item->id) }}" onsubmit="return confirm('Delete equipment?')" class="inline">
@@ -315,6 +335,121 @@
                         <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">Save</button>
                     </div>
                 </form>
+                </div>
+            </div>
+        </div>
+        <!-- Equipment Requests Modal -->
+        <div
+            x-show="showRequests"
+            x-cloak
+            @keydown.escape.window="showRequests=false"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 z-50 overflow-y-auto"
+        >
+            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showRequests=false"></div>
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 transform scale-95"
+                    x-transition:enter-end="opacity-100 transform scale-100"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100 transform scale-100"
+                    x-transition:leave-end="opacity-0 transform scale-95"
+                    class="relative w-full max-w-4xl bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700 max-h-[85vh] overflow-y-auto"
+                >
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Equipment Requests</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Review and action equipment requests from technicians</p>
+                            </div>
+                            <button type="button" @click="showRequests=false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        @if(isset($equipmentRequests) && $equipmentRequests->count() > 0)
+                        <div class="space-y-3">
+                            @foreach($equipmentRequests as $req)
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4" x-data="{ showReject: false }">
+                                {{-- Top row: name, date, status --}}
+                                <div class="flex items-center justify-between gap-3 mb-2">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="font-semibold text-sm text-gray-900 dark:text-white truncate">{{ $req->requestedBy->name ?? 'Unknown' }}</span>
+                                        <span class="text-gray-400 text-xs flex-shrink-0">•</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">{{ $req->created_at->format('M d, Y') }}</span>                                            @if($req->jobOrder)
+                                            <span class="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded">{{ $req->jobOrder->job_order_number }}</span>
+                                            @endif                                    </div>
+                                    <span class="flex-shrink-0 px-2.5 py-1 text-xs font-semibold rounded-full
+                                        {{ $req->status === 'pending'  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200' : '' }}
+                                        {{ $req->status === 'approved' ? 'bg-green-100  text-green-800  dark:bg-green-900/30  dark:text-green-200'  : '' }}
+                                        {{ $req->status === 'rejected' ? 'bg-red-100    text-red-800    dark:bg-red-900/30    dark:text-red-200'    : '' }}">
+                                        {{ ucfirst($req->status) }}
+                                    </span>
+                                </div>
+
+                                {{-- Equipment name --}}
+                                <p class="text-sm font-semibold text-indigo-700 dark:text-indigo-300 mb-1">{{ $req->equipment_name }}</p>
+
+                                {{-- Purpose --}}
+                                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $req->purpose }}</p>
+
+                                @if($req->admin_notes)
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 italic">Note: {{ $req->admin_notes }}</p>
+                                @endif
+
+                                {{-- Action buttons (pending only) --}}
+                                @if($req->status === 'pending')
+                                <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                                    <div class="flex items-center gap-2">
+                                        <form method="POST" action="{{ route('tech-head.equipment.requests.update', $req->id) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="status" value="approved">
+                                            <button type="submit" class="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium transition-colors">Approve</button>
+                                        </form>
+                                        <button type="button" @click="showReject=!showReject" class="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors">
+                                            Reject
+                                        </button>
+                                    </div>
+
+                                    {{-- Inline reject form — no absolute positioning --}}
+                                    <div x-show="showReject" x-cloak x-transition class="mt-3">
+                                        <form method="POST" action="{{ route('tech-head.equipment.requests.update', $req->id) }}" class="space-y-2">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="status" value="rejected">
+                                            <textarea name="admin_notes" rows="2" placeholder="Reason for rejection (optional)" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"></textarea>
+                                            <div class="flex justify-end gap-2">
+                                                <button type="button" @click="showReject=false" class="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
+                                                <button type="submit" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors">Confirm Reject</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                @endif
+                            </div>
+                            @endforeach
+                        </div>
+                        <div class="mt-4">
+                            {{ $equipmentRequests->links() }}
+                        </div>
+                        @else
+                        <div class="text-center py-10">
+                            <svg class="mx-auto w-12 h-12 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">No equipment requests yet</p>
+                        </div>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>

@@ -279,6 +279,18 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purpose/Reason *</label>
                         <textarea name="purpose" rows="3" x-model="requestData.purpose" required placeholder="Explain why you need this item..." class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"></textarea>
                     </div>
+                    @if(isset($myActiveJobOrders) && $myActiveJobOrders->count() > 0)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Link to Job Order <span class="text-gray-400 font-normal">(optional)</span></label>
+                        <select name="job_order_id" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+                            <option value="">-- None --</option>
+                            @foreach($myActiveJobOrders as $asgn)
+                            <option value="{{ $asgn->jobOrder->id }}">{{ $asgn->jobOrder->job_order_number }} — {{ $asgn->jobOrder->service_description ?? $asgn->jobOrder->service_type }}</option>
+                            @endforeach
+                        </select>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Track which items were used for this job order.</p>
+                    </div>
+                    @endif
                     <div class="flex justify-end gap-3 pt-2">
                         <button type="button" @click="showRequest=false" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">Cancel</button>
                         <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Submit Request</button>

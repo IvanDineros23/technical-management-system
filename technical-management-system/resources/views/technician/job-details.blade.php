@@ -25,6 +25,10 @@
                 timeStarted: null,
                 timeFinished: null,
                 remarks: '',
+                showEquipmentRequest: false,
+                eqSelectMode: 'existing',
+                eqId: '',
+                eqName: '',
                 async addTask() {
                     const text = this.newTaskText.trim();
                     if (!text) return;
@@ -549,6 +553,9 @@
                         <a href="{{ route('technician.inventory') }}" class="block w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center">
                             Request Materials
                         </a>
+                        <button type="button" @click="showEquipmentRequest=true" class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
+                            Request Equipment
+                        </button>
                     </div>
                 </div>
 
@@ -615,15 +622,22 @@
 
                 <!-- Equipment -->
                 <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Equipment</h3>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Equipment</h3>
+                        @php $pendingEqCount = $myJobEquipmentRequests->where('status','pending')->count(); @endphp
+                        @if($pendingEqCount > 0)
+                        <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200 rounded-full">{{ $pendingEqCount }} pending</span>
+                        @endif
+                    </div>
+
+                    {{-- Customer equipment from job order items --}}
                     @if($job->items->count() > 0)
-                        <div class="space-y-3">
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Job Items</p>
+                        <div class="space-y-2 mb-4">
                             @foreach($job->items as $item)
                                 <div class="p-3 bg-gray-50 dark:bg-gray-700/40 rounded-lg">
                                     <div class="flex items-center justify-between">
-                                        <p class="text-sm font-semibold text-gray-900 dark:text-white">
-                                            {{ $item->equipment_type }}
-                                        </p>
+                                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $item->equipment_type }}</p>
                                         <span class="text-xs text-gray-500 dark:text-gray-400">#{{ $item->item_number }}</span>
                                     </div>
                                     <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
@@ -633,19 +647,146 @@
                                         @if($item->serial_number)
                                             <p>SN: {{ $item->serial_number }}</p>
                                         @endif
-                                        @if($item->id_number)
-                                            <p>ID: {{ $item->id_number }}</p>
-                                        @endif
                                     </div>
                                 </div>
                             @endforeach
                         </div>
-                    @else
+                    @endif
+
+                    {{-- Requested equipment for this job --}}
+                    @if($myJobEquipmentRequests->count() > 0)
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">My Requests</p>
+                        <div class="space-y-2">
+                            @foreach($myJobEquipmentRequests as $req)
+                            <div class="p-3 rounded-lg border
+                                {{ $req->returned_at ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/20' : '' }}
+                                {{ !$req->returned_at && $req->status === 'pending'  ? 'border-yellow-200 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/10' : '' }}
+                                {{ !$req->returned_at && $req->status === 'approved' ? 'border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/10' : '' }}
+                                {{ !$req->returned_at && $req->status === 'rejected' ? 'border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/10' : '' }}">
+                                <div class="flex items-start justify-between gap-2">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white leading-snug">{{ $req->equipment_name }}</p>
+                                    @if($req->returned_at)
+                                    <span class="flex-shrink-0 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-300">Returned</span>
+                                    @elseif($req->status === 'pending')
+                                    <span class="flex-shrink-0 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">Pending</span>
+                                    @elseif($req->status === 'approved')
+                                    <span class="flex-shrink-0 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">Approved</span>
+                                    @else
+                                    <span class="flex-shrink-0 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200">Rejected</span>
+                                    @endif
+                                </div>
+                                @if($req->admin_notes)
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 italic">{{ $req->admin_notes }}</p>
+                                @endif
+                            </div>
+                            @endforeach
+                        </div>
+                    @elseif($job->items->count() === 0)
                         <p class="text-sm text-gray-500 dark:text-gray-400">No equipment listed for this job.</p>
                     @endif
+
+                    <button type="button" @click="showEquipmentRequest=true" class="mt-4 w-full px-3 py-2 border-2 border-dashed border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+                        + Request Equipment
+                    </button>
                 </div>
 
             </div>
         </div>
+
+    <!-- Request Equipment Modal -->
+    <div
+        x-show="showEquipmentRequest"
+        x-cloak
+        @keydown.escape.window="showEquipmentRequest=false"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-50 overflow-y-auto"
+    >
+        <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showEquipmentRequest=false"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform scale-95"
+                x-transition:enter-end="opacity-100 transform scale-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform scale-100"
+                x-transition:leave-end="opacity-0 transform scale-95"
+                class="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+            >
+                <form method="POST" action="{{ route('technician.equipment.request') }}" class="p-6 space-y-4">
+                    @csrf
+                    <input type="hidden" name="job_order_id" value="{{ $job->id }}">
+                    <input type="hidden" name="equipment_id" :value="eqId">
+                    <input type="hidden" name="equipment_name" :value="eqName">
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Request Equipment</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">For: <span class="font-semibold text-indigo-600 dark:text-indigo-400">{{ $job->job_order_number }}</span></p>
+                        </div>
+                        <button type="button" @click="showEquipmentRequest=false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Mode toggle -->
+                    <div class="flex gap-2">
+                        <button type="button"
+                            @click="eqSelectMode='existing'; eqId=''; eqName=''"
+                            :class="eqSelectMode==='existing' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                            class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors">
+                            Select from Inventory
+                        </button>
+                        <button type="button"
+                            @click="eqSelectMode='new'; eqId=''; eqName=''"
+                            :class="eqSelectMode==='new' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
+                            class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors">
+                            Enter Name Manually
+                        </button>
+                    </div>
+
+                    <div x-show="eqSelectMode==='existing'">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Equipment *</label>
+                        <select @change="eqId=$event.target.value; eqName=$event.target.selectedOptions[0].dataset.name"
+                            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+                            <option value="" data-name="">-- Select Equipment --</option>
+                            @foreach($allEquipment as $eq)
+                            <option value="{{ $eq->id }}" data-name="{{ $eq->name }}"
+                                {{ $eq->status !== 'available' ? 'class=text-gray-400' : '' }}>
+                                {{ $eq->name }} ({{ $eq->equipment_code }}) — {{ ucfirst(str_replace('_',' ',$eq->status)) }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div x-show="eqSelectMode==='new'">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Equipment Name *</label>
+                        <input type="text" x-model="eqName" placeholder="e.g., Digital Pressure Gauge" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purpose / Why do you need it? *</label>
+                        <textarea name="purpose" rows="3" required placeholder="Describe what you'll use this equipment for in this job..." class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white resize-none"></textarea>
+                    </div>
+
+                    <p class="text-xs text-gray-500 dark:text-gray-400 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg px-3 py-2">
+                        Your request will be sent to the Tech Head for approval. Once approved, the equipment will be marked as in-use and automatically returned to available when you complete this job.
+                    </p>
+
+                    <div class="flex justify-end gap-3 pt-1">
+                        <button type="button" @click="showEquipmentRequest=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">Submit Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        </div>
+    </div>
     </div>
 @endsection

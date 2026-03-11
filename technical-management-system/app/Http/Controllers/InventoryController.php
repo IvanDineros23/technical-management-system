@@ -103,7 +103,15 @@ class InventoryController extends Controller
                 ->withQueryString();
         }
 
-        return view($view, compact('items', 'stats', 'categories', 'requests'));
+        $myActiveJobOrders = null;
+        if ($view === 'technician.inventory') {
+            $myActiveJobOrders = \App\Models\Assignment::where('assigned_to', auth()->id())
+                ->whereIn('status', ['assigned', 'in_progress'])
+                ->with('jobOrder')
+                ->get();
+        }
+
+        return view($view, compact('items', 'stats', 'categories', 'requests', 'myActiveJobOrders'));
     }
 
     private function validateItem(Request $request, ?int $ignoreId): array
@@ -162,12 +170,14 @@ class InventoryController extends Controller
             'inventory_item_id' => 'required|exists:inventory_items,id',
             'quantity' => 'required|integer|min:1',
             'purpose' => 'required|string|max:500',
+            'job_order_id' => 'nullable|exists:job_orders,id',
         ]);
 
         $item = InventoryItem::find($validated['inventory_item_id']);
 
         $inventoryRequest = InventoryRequest::create([
             'inventory_item_id' => $validated['inventory_item_id'],
+            'job_order_id' => $validated['job_order_id'] ?? null,
             'requested_by' => auth()->id(),
             'quantity' => $validated['quantity'],
             'purpose' => $validated['purpose'],

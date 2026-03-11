@@ -1379,7 +1379,14 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return view('technician.job-details', compact('job', 'assignment', 'checklistItems', 'crewMembers', 'technicians'));
+        $allEquipment = \App\Models\Equipment::orderBy('name')->get(['id', 'name', 'equipment_code', 'status']);
+        $myJobEquipmentRequests = \App\Models\EquipmentRequest::where('job_order_id', $id)
+            ->where('requested_by', auth()->id())
+            ->with('equipment')
+            ->latest()
+            ->get();
+
+        return view('technician.job-details', compact('job', 'assignment', 'checklistItems', 'crewMembers', 'technicians', 'allEquipment', 'myJobEquipmentRequests'));
     })->name('job-details');
 
     Route::post('/job/{jobId}/crew-members', function (\Illuminate\Http\Request $request, $jobId) {
@@ -1639,6 +1646,19 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             'status' => 'pending',
         ]);
 
+        // Auto-return any equipment checked out for this job order
+        \App\Models\EquipmentRequest::where('job_order_id', $job->id)
+            ->where('status', 'approved')
+            ->whereNull('returned_at')
+            ->with('equipment')
+            ->get()
+            ->each(function ($req) {
+                if ($req->equipment_id && $req->equipment) {
+                    $req->equipment->update(['status' => 'available']);
+                }
+                $req->update(['returned_at' => now()]);
+            });
+
         return redirect()->back()->with('status', 'Report submitted for review.');
     })->name('job.submit-report');
 
@@ -1710,6 +1730,19 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         $job->update([
             'status' => 'pending',
         ]);
+
+        // Auto-return any equipment checked out for this job order
+        \App\Models\EquipmentRequest::where('job_order_id', $job->id)
+            ->where('status', 'approved')
+            ->whereNull('returned_at')
+            ->with('equipment')
+            ->get()
+            ->each(function ($req) {
+                if ($req->equipment_id && $req->equipment) {
+                    $req->equipment->update(['status' => 'available']);
+                }
+                $req->update(['returned_at' => now()]);
+            });
 
         return response()->json([
             'success' => true,
@@ -1809,16 +1842,48 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     })->name('job.pause');
     
     Route::get('/equipment', function () {
-        $equipment = Equipment::latest()->paginate(20);
+        $search = request('search');
+        $equipment = Equipment::when($search, fn($q) => $q->where('name', 'like', "%{$search}%")
+                ->orWhere('equipment_code', 'like', "%{$search}%")
+                ->orWhere('category', 'like', "%{$search}%")
+                ->orWhere('location', 'like', "%{$search}%"))
+            ->latest()->paginate(20)->withQueryString();
         $equipmentStats = [
             'total' => Equipment::count(),
             'available' => Equipment::where('status', 'available')->count(),
             'in_use' => Equipment::where('status', 'in_use')->count(),
             'maintenance' => Equipment::where('status', 'maintenance')->count(),
         ];
-        return view('technician.equipment', compact('equipment', 'equipmentStats'));
+        $allEquipment = Equipment::orderBy('name')->get(['id', 'name', 'equipment_code', 'status']);
+        $myRequests = \App\Models\EquipmentRequest::where('requested_by', auth()->id())
+            ->with(['equipment', 'jobOrder'])
+            ->latest()
+            ->get();
+        $myActiveJobOrders = \App\Models\Assignment::where('assigned_to', auth()->id())
+            ->whereIn('status', ['assigned', 'in_progress'])
+            ->with('jobOrder')
+            ->get();
+        return view('technician.equipment', compact('equipment', 'equipmentStats', 'allEquipment', 'myRequests', 'myActiveJobOrders', 'search'));
     })->name('equipment');
-    
+
+    Route::post('/equipment/request', function (\Illuminate\Http\Request $request) {
+        $validated = $request->validate([
+            'equipment_id'  => 'nullable|exists:equipment,id',
+            'equipment_name' => 'required|string|max:255',
+            'purpose'       => 'required|string|max:1000',
+            'job_order_id'  => 'nullable|exists:job_orders,id',
+        ]);
+        \App\Models\EquipmentRequest::create([
+            'equipment_id'  => $validated['equipment_id'] ?? null,
+            'equipment_name' => $validated['equipment_name'],
+            'job_order_id'  => $validated['job_order_id'] ?? null,
+            'requested_by'  => auth()->id(),
+            'purpose'       => $validated['purpose'],
+            'status'        => 'pending',
+        ]);
+        return redirect()->route('technician.equipment')->with('status', 'Equipment request submitted. Waiting for approval.');
+    })->name('equipment.request');
+
     Route::get('/inventory', [InventoryController::class, 'technicianIndex'])->name('inventory');
     Route::post('/inventory/request', [InventoryController::class, 'requestItem'])->name('inventory.request');
     
@@ -3248,7 +3313,12 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
     })->name('reports.revise');
     
     Route::get('/equipment', function () {
-        $equipment = Equipment::latest()->paginate(20);
+        $search = request('search');
+        $equipment = Equipment::when($search, fn($q) => $q->where('name', 'like', "%{$search}%")
+                ->orWhere('equipment_code', 'like', "%{$search}%")
+                ->orWhere('category', 'like', "%{$search}%")
+                ->orWhere('location', 'like', "%{$search}%"))
+            ->latest()->paginate(20)->withQueryString();
         $equipmentStats = [
             'total' => Equipment::count(),
             'available' => Equipment::where('status', 'available')->count(),
@@ -3256,8 +3326,39 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             'maintenance' => Equipment::where('status', 'maintenance')->count(),
             'retired' => Equipment::where('status', 'retired')->count(),
         ];
-        return view('tech-head.equipment', compact('equipment', 'equipmentStats'));
+        $equipmentRequests = \App\Models\EquipmentRequest::with(['requestedBy', 'equipment', 'jobOrder'])
+            ->latest()
+            ->paginate(15, ['*'], 'eq_requests_page');
+        return view('tech-head.equipment', compact('equipment', 'equipmentStats', 'equipmentRequests', 'search'));
     })->name('equipment');
+
+    Route::patch('/equipment/requests/{equipmentRequest}', function (\Illuminate\Http\Request $request, \App\Models\EquipmentRequest $equipmentRequest) {
+        $validated = $request->validate([
+            'status' => 'required|in:approved,rejected',
+            'admin_notes' => 'nullable|string|max:500',
+        ]);
+        $equipmentRequest->update([
+            'status' => $validated['status'],
+            'admin_notes' => $validated['admin_notes'] ?? null,
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+        ]);
+        // If approved and bound to a real equipment item, mark it as in_use
+        if ($validated['status'] === 'approved' && $equipmentRequest->equipment_id) {
+            \App\Models\Equipment::where('id', $equipmentRequest->equipment_id)
+                ->where('status', 'available')
+                ->update(['status' => 'in_use']);
+        }
+        \App\Helpers\AuditLogHelper::log(
+            action: 'UPDATE',
+            modelType: 'EquipmentRequest',
+            modelId: $equipmentRequest->id,
+            description: 'Tech Head ' . ucfirst($validated['status']) . ' equipment request for: ' . $equipmentRequest->equipment_name,
+            newValues: ['status' => $validated['status']],
+            changedFields: ['status']
+        );
+        return redirect()->route('tech-head.equipment')->with('status', 'Equipment request ' . $validated['status'] . '.');
+    })->name('equipment.requests.update');
 
     Route::get('/inventory', [InventoryController::class, 'techHeadIndex'])->name('inventory');
     Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');

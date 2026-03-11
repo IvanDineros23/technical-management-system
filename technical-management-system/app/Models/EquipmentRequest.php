@@ -6,27 +6,29 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\JobOrder;
 
-class InventoryRequest extends Model
+class EquipmentRequest extends Model
 {
     protected $fillable = [
-        'inventory_item_id',
+        'equipment_id',
+        'equipment_name',
         'job_order_id',
         'requested_by',
         'approved_by',
-        'quantity',
         'purpose',
         'status',
         'admin_notes',
         'approved_at',
+        'returned_at',
     ];
 
     protected $casts = [
         'approved_at' => 'datetime',
+        'returned_at' => 'datetime',
     ];
 
-    public function inventoryItem(): BelongsTo
+    public function equipment(): BelongsTo
     {
-        return $this->belongsTo(InventoryItem::class);
+        return $this->belongsTo(Equipment::class);
     }
 
     public function jobOrder(): BelongsTo
@@ -35,11 +37,6 @@ class InventoryRequest extends Model
     }
 
     public function requestedBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'requested_by');
-    }
-
-    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requested_by');
     }
