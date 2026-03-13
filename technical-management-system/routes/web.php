@@ -1809,7 +1809,44 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
 
         return redirect()->back()->with('success', 'File uploaded successfully.');
     })->name('job.attachments.upload');
-    
+
+    Route::delete('/attachments/{attachment}', function (\App\Models\JobOrderAttachment $attachment) {
+        // Only allow deleting attachments belonging to jobs the technician has access to
+        $jobOrder = $attachment->jobOrder;
+        $technicianId = auth()->id();
+        $hasAccess = \App\Models\Assignment::where('job_order_id', $jobOrder->id)
+            ->where('assigned_to', $technicianId)
+            ->exists();
+        if (! $hasAccess) {
+            abort(403, 'Unauthorized');
+        }
+
+        $snapshot = [
+            'id' => $attachment->id,
+            'job_order_id' => $attachment->job_order_id,
+            'file_name' => $attachment->file_name,
+            'file_path' => $attachment->file_path,
+        ];
+
+        if ($attachment->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($attachment->file_path)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($attachment->file_path);
+        }
+
+        $attachment->delete();
+
+        \App\Helpers\AuditLogHelper::log(
+            'DELETE',
+            'JobAttachment',
+            $snapshot['id'],
+            "Technician removed attachment '{$snapshot['file_name']}' from Job Order {$jobOrder->job_order_number}",
+            $snapshot,
+            null,
+            ['file_name', 'file_path']
+        );
+
+        return redirect()->back()->with('success', 'Attachment removed successfully.');
+    })->name('attachments.delete');
+
     // Job status update routes
     Route::post('/job/{jobId}/start', function ($jobId) {
         $job = \App\Models\JobOrder::findOrFail($jobId);
@@ -2405,11 +2442,13 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
     })->name('dashboard');
     
     Route::get('/work-orders', function (\Illuminate\Http\Request $request) {
-        $search = $request->get('search');
-        $status = $request->get('status');
-        $priority = $request->get('priority');
+        $search = $request->query('search');
+        $status = $request->query('status');
+        $priority = $request->query('priority');
 
-        $techHeadId = $request->user()->id;
+        if ($status === 'pending_approval') {
+            $status = 'for_accounting_approval';
+        }
         
         $query = JobOrder::with([
             'customer',
@@ -2419,11 +2458,6 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             'assignments.assignedTo'
         ])->withCount('certificates');
 
-        $query->where(function ($scoped) use ($techHeadId) {
-            $scoped->whereNotNull('approved_by')
-                ->orWhere('created_by', $techHeadId);
-        });
-        
         // Show all work orders (assigned and unassigned)
         
         // Search filter
@@ -2448,7 +2482,7 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             $query->where('priority', $priority);
         }
         
-        $workOrders = $query->latest()->paginate(20)->appends([
+        $workOrders = $query->latest()->paginate(10)->appends([
             'search' => $search,
             'status' => $status,
             'priority' => $priority

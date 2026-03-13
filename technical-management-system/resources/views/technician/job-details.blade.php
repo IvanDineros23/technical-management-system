@@ -22,6 +22,9 @@
                 newCrewName: '',
                 showRemoveModal: false,
                 taskToRemove: null,
+                showAttachmentRemoveModal: false,
+                attachmentRemoveUrl: '',
+                attachmentRemoveName: '',
                 timeStarted: null,
                 timeFinished: null,
                 remarks: '',
@@ -79,6 +82,16 @@
                 closeRemoveModal() {
                     this.showRemoveModal = false;
                     this.taskToRemove = null;
+                },
+                openAttachmentRemoveModal(url, fileName) {
+                    this.attachmentRemoveUrl = url;
+                    this.attachmentRemoveName = fileName;
+                    this.showAttachmentRemoveModal = true;
+                },
+                closeAttachmentRemoveModal() {
+                    this.showAttachmentRemoveModal = false;
+                    this.attachmentRemoveUrl = '';
+                    this.attachmentRemoveName = '';
                 },
                 crewMemberByUser(userId) {
                     return this.crewMembers.find(member => member.user_id === userId) || null;
@@ -509,10 +522,17 @@
                                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ number_format($attachment->file_size / 1024, 2) }} KB • {{ $attachment->created_at->format('M d, Y H:i') }}</p>
                                 </div>
                             </div>
-                            <a href="{{ Storage::url($attachment->file_path) }}" target="_blank" 
-                               class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
-                                Download
-                            </a>
+                            <div class="flex items-center gap-3">
+                                <a href="{{ Storage::url($attachment->file_path) }}" download="{{ $attachment->file_name }}"
+                                   class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
+                                    Download
+                                </a>
+                                <button type="button"
+                                        @click="openAttachmentRemoveModal(@js(route('technician.attachments.delete', $attachment->id)), @js($attachment->file_name))"
+                                        class="text-red-600 dark:text-red-400 hover:underline text-sm font-medium">
+                                    Remove
+                                </button>
+                            </div>
                         </div>
                         @endforeach
                     </div>
@@ -786,7 +806,65 @@
                 </form>
             </div>
         </div>
-        </div>
     </div>
+
+        <!-- Remove Attachment Modal -->
+        <div
+            x-show="showAttachmentRemoveModal"
+            x-cloak
+            @keydown.escape.window="closeAttachmentRemoveModal()"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 z-50 overflow-y-auto"
+        >
+            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="closeAttachmentRemoveModal()"></div>
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 transform scale-95"
+                    x-transition:enter-end="opacity-100 transform scale-100"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100 transform scale-100"
+                    x-transition:leave-end="opacity-0 transform scale-95"
+                    class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+                >
+                    <form :action="attachmentRemoveUrl" method="POST" class="p-6 space-y-4">
+                        @csrf
+                        @method('DELETE')
+
+                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Remove Attachment</h3>
+                            <button type="button" @click="closeAttachmentRemoveModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Are you sure you want to remove this attachment?</p>
+                            <div class="p-3 bg-gray-50 dark:bg-gray-700/40 rounded-lg">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white break-all" x-text="attachmentRemoveName || 'Selected file'"></p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <button type="button" @click="closeAttachmentRemoveModal()"
+                                    class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                    class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
+                                Remove
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection

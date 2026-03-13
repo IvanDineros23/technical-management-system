@@ -83,6 +83,192 @@
             this.selectedOrder = order;
             this.showTimeline = true;
         },
+        normalizeStatus(status) {
+            return status === 'pending_approval' ? 'for_accounting_approval' : status;
+        },
+        statusLabel(status) {
+            const normalizedStatus = this.normalizeStatus(status);
+
+            if (normalizedStatus === 'pending') {
+                return 'Waiting for Assignment';
+            }
+
+            if (normalizedStatus === 'approved') {
+                return 'Ready for Assignment';
+            }
+
+            if (normalizedStatus === 'for_accounting_approval') {
+                return 'For Accounting Approval';
+            }
+
+            if (!normalizedStatus) {
+                return 'N/A';
+            }
+
+            return normalizedStatus.replace(/_/g, ' ').replace(/\b\w/g, character => character.toUpperCase());
+        },
+        assignmentTimelineLabel(order) {
+            if (!order || !order.assignments || order.assignments.length === 0) {
+                return 'Pending assignment';
+            }
+
+            return order.assignments
+                .map(assignment => assignment.technician)
+                .filter(Boolean)
+                .join(', ');
+        },
+        calibrationTimelineLabel(order) {
+            const normalizedStatus = this.normalizeStatus(order ? order.status : null);
+
+            if (['in_progress', 'for_accounting_approval', 'approved', 'completed'].includes(normalizedStatus)) {
+                return this.statusLabel(normalizedStatus);
+            }
+
+            return 'Not yet started';
+        },
+        reportTimelineLabel(order) {
+            const normalizedStatus = this.normalizeStatus(order ? order.status : null);
+
+            if (['for_accounting_approval', 'approved', 'completed'].includes(normalizedStatus)) {
+                return 'Submitted for accounting approval';
+            }
+
+            if (normalizedStatus === 'in_progress') {
+                return 'Work in progress';
+            }
+
+            return 'Awaiting report';
+        },
+        approvalTimelineLabel(order) {
+            const normalizedStatus = this.normalizeStatus(order ? order.status : null);
+
+            if (normalizedStatus === 'for_accounting_approval') {
+                return 'Awaiting accounting approval';
+            }
+
+            if (['approved', 'completed'].includes(normalizedStatus)) {
+                return 'Approved & signed';
+            }
+
+            return 'Pending approval';
+        },
+        certificateTimelineLabel(order) {
+            if (order && Number(order.certificates_count || 0) > 0) {
+                return 'Certificate generated';
+            }
+
+            return 'Not yet generated';
+        },
+        timelineStepState(step, order) {
+            const normalizedStatus = this.normalizeStatus(order ? order.status : null);
+            const hasAssignments = Boolean(order && order.assignments && order.assignments.length > 0);
+            const hasCertificate = Boolean(order && Number(order.certificates_count || 0) > 0);
+
+            if (step === 'created') {
+                return 'completed';
+            }
+
+            if (step === 'assigned') {
+                if (!hasAssignments) {
+                    return normalizedStatus === 'pending' ? 'current' : 'pending';
+                }
+
+                return normalizedStatus === 'assigned' ? 'current' : 'completed';
+            }
+
+            if (step === 'calibration') {
+                if (normalizedStatus === 'in_progress') {
+                    return 'current';
+                }
+
+                return ['for_accounting_approval', 'approved', 'completed'].includes(normalizedStatus) ? 'completed' : 'pending';
+            }
+
+            if (step === 'report') {
+                if (normalizedStatus === 'for_accounting_approval') {
+                    return 'completed';
+                }
+
+                return ['approved', 'completed'].includes(normalizedStatus) ? 'completed' : 'pending';
+            }
+
+            if (step === 'approval') {
+                if (normalizedStatus === 'for_accounting_approval') {
+                    return 'current';
+                }
+
+                return ['approved', 'completed'].includes(normalizedStatus) ? 'completed' : 'pending';
+            }
+
+            if (step === 'certificate_generated') {
+                if (hasCertificate) {
+                    return normalizedStatus === 'completed' ? 'completed' : 'current';
+                }
+
+                return normalizedStatus === 'approved' ? 'current' : 'pending';
+            }
+
+            if (step === 'certificate_released') {
+                return normalizedStatus === 'completed' && hasCertificate ? 'current' : 'pending';
+            }
+
+            return 'pending';
+        },
+        timelineStepBadge(step, order) {
+            const state = this.timelineStepState(step, order);
+
+            if (state === 'completed') {
+                return 'Done';
+            }
+
+            if (state === 'current') {
+                return 'Current';
+            }
+
+            return 'Next';
+        },
+        currentTimelineStage(order) {
+            const normalizedStatus = this.normalizeStatus(order ? order.status : null);
+            const hasAssignments = Boolean(order && order.assignments && order.assignments.length > 0);
+            const hasCertificate = Boolean(order && Number(order.certificates_count || 0) > 0);
+
+            if (normalizedStatus === 'completed' && hasCertificate) {
+                return 'Certificate Ready for Release';
+            }
+
+            if (hasCertificate) {
+                return 'Certificate Generated';
+            }
+
+            if (normalizedStatus === 'approved') {
+                return 'Approved and Signed';
+            }
+
+            if (normalizedStatus === 'for_accounting_approval') {
+                return 'Awaiting Approval';
+            }
+
+            if (normalizedStatus === 'in_progress') {
+                return 'Calibration in Progress';
+            }
+
+            if (normalizedStatus === 'assigned' || hasAssignments) {
+                return 'Assigned to Technician';
+            }
+
+            if (normalizedStatus === 'cancelled') {
+                return 'Job Order Cancelled';
+            }
+
+            return 'Waiting for Assignment';
+        },
+        timelineProgress(order) {
+            const steps = ['created', 'assigned', 'calibration', 'report', 'approval', 'certificate_generated'];
+            const completedSteps = steps.filter(step => this.timelineStepState(step, order) === 'completed').length;
+            const currentStep = steps.some(step => this.timelineStepState(step, order) === 'current') ? 1 : 0;
+
+            return Math.round(((completedSteps + currentStep) / steps.length) * 100);
+        },
         initSignaturePad() {
             const canvas = document.getElementById('signatureCanvas');
             if (!canvas) return;
@@ -194,8 +380,8 @@
                     Cancelled
                 </a>
                 
-                <a href="{{ route('tech-head.work-orders', ['status' => 'pending_approval'] + request()->except('status')) }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'pending_approval' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                     <a href="{{ route('tech-head.work-orders', ['status' => 'for_accounting_approval'] + request()->except('status')) }}" 
+                         class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ in_array(request('status'), ['pending_approval', 'for_accounting_approval'], true) ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
                     Pending Approval
                 </a>
                 
@@ -261,9 +447,10 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                         @forelse($workOrders as $order)
-                            <tr 
-                                @click="openDetails({{ json_encode([
+                            @php
+                                $orderPayload = [
                                     'id' => $order->id,
+                                    'job_order_number' => $order->job_order_number,
                                     'wo_number' => $order->job_order_number,
                                     'customer' => $order->customer->name ?? 'N/A',
                                     'service_type' => $order->service_type ?? 'N/A',
@@ -275,6 +462,7 @@
                                     'city' => $order->city ?? '',
                                     'notes' => $order->notes ?? '',
                                     'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
+                                    'certificates_count' => (int) $order->certificates_count,
                                     'attachments' => $order->attachments->map(function ($attachment) {
                                         return [
                                             'id' => $attachment->id,
@@ -300,7 +488,25 @@
                                             'status' => $assignment->status,
                                         ];
                                     })->values(),
-                                ]) }})"
+                                ];
+
+                                $editPayload = [
+                                    'id' => $order->id,
+                                    'wo_number' => $order->job_order_number,
+                                    'customer' => $order->customer->name ?? 'N/A',
+                                    'service_type' => $order->service_type ?? 'N/A',
+                                    'service_description' => $order->service_description ?? '',
+                                    'priority' => $order->priority ?? 'normal',
+                                    'status' => $order->status,
+                                    'required_date' => $order->required_date ? $order->required_date->setTimezone('Asia/Manila')->format('Y-m-d') : null,
+                                    'service_address' => $order->service_address ?? '',
+                                    'city' => $order->city ?? '',
+                                    'notes' => $order->notes ?? '',
+                                    'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
+                                ];
+                            @endphp
+                            <tr 
+                                @click="openDetails({{ json_encode($orderPayload) }})"
                                 class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                             >
                                 <td class="py-3 text-center">
@@ -345,11 +551,13 @@
                                 <td class="py-3 text-center">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full
                                         {{ $order->status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200' : '' }}
+                                        {{ $order->status === 'assigned' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' : '' }}
+                                        {{ $order->status === 'for_accounting_approval' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200' : '' }}
                                         {{ $order->status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' : '' }}
                                         {{ $order->status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' : '' }}
                                         {{ $order->status === 'completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' : '' }}
                                         {{ $order->status === 'cancelled' ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200' : '' }}">
-                                        {{ $order->status === 'pending' ? 'Waiting for Assignment' : ($order->status === 'approved' ? 'Ready for Assignment' : ucfirst(str_replace('_', ' ', $order->status))) }}
+                                        {{ $order->status === 'pending' ? 'Waiting for Assignment' : ($order->status === 'approved' ? 'Ready for Assignment' : ($order->status === 'for_accounting_approval' ? 'For Accounting Approval' : ucfirst(str_replace('_', ' ', $order->status)))) }}
                                     </span>
                                 </td>
                                 <td class="py-3 text-center">
@@ -368,7 +576,7 @@
                                             </a>
                                         @endif
                                         
-                                        <button @click="openTimeline({{ json_encode($order) }})" class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm" title="View Timeline">
+                                        <button @click="openTimeline({{ json_encode($orderPayload) }})" class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm" title="View Timeline">
                                             <span class="flex items-center gap-1">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -377,8 +585,8 @@
                                             </span>
                                         </button>
                                         
-                                        @if($order->status === 'pending_approval' || $order->status === 'completed')
-                                            <button @click="openApproval({{ json_encode($order) }})" class="px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800/50 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm animate-pulse" title="Approve & Sign">
+                                        @if($order->status === 'for_accounting_approval' || $order->status === 'completed')
+                                            <button @click="openApproval({{ json_encode($orderPayload) }})" class="px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800/50 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm animate-pulse" title="Approve & Sign">
                                                 <span class="flex items-center gap-1">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -388,7 +596,7 @@
                                             </button>
                                         @endif
                                         
-                                        <button @click="openEdit({{ json_encode(['id' => $order->id, 'wo_number' => $order->job_order_number, 'customer' => $order->customer->name ?? 'N/A', 'service_type' => $order->service_type ?? 'N/A', 'service_description' => $order->service_description ?? '', 'priority' => $order->priority ?? 'normal', 'status' => $order->status, 'required_date' => $order->required_date ? $order->required_date->setTimezone('Asia/Manila')->format('Y-m-d') : null, 'service_address' => $order->service_address ?? '', 'city' => $order->city ?? '', 'notes' => $order->notes ?? '', 'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')]) }})" class="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/50 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm">
+                                        <button @click="openEdit({{ json_encode($editPayload) }})" class="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/50 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm">
                                             <span class="flex items-center gap-1">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -486,7 +694,7 @@
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>
-                                <span class="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200" x-text="selectedOrder?.status === 'pending' ? 'Waiting for Assignment' : (selectedOrder?.status === 'approved' ? 'Ready for Assignment' : selectedOrder?.status)"></span>
+                                <span class="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200" x-text="selectedOrder ? statusLabel(selectedOrder.status) : 'N/A'"></span>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Required Date</p>
@@ -1025,20 +1233,47 @@
                             </button>
                         </div>
 
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+                            <div class="md:col-span-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-900/50 dark:bg-blue-900/20">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Current Stage</p>
+                                <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white" x-text="currentTimelineStage(selectedOrder)"></p>
+                                <p class="mt-1 text-sm text-blue-700 dark:text-blue-300" x-text="selectedOrder ? statusLabel(selectedOrder.status) : 'N/A'"></p>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-700/50">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Progress</p>
+                                    <p class="text-sm font-bold text-gray-900 dark:text-white" x-text="selectedOrder ? timelineProgress(selectedOrder) + '%' : '0%'"></p>
+                                </div>
+                                <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
+                                    <div class="h-full rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-500 transition-all duration-300"
+                                         :style="'width: ' + (selectedOrder ? timelineProgress(selectedOrder) : 0) + '%'">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Timeline -->
                         <div class="space-y-4">
                             <!-- Created -->
                             <div class="flex gap-4">
                                 <div class="flex flex-col items-center">
-                                    <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                                         :class="timelineStepState('created', selectedOrder) === 'completed' ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-blue-100 dark:bg-blue-900/30'">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                             :class="timelineStepState('created', selectedOrder) === 'completed' ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                         </svg>
                                     </div>
-                                    <div class="w-0.5 h-full bg-gray-200 dark:bg-gray-700 mt-2"></div>
+                                    <div class="w-0.5 h-full mt-2" :class="timelineStepState('created', selectedOrder) === 'completed' ? 'bg-emerald-300 dark:bg-emerald-700' : 'bg-gray-200 dark:bg-gray-700'"></div>
                                 </div>
-                                <div class="flex-1 pb-8">
-                                    <p class="font-semibold text-gray-900 dark:text-white">Work Order Created</p>
+                                <div class="flex-1 pb-8 rounded-xl px-3 py-2 transition-colors"
+                                     :class="timelineStepState('created', selectedOrder) === 'completed' ? 'bg-emerald-50 dark:bg-emerald-900/10' : ''">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="font-semibold text-gray-900 dark:text-white">Work Order Created</p>
+                                        <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                                              :class="timelineStepState('created', selectedOrder) === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'"
+                                              x-text="timelineStepBadge('created', selectedOrder)"></span>
+                                    </div>
                                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="selectedOrder?.created_at || 'N/A'"></p>
                                     <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Initial work order submitted</p>
                                 </div>
@@ -1047,95 +1282,143 @@
                             <!-- Assigned -->
                             <div class="flex gap-4">
                                 <div class="flex flex-col items-center">
-                                    <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                                         :class="timelineStepState('assigned', selectedOrder) === 'completed' ? 'bg-emerald-100 dark:bg-emerald-900/30' : (timelineStepState('assigned', selectedOrder) === 'current' ? 'bg-indigo-100 dark:bg-indigo-900/30 ring-2 ring-indigo-300 dark:ring-indigo-700' : 'bg-gray-100 dark:bg-gray-700/70')">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                             :class="timelineStepState('assigned', selectedOrder) === 'completed' ? 'text-emerald-600 dark:text-emerald-400' : (timelineStepState('assigned', selectedOrder) === 'current' ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500')">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                         </svg>
                                     </div>
-                                    <div class="w-0.5 h-full bg-gray-200 dark:bg-gray-700 mt-2"></div>
+                                    <div class="w-0.5 h-full mt-2" :class="timelineStepState('assigned', selectedOrder) !== 'pending' ? 'bg-indigo-300 dark:bg-indigo-700' : 'bg-gray-200 dark:bg-gray-700'"></div>
                                 </div>
-                                <div class="flex-1 pb-8">
-                                    <p class="font-semibold text-gray-900 dark:text-white">Technician Assigned</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Pending assignment</p>
+                                <div class="flex-1 pb-8 rounded-xl px-3 py-2 transition-colors"
+                                     :class="timelineStepState('assigned', selectedOrder) === 'current' ? 'bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-800/60' : (timelineStepState('assigned', selectedOrder) === 'completed' ? 'bg-emerald-50 dark:bg-emerald-900/10' : '')">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="font-semibold text-gray-900 dark:text-white">Technician Assigned</p>
+                                        <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                                              :class="timelineStepState('assigned', selectedOrder) === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : (timelineStepState('assigned', selectedOrder) === 'current' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')"
+                                              x-text="timelineStepBadge('assigned', selectedOrder)"></span>
+                                    </div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="assignmentTimelineLabel(selectedOrder)"></p>
                                 </div>
                             </div>
 
                             <!-- Calibration Started -->
                             <div class="flex gap-4">
                                 <div class="flex flex-col items-center">
-                                    <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                                         :class="timelineStepState('calibration', selectedOrder) === 'completed' ? 'bg-emerald-100 dark:bg-emerald-900/30' : (timelineStepState('calibration', selectedOrder) === 'current' ? 'bg-amber-100 dark:bg-amber-900/30 ring-2 ring-amber-300 dark:ring-amber-700' : 'bg-gray-100 dark:bg-gray-700/70')">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                             :class="timelineStepState('calibration', selectedOrder) === 'completed' ? 'text-emerald-600 dark:text-emerald-400' : (timelineStepState('calibration', selectedOrder) === 'current' ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500')">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                                         </svg>
                                     </div>
-                                    <div class="w-0.5 h-full bg-gray-200 dark:bg-gray-700 mt-2"></div>
+                                    <div class="w-0.5 h-full mt-2" :class="timelineStepState('calibration', selectedOrder) !== 'pending' ? 'bg-amber-300 dark:bg-amber-700' : 'bg-gray-200 dark:bg-gray-700'"></div>
                                 </div>
-                                <div class="flex-1 pb-8">
-                                    <p class="font-semibold text-gray-900 dark:text-white">Calibration Started</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Not yet started</p>
+                                <div class="flex-1 pb-8 rounded-xl px-3 py-2 transition-colors"
+                                     :class="timelineStepState('calibration', selectedOrder) === 'current' ? 'bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/60' : (timelineStepState('calibration', selectedOrder) === 'completed' ? 'bg-emerald-50 dark:bg-emerald-900/10' : '')">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="font-semibold text-gray-900 dark:text-white">Calibration Started</p>
+                                        <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                                              :class="timelineStepState('calibration', selectedOrder) === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : (timelineStepState('calibration', selectedOrder) === 'current' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')"
+                                              x-text="timelineStepBadge('calibration', selectedOrder)"></span>
+                                    </div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="calibrationTimelineLabel(selectedOrder)"></p>
                                 </div>
                             </div>
 
                             <!-- Report Uploaded -->
                             <div class="flex gap-4">
                                 <div class="flex flex-col items-center">
-                                    <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                                         :class="timelineStepState('report', selectedOrder) === 'completed' ? 'bg-emerald-100 dark:bg-emerald-900/30' : (timelineStepState('report', selectedOrder) === 'current' ? 'bg-purple-100 dark:bg-purple-900/30 ring-2 ring-purple-300 dark:ring-purple-700' : 'bg-gray-100 dark:bg-gray-700/70')">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                             :class="timelineStepState('report', selectedOrder) === 'completed' ? 'text-emerald-600 dark:text-emerald-400' : (timelineStepState('report', selectedOrder) === 'current' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-400 dark:text-gray-500')">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                         </svg>
                                     </div>
-                                    <div class="w-0.5 h-full bg-gray-200 dark:bg-gray-700 mt-2"></div>
+                                    <div class="w-0.5 h-full mt-2" :class="timelineStepState('report', selectedOrder) !== 'pending' ? 'bg-purple-300 dark:bg-purple-700' : 'bg-gray-200 dark:bg-gray-700'"></div>
                                 </div>
-                                <div class="flex-1 pb-8">
-                                    <p class="font-semibold text-gray-900 dark:text-white">Report Uploaded</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Awaiting report</p>
+                                <div class="flex-1 pb-8 rounded-xl px-3 py-2 transition-colors"
+                                     :class="timelineStepState('report', selectedOrder) === 'current' ? 'bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800/60' : (timelineStepState('report', selectedOrder) === 'completed' ? 'bg-emerald-50 dark:bg-emerald-900/10' : '')">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="font-semibold text-gray-900 dark:text-white">Report Uploaded</p>
+                                        <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                                              :class="timelineStepState('report', selectedOrder) === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : (timelineStepState('report', selectedOrder) === 'current' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')"
+                                              x-text="timelineStepBadge('report', selectedOrder)"></span>
+                                    </div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="reportTimelineLabel(selectedOrder)"></p>
                                 </div>
                             </div>
 
                             <!-- Approved -->
                             <div class="flex gap-4">
                                 <div class="flex flex-col items-center">
-                                    <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                                         :class="timelineStepState('approval', selectedOrder) === 'completed' ? 'bg-emerald-100 dark:bg-emerald-900/30' : (timelineStepState('approval', selectedOrder) === 'current' ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-300 dark:ring-green-700' : 'bg-gray-100 dark:bg-gray-700/70')">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                             :class="timelineStepState('approval', selectedOrder) === 'completed' ? 'text-emerald-600 dark:text-emerald-400' : (timelineStepState('approval', selectedOrder) === 'current' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500')">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                         </svg>
                                     </div>
-                                    <div class="w-0.5 h-full bg-gray-200 dark:bg-gray-700 mt-2"></div>
+                                    <div class="w-0.5 h-full mt-2" :class="timelineStepState('approval', selectedOrder) !== 'pending' ? 'bg-green-300 dark:bg-green-700' : 'bg-gray-200 dark:bg-gray-700'"></div>
                                 </div>
-                                <div class="flex-1 pb-8">
-                                    <p class="font-semibold text-gray-900 dark:text-white">Approved & Signed</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Pending approval</p>
+                                <div class="flex-1 pb-8 rounded-xl px-3 py-2 transition-colors"
+                                     :class="timelineStepState('approval', selectedOrder) === 'current' ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/60' : (timelineStepState('approval', selectedOrder) === 'completed' ? 'bg-emerald-50 dark:bg-emerald-900/10' : '')">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="font-semibold text-gray-900 dark:text-white">Approved & Signed</p>
+                                        <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                                              :class="timelineStepState('approval', selectedOrder) === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : (timelineStepState('approval', selectedOrder) === 'current' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')"
+                                              x-text="timelineStepBadge('approval', selectedOrder)"></span>
+                                    </div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="approvalTimelineLabel(selectedOrder)"></p>
                                 </div>
                             </div>
 
                             <!-- Certificate Generated -->
                             <div class="flex gap-4">
                                 <div class="flex flex-col items-center">
-                                    <div class="w-10 h-10 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                                         :class="timelineStepState('certificate_generated', selectedOrder) === 'completed' ? 'bg-emerald-100 dark:bg-emerald-900/30' : (timelineStepState('certificate_generated', selectedOrder) === 'current' ? 'bg-cyan-100 dark:bg-cyan-900/30 ring-2 ring-cyan-300 dark:ring-cyan-700' : 'bg-gray-100 dark:bg-gray-700/70')">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                             :class="timelineStepState('certificate_generated', selectedOrder) === 'completed' ? 'text-emerald-600 dark:text-emerald-400' : (timelineStepState('certificate_generated', selectedOrder) === 'current' ? 'text-cyan-600 dark:text-cyan-400' : 'text-gray-400 dark:text-gray-500')">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                         </svg>
                                     </div>
-                                    <div class="w-0.5 h-full bg-gray-200 dark:bg-gray-700 mt-2"></div>
+                                    <div class="w-0.5 h-full mt-2" :class="timelineStepState('certificate_generated', selectedOrder) !== 'pending' ? 'bg-cyan-300 dark:bg-cyan-700' : 'bg-gray-200 dark:bg-gray-700'"></div>
                                 </div>
-                                <div class="flex-1 pb-8">
-                                    <p class="font-semibold text-gray-900 dark:text-white">Certificate Generated</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Not yet generated</p>
+                                <div class="flex-1 pb-8 rounded-xl px-3 py-2 transition-colors"
+                                     :class="timelineStepState('certificate_generated', selectedOrder) === 'current' ? 'bg-cyan-50 dark:bg-cyan-900/10 border border-cyan-200 dark:border-cyan-800/60' : (timelineStepState('certificate_generated', selectedOrder) === 'completed' ? 'bg-emerald-50 dark:bg-emerald-900/10' : '')">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="font-semibold text-gray-900 dark:text-white">Certificate Generated</p>
+                                        <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                                              :class="timelineStepState('certificate_generated', selectedOrder) === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : (timelineStepState('certificate_generated', selectedOrder) === 'current' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')"
+                                              x-text="timelineStepBadge('certificate_generated', selectedOrder)"></span>
+                                    </div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="certificateTimelineLabel(selectedOrder)"></p>
                                 </div>
                             </div>
 
                             <!-- Certificate Released -->
                             <div class="flex gap-4">
                                 <div class="flex flex-col items-center">
-                                    <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                                         :class="timelineStepState('certificate_released', selectedOrder) === 'current' ? 'bg-emerald-100 dark:bg-emerald-900/30 ring-2 ring-emerald-300 dark:ring-emerald-700' : 'bg-gray-100 dark:bg-gray-700/70'">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                             :class="timelineStepState('certificate_released', selectedOrder) === 'current' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                                         </svg>
                                     </div>
                                 </div>
-                                <div class="flex-1">
-                                    <p class="font-semibold text-gray-900 dark:text-white">Certificate Released</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Not yet released</p>
+                                <div class="flex-1 rounded-xl px-3 py-2 transition-colors"
+                                     :class="timelineStepState('certificate_released', selectedOrder) === 'current' ? 'bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/60' : ''">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="font-semibold text-gray-900 dark:text-white">Certificate Released</p>
+                                        <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                                              :class="timelineStepState('certificate_released', selectedOrder) === 'current' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'"
+                                              x-text="timelineStepBadge('certificate_released', selectedOrder)"></span>
+                                    </div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="timelineStepState('certificate_released', selectedOrder) === 'current' ? 'Ready for final release or turnover' : 'Not yet released'"></p>
                                 </div>
                             </div>
                         </div>

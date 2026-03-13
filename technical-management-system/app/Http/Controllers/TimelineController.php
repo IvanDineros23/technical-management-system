@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\JobOrder;
+use App\Models\JobOrderAttachment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -70,18 +71,12 @@ class TimelineController extends Controller
         $jobStatus = 'pending';
         $jobOrder = null;
         
-        // Extract JO number if it's a JobOrder or find associated JobOrder
-        if ($modelType === 'JobOrder' && $modelId) {
-            $jobOrder = JobOrder::find($modelId);
-            if ($jobOrder) {
-                $joNumber = $jobOrder->job_order_number;
-                $customerName = $jobOrder->customer?->name ?? 'Unknown Customer';
-                $jobStatus = $jobOrder->status ?? 'pending';
-            }
-        } else if (in_array($modelType, ['Assignment', 'Calibration', 'Certificate', 'Payment', 'Invoice', 'SignatoryApproval', 'AccountingRelease']) && $modelId) {
-            // Try to find the associated JobOrder for other models
-            // This is a simplified approach - in a real system you'd have explicit foreign keys
-            // For now, we'll just leave jobOrder as null for non-JobOrder model types
+        // Resolve the job order for direct or related audit log records.
+        $jobOrder = $this->resolveJobOrderFromAuditLog($auditLog);
+        if ($jobOrder) {
+            $joNumber = $jobOrder->job_order_number;
+            $customerName = $jobOrder->customer?->name ?? 'Unknown Customer';
+            $jobStatus = $jobOrder->status ?? 'pending';
         }
         
         // Map action to human-readable format
@@ -113,7 +108,7 @@ class TimelineController extends Controller
         $status = 'pending';
         $type = 'system';
         
-        if ($modelType === 'JobOrder') {
+        if ($jobOrder) {
             $type = 'job_order';
             $status = $jobStatus;
         }
@@ -147,6 +142,32 @@ class TimelineController extends Controller
                 'model_id' => $modelId,
             ]
         ];
+    }
+
+    /**
+     * Resolve the related job order for an audit log record.
+     */
+    private function resolveJobOrderFromAuditLog(AuditLog $auditLog): ?JobOrder
+    {
+        $modelType = $auditLog->model_type ?? '';
+        $modelId = $auditLog->model_id ?? 0;
+
+        if ($modelType === 'JobOrder' && $modelId) {
+            return JobOrder::find($modelId);
+        }
+
+        if (in_array($modelType, ['JobAttachment', 'JobOrderAttachment'], true)) {
+            $jobOrderId = data_get($auditLog->new_values, 'job_order_id')
+                ?? data_get($auditLog->old_values, 'job_order_id');
+
+            if (! $jobOrderId && $modelId) {
+                $jobOrderId = JobOrderAttachment::find($modelId)?->job_order_id;
+            }
+
+            return $jobOrderId ? JobOrder::find($jobOrderId) : null;
+        }
+
+        return null;
     }
 
     /**
@@ -239,7 +260,7 @@ class TimelineController extends Controller
 
         // Get audit logs for technical activities - only job/assignment related
         $query = AuditLog::with(['user' => function($q) { $q->with('role'); }])
-            ->whereIn('model_type', ['JobOrder', 'Assignment', 'Calibration', 'Equipment'])
+            ->whereIn('model_type', ['JobOrder', 'Assignment', 'Calibration', 'Equipment', 'JobAttachment', 'JobOrderAttachment'])
             ->whereNotIn('description', ['User logged in', 'User logged out']);
 
         if ($search) {
@@ -266,7 +287,7 @@ class TimelineController extends Controller
         
         $stats = [
             'today_tasks' => AuditLog::whereDate('created_at', today())
-                ->whereIn('model_type', ['JobOrder', 'Assignment'])
+                ->whereIn('model_type', ['JobOrder', 'Assignment', 'JobAttachment', 'JobOrderAttachment'])
                 ->whereNotIn('description', ['User logged in', 'User logged out'])
                 ->count(),
             'pending' => JobOrder::where('status', 'pending')->count(),
@@ -293,8 +314,8 @@ class TimelineController extends Controller
 
         // Get audit logs related to tech team activities and approvals - only job-related
         $query = AuditLog::with(['user' => function($q) { $q->with('role'); }])
-            ->whereIn('action', ['CREATE', 'UPDATE'])
-            ->whereIn('model_type', ['JobOrder', 'Assignment', 'Calibration'])
+            ->whereIn('action', ['CREATE', 'UPDATE', 'DELETE'])
+            ->whereIn('model_type', ['JobOrder', 'Assignment', 'Calibration', 'JobAttachment', 'JobOrderAttachment'])
             ->whereNotIn('description', ['User logged in', 'User logged out']);
 
         if ($search) {
@@ -453,7 +474,7 @@ class TimelineController extends Controller
 
         // Get all audit logs for system-wide view - only job-related activities
         $query = AuditLog::with(['user' => function($q) { $q->with('role'); }])
-            ->whereIn('model_type', ['JobOrder', 'Assignment', 'Calibration', 'Certificate', 'Payment', 'Invoice', 'Equipment', 'SignatoryApproval', 'AccountingRelease'])
+            ->whereIn('model_type', ['JobOrder', 'Assignment', 'Calibration', 'Certificate', 'Payment', 'Invoice', 'Equipment', 'SignatoryApproval', 'AccountingRelease', 'JobAttachment', 'JobOrderAttachment'])
             ->whereNotIn('description', ['User logged in', 'User logged out']);
 
         if ($search) {
@@ -508,6 +529,8 @@ class TimelineController extends Controller
      */
     public function getJobAuditTrailJson(JobOrder $jobOrder)
     {
+        $attachmentIds = JobOrderAttachment::where('job_order_id', $jobOrder->id)->pluck('id');
+
         // Get all activities related to this job order
         $allActivities = AuditLog::with(['user' => function($q) { $q->with('role'); }])
             ->where(function($query) use ($jobOrder) {
@@ -522,6 +545,18 @@ class TimelineController extends Controller
                     $q->whereIn('model_type', ['Assignment', 'Calibration', 'Certificate', 'Payment', 'Invoice', 'AccountingRelease', 'SignatoryApproval'])
                       ->where('model_id', '>', 0);
                 });
+            })
+            ->where(function ($query) use ($attachmentIds) {
+                if ($attachmentIds->isNotEmpty()) {
+                    $query->where(function ($q) use ($attachmentIds) {
+                        $q->whereIn('model_type', ['JobAttachment', 'JobOrderAttachment'])
+                          ->whereIn('model_id', $attachmentIds);
+                    })->orWhere(function ($q) {
+                        $q->whereNotIn('model_type', ['JobAttachment', 'JobOrderAttachment']);
+                    });
+                } else {
+                    $query->whereNotIn('model_type', ['JobAttachment', 'JobOrderAttachment']);
+                }
             })
             ->whereNotIn('description', ['User logged in', 'User logged out'])
             ->latest('created_at')
