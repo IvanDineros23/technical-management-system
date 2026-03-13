@@ -75,6 +75,20 @@ Route::get('/dashboard', function () {
     return view('dashboard', compact('stats'));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+// API Routes for modals and AJAX
+Route::middleware(['auth', 'verified'])->prefix('api')->name('api.')->group(function () {
+    // Get job audit trail as JSON for modal
+    Route::get('/job-orders/{jobOrder}/audit-trail', [TimelineController::class, 'getJobAuditTrailJson'])
+        ->name('job-order.audit-trail');
+});
+
+// Shared Routes for All Authenticated Users
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Complete job audit trail - shows all activities for a specific job order
+    Route::get('/job-orders/{jobOrder}/audit-trail', [TimelineController::class, 'jobAuditTrail'])
+        ->name('job-order.audit-trail');
+});
+
 // Marketing Routes
 Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->name('marketing.')->group(function () {
     Route::get('/dashboard', function () {
@@ -3578,9 +3592,8 @@ Route::middleware(['auth', 'verified', 'role:signatory'])->prefix('signatory')->
     Route::get('/reports', [SignatoryController::class, 'reports'])->name('reports');
     Route::get('/reports/{report}', [SignatoryController::class, 'viewReport'])->name('report.view');
     
-    // Timeline - Unified view
-    Route::get('/timelines', [SignatoryController::class, 'allTimelines'])->name('timelines');
-    Route::get('/timeline/{jobOrder}', [SignatoryController::class, 'timeline'])->name('timeline');
+    // Timeline - Unified view using TimelineController
+    Route::get('/timeline', [TimelineController::class, 'index'])->name('timeline');
     
     // Profile
     Route::get('/profile', [SignatoryController::class, 'profile'])->name('profile');

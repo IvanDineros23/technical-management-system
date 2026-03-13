@@ -1,6 +1,19 @@
 @props(['timeline'])
 
 @php
+    // Color mapping for different action types
+    $actionColorMap = [
+        'create' => 'border-green-500 bg-green-50 dark:bg-green-900/20',
+        'update' => 'border-orange-500 bg-orange-50 dark:bg-orange-900/20',
+        'delete' => 'border-red-500 bg-red-50 dark:bg-red-900/20',
+        'completed' => 'border-green-500 bg-green-50 dark:bg-green-900/20',
+        'in_progress' => 'border-blue-500 bg-blue-50 dark:bg-blue-900/20',
+        'pending' => 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20',
+        'approved' => 'border-purple-500 bg-purple-50 dark:bg-purple-900/20',
+        'payment' => 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20',
+        'default' => 'border-gray-500 bg-gray-50 dark:bg-gray-900/20',
+    ];
+    
     $statusColors = [
         'pending' => 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-500',
         'in_progress' => 'bg-blue-100 dark:bg-blue-900/30 border-blue-500',
@@ -27,12 +40,19 @@
         'system' => '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>',
     ];
     
-    $statusColor = $statusColors[$timeline['status']] ?? 'bg-gray-100 dark:bg-gray-700 border-gray-500';
+    // Check if timeline item has a job order associated
+    $hasJobOrder = isset($timeline['job_order']) && $timeline['job_order'];
+    $jobOrderId = $hasJobOrder ? $timeline['job_order']->id : null;
+    
+    $actionColor = $actionColorMap[$timeline['action_color'] ?? 'default'] ?? $actionColorMap['default'];
     $priorityColor = $priorityColors[$timeline['priority']] ?? 'text-gray-600';
     $icon = $typeIcons[$timeline['type']] ?? $typeIcons['system'];
 @endphp
 
-<div class="flex gap-4 {{ $statusColor }} border-l-4 p-4 rounded-r-lg hover:shadow-md transition-shadow">
+<div class="flex gap-4 {{ $actionColor }} border-l-4 p-4 rounded-r-lg hover:shadow-md transition-shadow {{ $hasJobOrder ? 'cursor-pointer hover:bg-opacity-75' : '' }}"
+    @if($hasJobOrder)
+        onclick="window.dispatchEvent(new CustomEvent('open-audit-modal', { detail: { jobOrderId: {{ (int) $jobOrderId }} } }))"
+    @endif>
     <!-- Icon -->
     <div class="flex-shrink-0">
         <div class="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 shadow">
@@ -44,7 +64,7 @@
     <div class="flex-1 min-w-0">
         <div class="flex items-start justify-between gap-2">
             <div class="flex-1">
-                <h4 class="font-semibold text-gray-900 dark:text-white text-sm">
+                <h4 class="font-semibold text-gray-900 dark:text-white text-sm {{ $hasJobOrder ? 'hover:underline' : '' }}">
                     {{ $timeline['title'] }}
                 </h4>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -65,7 +85,28 @@
         
         <!-- Metadata -->
         <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-            @if(isset($timeline['customer']))
+            <!-- User/Employee Info -->
+            @if(isset($timeline['metadata']['user_name']))
+                <span class="flex items-center gap-1 font-medium text-gray-700 dark:text-gray-300">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    {{ $timeline['metadata']['user_name'] }}
+                </span>
+                @if(isset($timeline['metadata']['user_role']))
+                    <span class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        {{ $timeline['metadata']['user_role'] }}
+                    </span>
+                @endif
+                @if(isset($timeline['metadata']['user_dept']) && $timeline['metadata']['user_dept'])
+                    <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded">
+                        {{ $timeline['metadata']['user_dept'] }}
+                    </span>
+                @endif
+            @elseif(isset($timeline['customer']))
                 <span class="flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>

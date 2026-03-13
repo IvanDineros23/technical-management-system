@@ -69,17 +69,25 @@ class AuditLogMiddleware
         }
 
         $modelId = 0;
+        $modelType = 'Unknown';
         $routeParameters = $route?->parameters() ?? [];
-        foreach ($routeParameters as $value) {
+        
+        // Try to extract model type from route parameter objects
+        foreach ($routeParameters as $key => $value) {
             if (is_object($value) && isset($value->id)) {
+                $modelType = class_basename($value);
                 $modelId = (int) $value->id;
                 break;
             }
 
             if (is_numeric($value)) {
                 $modelId = (int) $value;
-                break;
             }
+        }
+        
+        // If model type not found from objects, try to extract from route name
+        if ($modelType === 'Unknown') {
+            $modelType = $this->extractModelTypeFromRoute($routeName, $routeUri);
         }
 
         $action = match ($request->method()) {
@@ -102,7 +110,7 @@ class AuditLogMiddleware
         AuditLog::create([
             'user_id' => auth()->id(),
             'action' => $action,
-            'model_type' => $routeName,
+            'model_type' => $modelType,
             'model_id' => $modelId,
             'old_values' => null,
             'new_values' => [
@@ -120,5 +128,109 @@ class AuditLogMiddleware
         ]);
 
         return $response;
+    }
+
+    /**
+     * Extract model type from route name or URI
+     */
+    private function extractModelTypeFromRoute(string $routeName, string $routeUri): string
+    {
+        // Map route names and patterns to model types (order matters - more specific first)
+        $patterns = [
+            // Job Orders
+            'job-order' => 'JobOrder',
+            'job_order' => 'JobOrder',
+            'joborder' => 'JobOrder',
+            'job-orders' => 'JobOrder',
+            'job_orders' => 'JobOrder',
+            'joborders' => 'JobOrder',
+            'requests' => 'JobOrder',
+            
+            // Calibrations
+            'calibration' => 'Calibration',
+            'calibrations' => 'Calibration',
+            
+            // Certificates
+            'certificate' => 'Certificate',
+            'certificates' => 'Certificate',
+            'cert' => 'Certificate',
+            
+            // Payments
+            'payment' => 'Payment',
+            'payments' => 'Payment',
+            
+            // Equipment
+            'equipment' => 'Equipment',
+            'equipments' => 'Equipment',
+            
+            // Assignments
+            'assignment' => 'Assignment',
+            'assignments' => 'Assignment',
+            'assign' => 'Assignment',
+            
+            // Invoices
+            'invoice' => 'Invoice',
+            'invoices' => 'Invoice',
+            
+            // Accounting/Releases
+            'accounting' => 'AccountingRelease',
+            'release' => 'Release',
+            'releases' => 'Release',
+            
+            // Signatory
+            'signatory' => 'SignatoryApproval',
+            'approval' => 'SignatoryApproval',
+            
+            // Attachments
+            'attachment' => 'JobAttachment',
+            'attachments' => 'JobAttachment',
+            
+            // Checklists
+            'checklist' => 'ChecklistItem',
+            'checklists' => 'ChecklistItem',
+            'crew' => 'JobOrderCrewMember',
+        ];
+
+        // Check route name first
+        $routeLower = strtolower($routeName);
+        foreach ($patterns as $pattern => $modelType) {
+            if (str_contains($routeLower, $pattern)) {
+                return $modelType;
+            }
+        }
+
+        // Try to extract from URI
+        $uriLower = strtolower($routeUri);
+        foreach ($patterns as $pattern => $modelType) {
+            if (str_contains($uriLower, $pattern)) {
+                return $modelType;
+            }
+        }
+
+        // URI-based extraction (first meaningful path segment)
+        $uriParts = explode('/', trim($routeUri, '/'));
+        if (!empty($uriParts)) {
+            $firstPart = strtolower($uriParts[0]);
+            if ($firstPart && !in_array($firstPart, ['admin', 'marketing', 'technician', 'tech-head', 'signatory', 'accounting', 'customer', 'api', 'auth'])) {
+                // Use the first part as a hint but still check patterns
+                foreach ($patterns as $pattern => $modelType) {
+                    if (str_contains($firstPart, $pattern)) {
+                        return $modelType;
+                    }
+                }
+            }
+        }
+
+        // Last resort: check second part of URI for meaningful segments
+        if (count($uriParts) > 1) {
+            $secondPart = strtolower($uriParts[1]);
+            foreach ($patterns as $pattern => $modelType) {
+                if (str_contains($secondPart, $pattern)) {
+                    return $modelType;
+                }
+            }
+        }
+
+        return 'Unknown';
     }
 }

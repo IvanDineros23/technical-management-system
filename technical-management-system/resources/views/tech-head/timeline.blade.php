@@ -71,9 +71,9 @@
     <!-- Timeline Section -->
     <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <div class="flex items-center justify-between mb-6">
-            <div>
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Team Oversight Timeline</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Monitor all team activities and job progress</p>
+            <div class="bg-blue-600 text-white px-4 py-2 rounded-lg">
+                <h3 class="font-bold">Team Oversight Timeline</h3>
+                <p class="text-sm">Monitor all team activities and job progress</p>
             </div>
         </div>
         
@@ -91,6 +91,16 @@
                 </div>
             @endforelse
         </div>
+        
+        <!-- Pagination -->
+        @if($pagination && $pagination->hasPages())
+            <div class="mt-6 mb-4">
+                {{ $pagination->links('pagination::tailwind') }}
+            </div>
+        @endif
     </div>
 </div>
+
+<!-- Job Audit Trail Modal -->
+<x-job-audit-modal />
 @endsection
