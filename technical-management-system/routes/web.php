@@ -981,27 +981,79 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
         }
     })->name('customers.destroy');
     
-    Route::get('/reports', function () {
-        $totalRevenue = \App\Models\JobOrder::sum('grand_total');
-        $completedJobs = \App\Models\JobOrder::where('status', 'completed')->count();
-        $activeCustomers = \App\Models\Customer::where('is_active', true)->count();
+    Route::get('/reports', function (Request $request) {
+        $fromDate = $request->string('from_date')->toString();
+        $toDate = $request->string('to_date')->toString();
+
+        if ($fromDate !== '' && $toDate !== '' && $fromDate > $toDate) {
+            [$fromDate, $toDate] = [$toDate, $fromDate];
+        }
+
+        $startDate = $fromDate !== ''
+            ? \Illuminate\Support\Carbon::parse($fromDate)->startOfDay()
+            : now()->subDays(29)->startOfDay();
+
+        $endDate = $toDate !== ''
+            ? \Illuminate\Support\Carbon::parse($toDate)->endOfDay()
+            : now()->endOfDay();
+
+        $baseQuery = \App\Models\JobOrder::query()
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->whereBetween('created_at', [$startDate, $endDate]);
+
+        $totalRevenue = (clone $baseQuery)
+            ->sum(DB::raw('COALESCE(grand_total, total_amount, 0)'));
+
+        $completedJobs = (clone $baseQuery)
+            ->where('status', 'completed')
+            ->count();
+
+        $activeCustomers = (clone $baseQuery)
+            ->whereHas('customer', function ($query) {
+                $query->where('is_active', true);
+            })
+            ->distinct('customer_id')
+            ->count('customer_id');
+
         $avgJobValue = $completedJobs > 0 ? $totalRevenue / $completedJobs : 0;
-        
-        // Job Orders Trend Data (Last 30 days)
-        $jobOrdersTrendData = \App\Models\JobOrder::selectRaw('DATE(created_at) as date, COUNT(*) as count')
-            ->where('created_at', '>=', now()->subDays(30))
+
+        $trendByDate = (clone $baseQuery)
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
             ->groupBy('date')
             ->orderBy('date')
-            ->get();
-        
-        // Revenue Overview Data (Last 30 days)
-        $revenueOverviewData = \App\Models\JobOrder::selectRaw('DATE(created_at) as date, SUM(grand_total) as revenue')
-            ->where('created_at', '>=', now()->subDays(30))
+            ->get()
+            ->keyBy('date');
+
+        $revenueByDate = (clone $baseQuery)
+            ->selectRaw('DATE(created_at) as date, SUM(COALESCE(grand_total, total_amount, 0)) as revenue')
             ->groupBy('date')
             ->orderBy('date')
-            ->get();
-        
+            ->get()
+            ->keyBy('date');
+
+        $jobOrdersTrendData = collect();
+        $revenueOverviewData = collect();
+
+        $cursorDate = $startDate->copy();
+        while ($cursorDate->lte($endDate)) {
+            $dateKey = $cursorDate->toDateString();
+
+            $jobOrdersTrendData->push([
+                'date' => $dateKey,
+                'count' => (int) (($trendByDate[$dateKey]->count ?? 0)),
+            ]);
+
+            $revenueOverviewData->push([
+                'date' => $dateKey,
+                'revenue' => (float) (($revenueByDate[$dateKey]->revenue ?? 0)),
+            ]);
+
+            $cursorDate->addDay();
+        }
+
         return view('marketing.reports', compact(
+            'fromDate',
+            'toDate',
             'totalRevenue',
             'completedJobs',
             'activeCustomers',
@@ -1247,22 +1299,31 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     })->name('dashboard');
     
     Route::get('/assignments', function () {
-        // Show only job orders assigned to the current technician
+        // Show only assignments that are explicitly assigned to the logged-in technician.
+        // Use assignment status (not job order status) because tech-head scheduling can keep
+        // job orders in "approved" while assignment is already active for a technician.
         $currentUser = auth()->user();
-        $assignments = \App\Models\Assignment::with(['jobOrder.customer', 'jobOrder'])
+
+        $assignments = \App\Models\Assignment::with(['jobOrder.customer', 'jobOrder', 'assignedBy'])
             ->where('assigned_to', $currentUser->id)
-            ->whereHas('jobOrder', function($query) {
-                $query->whereIn('status', ['assigned', 'in_progress', 'on_hold', 'completed']);
+            ->whereIn('status', ['assigned', 'in_progress', 'on_hold', 'completed'])
+            ->whereHas('jobOrder', function ($query) {
+                $query->where('status', '!=', 'cancelled');
             })
-            ->latest()
+            ->latest('assigned_at')
             ->paginate(20)
-            ->through(function($assignment) {
-                // Return the job order with assignment info
+            ->through(function ($assignment) {
                 $job = $assignment->jobOrder;
+
+                // Surface assignment metadata to the existing page without changing view contracts.
                 $job->assignment_id = $assignment->id;
-                $job->assigned_at = $assignment->created_at;
+                $job->assigned_at = $assignment->assigned_at ?? $assignment->created_at;
+                $job->status = $assignment->status;
+                $job->assigned_by_name = optional($assignment->assignedBy)->name;
+
                 return $job;
             });
+
         return view('technician.assignments', compact('assignments'));
     })->name('assignments');
     
@@ -1850,12 +1911,23 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     // Job status update routes
     Route::post('/job/{jobId}/start', function ($jobId) {
         $job = \App\Models\JobOrder::findOrFail($jobId);
+        $assignment = \App\Models\Assignment::where('job_order_id', $job->id)
+            ->where('assigned_to', auth()->id())
+            ->latest('id')
+            ->first();
         $previousStatus = $job->status;
 
         // Update job status to in_progress
         $job->update([
             'status' => 'in_progress',
         ]);
+
+        if ($assignment) {
+            $assignment->update([
+                'status' => 'in_progress',
+                'started_at' => $assignment->started_at ?? now(),
+            ]);
+        }
 
         \App\Helpers\AuditLogHelper::log(
             'UPDATE',
@@ -1872,12 +1944,22 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
 
     Route::post('/job/{jobId}/pause', function ($jobId) {
         $job = \App\Models\JobOrder::findOrFail($jobId);
+        $assignment = \App\Models\Assignment::where('job_order_id', $job->id)
+            ->where('assigned_to', auth()->id())
+            ->latest('id')
+            ->first();
         $previousStatus = $job->status;
 
         // Update job status to on_hold
         $job->update([
             'status' => 'on_hold',
         ]);
+
+        if ($assignment) {
+            $assignment->update([
+                'status' => 'on_hold',
+            ]);
+        }
 
         \App\Helpers\AuditLogHelper::log(
             'UPDATE',
@@ -2795,7 +2877,8 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             'assigned_to',
             DB::raw('COUNT(*) as total_assignments'),
             DB::raw('SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed'),
-            DB::raw('SUM(CASE WHEN status IN ("assigned", "in_progress") THEN 1 ELSE 0 END) as active')
+            DB::raw('SUM(CASE WHEN status IN ("assigned", "in_progress", "on_hold") THEN 1 ELSE 0 END) as active'),
+            DB::raw('SUM(CASE WHEN scheduled_date IS NOT NULL AND status IN ("assigned", "in_progress", "on_hold") THEN 1 ELSE 0 END) as scheduled')
         )
             ->whereIn('assigned_to', $technicianIds)
             ->groupBy('assigned_to')
@@ -3461,20 +3544,9 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         $today = now();
         $weekStart = now()->startOfWeek();
         $weekEnd = now()->endOfWeek();
-
-        $techHeadId = auth()->id();
-        $applyWorkOrderScope = function ($query) use ($techHeadId) {
-            $query->where(function ($scoped) use ($techHeadId) {
-                $scoped->whereNotNull('approved_by')
-                    ->orWhere('created_by', $techHeadId);
-            });
-        };
         
         // Get weekly schedule with filters
         $query = Assignment::with(['jobOrder.customer', 'assignedTo'])
-            ->whereHas('jobOrder', function ($jobFilter) use ($applyWorkOrderScope) {
-                $applyWorkOrderScope($jobFilter);
-            })
             ->where(function ($filter) use ($weekStart, $weekEnd) {
                 $filter->whereBetween('scheduled_date', [$weekStart, $weekEnd])
                     ->orWhereHas('jobOrder', function ($jobFilter) use ($weekStart, $weekEnd) {
@@ -3516,7 +3588,7 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             ->where('status', 'approved')
             ->whereDoesntHave('assignments', function ($assignmentQuery) {
                 $assignmentQuery->whereNotNull('assigned_to')
-                    ->whereIn('status', ['assigned', 'in_progress']);
+                    ->whereIn('status', ['assigned', 'in_progress', 'on_hold']);
             })
             ->orderBy('created_at', 'desc')
             ->get();
@@ -3529,11 +3601,8 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             ->get();
 
         $activeAssignmentsQuery = Assignment::with(['jobOrder.customer', 'assignedTo'])
-            ->whereHas('jobOrder', function ($jobFilter) use ($applyWorkOrderScope) {
-                $applyWorkOrderScope($jobFilter);
-            })
             ->whereNotNull('assigned_to')
-            ->whereIn('status', ['assigned', 'in_progress'])
+            ->whereIn('status', ['assigned', 'in_progress', 'on_hold'])
             ->orderByRaw('scheduled_date IS NULL, scheduled_date ASC')
             ->orderBy('scheduled_time');
 
@@ -3564,8 +3633,10 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
                 'assignments' => $items,
             ];
         });
+
+        $availableTechnicians = max(0, $technicians->count() - $assignmentsByTechnician->keys()->count());
         
-        return view('tech-head.schedule', compact('weeklySchedule', 'today', 'weekStart', 'weekEnd', 'unassignedJobs', 'technicians', 'technicianSchedules'));
+        return view('tech-head.schedule', compact('weeklySchedule', 'today', 'weekStart', 'weekEnd', 'unassignedJobs', 'technicians', 'technicianSchedules', 'availableTechnicians'));
     })->name('schedule');
     
     Route::get('/analytics', function () {

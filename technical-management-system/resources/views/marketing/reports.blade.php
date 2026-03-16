@@ -79,11 +79,16 @@
     <div class="mb-6 flex flex-wrap gap-3 items-center">
         <div>
             <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">From Date</label>
-            <input type="date" id="fromDate" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
+            <input type="date" id="fromDate" value="{{ $fromDate ?? '' }}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
         </div>
         <div>
             <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">To Date</label>
-            <input type="date" id="toDate" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
+            <input type="date" id="toDate" value="{{ $toDate ?? '' }}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div class="mt-5">
+            <button onclick="applyDateFilters()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                Apply
+            </button>
         </div>
         <div class="mt-5">
             <button onclick="resetDateFilters()" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors">
@@ -372,9 +377,29 @@
         }
         
         // Reset date filters
+        function applyDateFilters() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+
+            const params = new URLSearchParams(window.location.search);
+
+            if (fromDate) {
+                params.set('from_date', fromDate);
+            } else {
+                params.delete('from_date');
+            }
+
+            if (toDate) {
+                params.set('to_date', toDate);
+            } else {
+                params.delete('to_date');
+            }
+
+            window.location.href = `${window.location.pathname}?${params.toString()}`;
+        }
+
         function resetDateFilters() {
-            document.getElementById('fromDate').value = '';
-            document.getElementById('toDate').value = '';
+            window.location.href = window.location.pathname;
         }
     </script>
 @endsection

@@ -349,7 +349,7 @@
     </div>
 
     <!-- SUBMIT REPORT MODAL -->
-    <div x-show="showSubmitModal" 
+    <div x-show="showSubmitModal" x-cloak
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0"
          x-transition:enter-end="opacity-100"
@@ -437,7 +437,7 @@
     </div>
 
     <!-- VIEW REPORT MODAL -->
-    <div x-show="showViewModal" 
+    <div x-show="showViewModal" x-cloak
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0"
          x-transition:enter-end="opacity-100"

@@ -509,7 +509,7 @@
     <!-- ===================== QUICK ACTIONS ===================== -->
     <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h3>
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <a href="{{ route('tech-head.work-orders') }}" class="flex flex-col items-center p-4 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-xl transition-colors border-2 border-blue-200 dark:border-blue-700">
                 <svg class="w-8 h-8 text-blue-600 dark:text-blue-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>

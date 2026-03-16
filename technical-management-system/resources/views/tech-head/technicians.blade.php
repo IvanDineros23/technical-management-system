@@ -125,7 +125,7 @@
                         <tr>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Name</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Email</th>
-                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Role</th>
+                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Availability / Schedule</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Active</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Completed</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Total</th>
@@ -137,8 +137,23 @@
                             @php
                                 $stats = $technicianStats[$tech->id] ?? null;
                                 $active = $stats->active ?? 0;
+                                $scheduled = $stats->scheduled ?? 0;
                                 $completed = $stats->completed ?? 0;
                                 $total = $stats->total_assignments ?? ($active + $completed);
+
+                                $availabilityLabel = 'Available';
+                                $availabilityClass = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
+
+                                if (!($tech->is_active ?? true) || in_array($tech->availability, ['on_leave', 'unavailable'], true)) {
+                                    $availabilityLabel = 'Not Available';
+                                    $availabilityClass = 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200';
+                                } elseif ($active > 0) {
+                                    $availabilityLabel = 'Assigned';
+                                    $availabilityClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
+                                } elseif ($scheduled > 0) {
+                                    $availabilityLabel = 'With Schedule';
+                                    $availabilityClass = 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
+                                }
                             @endphp
                             <tr 
                                 @click="openDetails({{ json_encode([
@@ -146,7 +161,9 @@
                                     'name' => $tech->name,
                                     'email' => $tech->email,
                                     'role' => $tech->role->name ?? 'Technician',
+                                    'availability' => $tech->availability,
                                     'active' => $active,
+                                    'scheduled' => $scheduled,
                                     'completed' => $completed,
                                     'total' => $total,
                                     'created_at' => $tech->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')
@@ -160,7 +177,12 @@
                                     <p class="text-sm text-gray-700 dark:text-gray-300">{{ $tech->email }}</p>
                                 </td>
                                 <td class="py-3 text-center">
-                                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ $tech->role->name ?? 'Technician' }}</span>
+                                    <div class="flex flex-col items-center gap-1">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full {{ $availabilityClass }}">{{ $availabilityLabel }}</span>
+                                        @if($scheduled > 0)
+                                            <span class="text-[11px] text-gray-500 dark:text-gray-400">{{ $scheduled }} scheduled</span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="py-3 text-center">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">{{ $active }}</span>

@@ -11,6 +11,19 @@ use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
+    private function applyDateRange($query, ?string $fromDate, ?string $toDate)
+    {
+        if (!empty($fromDate)) {
+            $query->whereDate('created_at', '>=', $fromDate);
+        }
+
+        if (!empty($toDate)) {
+            $query->whereDate('created_at', '<=', $toDate);
+        }
+
+        return $query;
+    }
+
     /**
      * Generate Job Orders Report
      */
@@ -19,15 +32,10 @@ class ReportController extends Controller
         $fromDate = $request->input('from_date');
         $toDate = $request->input('to_date');
         
-        $query = JobOrder::with('customer');
-        
-        if ($fromDate) {
-            $query->whereDate('created_at', '>=', $fromDate);
-        }
-        
-        if ($toDate) {
-            $query->whereDate('created_at', '<=', $toDate);
-        }
+        $query = JobOrder::with('customer')
+            ->whereNotIn('status', ['cancelled', 'rejected']);
+
+        $this->applyDateRange($query, $fromDate, $toDate);
         
         $jobOrders = $query->get();
         
@@ -65,19 +73,16 @@ class ReportController extends Controller
         $fromDate = $request->input('from_date');
         $toDate = $request->input('to_date');
         
-        $query = JobOrder::query();
-        
-        if ($fromDate) {
-            $query->whereDate('created_at', '>=', $fromDate);
-        }
-        
-        if ($toDate) {
-            $query->whereDate('created_at', '<=', $toDate);
-        }
+        $query = JobOrder::query()
+            ->whereNotIn('status', ['cancelled', 'rejected']);
+
+        $this->applyDateRange($query, $fromDate, $toDate);
         
         $jobOrders = $query->with('customer')->get();
         
-        $totalRevenue = $jobOrders->sum('grand_total');
+        $totalRevenue = $jobOrders->sum(function ($jobOrder) {
+            return (float) ($jobOrder->grand_total ?? $jobOrder->total_amount ?? 0);
+        });
         $totalJobs = $jobOrders->count();
         $averageRevenue = $totalJobs > 0 ? $totalRevenue / $totalJobs : 0;
         
@@ -85,7 +90,9 @@ class ReportController extends Controller
         $revenueByCustomer = $jobOrders->groupBy('customer_id')->map(function($orders) {
             return [
                 'customer' => $orders->first()->customer,
-                'total' => $orders->sum('grand_total'),
+                'total' => $orders->sum(function ($jobOrder) {
+                    return (float) ($jobOrder->grand_total ?? $jobOrder->total_amount ?? 0);
+                }),
                 'count' => $orders->count(),
             ];
         })->sortByDesc('total');
@@ -140,6 +147,7 @@ class ReportController extends Controller
                 if ($toDate) {
                     $q->whereDate('created_at', '<=', $toDate);
                 }
+                $q->whereNotIn('status', ['cancelled', 'rejected']);
             });
         }
         
@@ -148,7 +156,11 @@ class ReportController extends Controller
         $totalCustomers = $customers->count();
         $activeCustomers = $customers->where('is_active', true)->count();
         $totalRevenue = $customers->sum(function($customer) {
-            return $customer->jobOrders->sum('grand_total');
+            return $customer->jobOrders
+                ->whereNotIn('status', ['cancelled', 'rejected'])
+                ->sum(function ($jobOrder) {
+                    return (float) ($jobOrder->grand_total ?? $jobOrder->total_amount ?? 0);
+                });
         });
         
         // Log the report generation
@@ -190,27 +202,24 @@ class ReportController extends Controller
         $fromDate = $request->input('from_date');
         $toDate = $request->input('to_date');
         
-        $query = JobOrder::query();
-        
-        if ($fromDate) {
-            $query->whereDate('created_at', '>=', $fromDate);
-        }
-        
-        if ($toDate) {
-            $query->whereDate('created_at', '<=', $toDate);
-        }
+        $query = JobOrder::query()
+            ->whereNotIn('status', ['cancelled', 'rejected']);
+
+        $this->applyDateRange($query, $fromDate, $toDate);
         
         $jobOrders = $query->with('customer')->get();
         
         $totalJobs = $jobOrders->count();
         $completedJobs = $jobOrders->where('status', 'completed')->count();
-        $inProgressJobs = $jobOrders->where('status', 'in_progress')->count();
-        $pendingJobs = $jobOrders->where('status', 'pending')->count();
+        $inProgressJobs = $jobOrders->whereIn('status', ['assigned', 'in_progress', 'on_hold'])->count();
+        $pendingJobs = $jobOrders->whereIn('status', ['pending', 'for_accounting_approval', 'approved'])->count();
         
         $completionRate = $totalJobs > 0 ? ($completedJobs / $totalJobs) * 100 : 0;
         
         // Calculate average revenue per job
-        $totalRevenue = $jobOrders->sum('grand_total');
+        $totalRevenue = $jobOrders->sum(function ($jobOrder) {
+            return (float) ($jobOrder->grand_total ?? $jobOrder->total_amount ?? 0);
+        });
         $averageRevenue = $totalJobs > 0 ? $totalRevenue / $totalJobs : 0;
         
         // Job status breakdown

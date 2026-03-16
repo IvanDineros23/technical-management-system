@@ -156,6 +156,27 @@ class TimelineController extends Controller
             return JobOrder::find($modelId);
         }
 
+        if ($modelType === 'Assignment' && $modelId) {
+            $assignment = \App\Models\Assignment::with('jobOrder')->find($modelId);
+            if ($assignment?->jobOrder) {
+                return $assignment->jobOrder;
+            }
+        }
+
+        if ($modelType === 'Calibration' && $modelId) {
+            $calibration = \App\Models\Calibration::with('assignment.jobOrder')->find($modelId);
+            if ($calibration?->assignment?->jobOrder) {
+                return $calibration->assignment->jobOrder;
+            }
+        }
+
+        if ($modelType === 'Report' && $modelId) {
+            $report = \App\Models\Report::with('assignment.jobOrder')->find($modelId);
+            if ($report?->assignment?->jobOrder) {
+                return $report->assignment->jobOrder;
+            }
+        }
+
         if (in_array($modelType, ['JobAttachment', 'JobOrderAttachment'], true)) {
             $jobOrderId = data_get($auditLog->new_values, 'job_order_id')
                 ?? data_get($auditLog->old_values, 'job_order_id');
@@ -165,6 +186,14 @@ class TimelineController extends Controller
             }
 
             return $jobOrderId ? JobOrder::find($jobOrderId) : null;
+        }
+
+        // Fallback: extract JO number from description (e.g., JO-00018).
+        $description = (string) ($auditLog->description ?? '');
+        if ($description !== '' && preg_match('/\b(JO-[A-Za-z0-9-]+)\b/i', $description, $matches)) {
+            $joNumber = strtoupper($matches[1]);
+
+            return JobOrder::whereRaw('UPPER(job_order_number) = ?', [$joNumber])->first();
         }
 
         return null;
@@ -312,10 +341,27 @@ class TimelineController extends Controller
     {
         $search = $filters['search'] ?? null;
 
-        // Get audit logs related to tech team activities and approvals - only job-related
+        // Tech Head should only see job lifecycle activities (assignment, execution, approvals, reports).
         $query = AuditLog::with(['user' => function($q) { $q->with('role'); }])
-            ->whereIn('action', ['CREATE', 'UPDATE', 'DELETE'])
-            ->whereIn('model_type', ['JobOrder', 'Assignment', 'Calibration', 'JobAttachment', 'JobOrderAttachment'])
+            ->whereIn('action', ['CREATE', 'UPDATE', 'DELETE', 'ASSIGN', 'APPROVE', 'REJECT', 'GENERATE', 'SUBMIT'])
+            ->whereNotIn('model_type', ['Backup', 'Cache', 'Settings', 'AuditLog'])
+            ->where(function ($q) {
+                $q->whereIn('model_type', [
+                    'JobOrder',
+                    'Assignment',
+                    'Calibration',
+                    'Report',
+                    'Invoice',
+                    'Payment',
+                    'AccountingRelease',
+                    'SignatoryApproval',
+                    'JobAttachment',
+                    'JobOrderAttachment',
+                ])
+                // Some legacy records are saved as Unknown but still include JO references.
+                ->orWhere('description', 'like', '%JO-%')
+                ->orWhere('description', 'like', '%Job Order%');
+            })
             ->whereNotIn('description', ['User logged in', 'User logged out']);
 
         if ($search) {
@@ -336,9 +382,18 @@ class TimelineController extends Controller
             ->latest('created_at')
             ->paginate(8);
 
-        $timelines = $auditLogs->getCollection()->map(function ($auditLog) {
-            return $this->formatAuditLogToTimeline($auditLog);
-        });
+        $timelines = $auditLogs->getCollection()
+            ->map(function ($auditLog) {
+                return $this->formatAuditLogToTimeline($auditLog);
+            })
+            // Final guard: keep only entries tied to a concrete Job Order context.
+            ->filter(function ($timeline) {
+                return !empty($timeline['job_order'])
+                    || str_starts_with((string) ($timeline['title'] ?? ''), 'JO-')
+                    || str_contains((string) ($timeline['description'] ?? ''), 'Job Order')
+                    || str_contains((string) ($timeline['description'] ?? ''), 'JO-');
+            })
+            ->values();
         
         $stats = [
             'total_active' => JobOrder::whereIn('status', ['pending', 'in_progress'])->count(),
