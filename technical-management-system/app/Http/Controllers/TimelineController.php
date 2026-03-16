@@ -414,56 +414,8 @@ class TimelineController extends Controller
      */
     private function getSignatoryTimeline(array $filters = []): array
     {
-        $search = $filters['search'] ?? null;
-
-        // Get audit logs for certificate and approval-related activities
-        $query = AuditLog::with(['user' => function($q) { $q->with('role'); }])
-            ->whereIn('model_type', ['Certificate', 'SignatoryApproval', 'JobOrder'])
-            ->where('action', 'UPDATE')
-            ->whereNotIn('description', ['User logged in', 'User logged out']);
-
-        if ($search) {
-            if (is_numeric($search)) {
-                $jobOrders = JobOrder::where('job_order_number', 'like', "%{$search}%")
-                    ->pluck('id');
-                if ($jobOrders->isNotEmpty()) {
-                    $query->wherein('model_id', $jobOrders);
-                } else {
-                    $query->where('description', 'like', "%{$search}%");
-                }
-            } else {
-                $query->where('description', 'like', "%{$search}%");
-            }
-        }
-
-        $auditLogs = $query
-            ->latest('created_at')
-            ->paginate(8);
-
-        $timelines = $auditLogs->getCollection()->map(function ($auditLog) {
-            return $this->formatAuditLogToTimeline($auditLog);
-        });
-        
-        $stats = [
-            'pending_signature' => \App\Models\Calibration::where('status', 'approved')
-                ->whereDoesntHave('certificate')
-                ->count(),
-            'signed_today' => AuditLog::whereDate('created_at', today())
-                ->where('model_type', 'Certificate')
-                ->whereNotIn('description', ['User logged in', 'User logged out'])
-                ->count(),
-            'in_progress' => JobOrder::where('status', 'in_progress')->count(),
-            'total_signed' => AuditLog::where('model_type', 'Certificate')
-                ->where('action', 'UPDATE')
-                ->count(),
-        ];
-        
-        return [
-            'timelines' => $timelines,
-            'pagination' => $auditLogs,
-            'stats' => $stats,
-            'pendingCount' => $stats['pending_signature']
-        ];
+        // Keep signatory timeline behavior aligned with tech head/accounting timeline behavior.
+        return $this->getTechHeadTimeline($filters);
     }
     
     /**
@@ -471,53 +423,8 @@ class TimelineController extends Controller
      */
     private function getAccountingTimeline(array $filters = []): array
     {
-        $search = $filters['search'] ?? null;
-
-        // Get audit logs for accounting-related activities - only job-related
-        $query = AuditLog::with(['user' => function($q) { $q->with('role'); }])
-            ->whereIn('model_type', ['JobOrder', 'Payment', 'Invoice', 'AccountingRelease'])
-            ->whereHas('user', function($q) {
-                $q->whereHas('role', function($r) {
-                    $r->where('slug', 'accounting');
-                });
-            })
-            ->whereNotIn('description', ['User logged in', 'User logged out']);
-
-        if ($search) {
-            if (is_numeric($search)) {
-                $jobOrders = JobOrder::where('job_order_number', 'like', "%{$search}%")
-                    ->pluck('id');
-                if ($jobOrders->isNotEmpty()) {
-                    $query->wherein('model_id', $jobOrders);
-                } else {
-                    $query->where('description', 'like', "%{$search}%");
-                }
-            } else {
-                $query->where('description', 'like', "%{$search}%");
-            }
-        }
-
-        $auditLogs = $query
-            ->latest('created_at')
-            ->paginate(8);
-
-        $timelines = $auditLogs->getCollection()->map(function ($auditLog) {
-            return $this->formatAuditLogToTimeline($auditLog);
-        });
-        
-        $stats = [
-            'total_jobs' => JobOrder::count(),
-            'pending' => JobOrder::whereIn('status', ['for_accounting_approval', 'pending', 'rejected'])->count(),
-            'in_progress' => JobOrder::whereIn('status', ['approved', 'assigned', 'in_progress', 'on_hold'])->count(),
-            'completed' => JobOrder::where('status', 'completed')->count(),
-        ];
-        
-        return [
-            'timelines' => $timelines,
-            'pagination' => $auditLogs,
-            'stats' => $stats,
-            'pendingCount' => 0
-        ];
+        // Keep accounting timeline behavior aligned with tech head timeline behavior.
+        return $this->getTechHeadTimeline($filters);
     }
     
     /**
