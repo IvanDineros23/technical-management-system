@@ -14,7 +14,11 @@ class SettingsController extends Controller
     public function index()
     {
         $backups = $this->getBackupFiles();
-        return view('admin.settings', compact('backups'));
+        $securitySettings = $this->getSecuritySettings();
+        $activeSessions = $this->getActiveSessions();
+        $maintenanceInfo = $this->getMaintenanceInfo();
+
+        return view('admin.settings', compact('backups', 'securitySettings', 'activeSessions', 'maintenanceInfo'));
     }
 
     public function updateGeneral(Request $request)
@@ -158,29 +162,27 @@ class SettingsController extends Controller
         ]);
 
         $settings = [
-            'session_timeout' => $request->session_timeout,
+            'session_timeout' => (int) $request->session_timeout,
             'force_password_change' => $request->has('force_password_change'),
             'two_factor_auth' => $request->has('two_factor_auth'),
         ];
 
-        Storage::put('security_settings.json', json_encode($settings));
+        Storage::disk('local')->put('security_settings.json', json_encode($settings));
+        session()->put('security.last_activity', time());
 
         AuditLogHelper::log('UPDATE', 'Settings', 0, 'Updated security settings');
 
-        return redirect()->back()->with('success', 'Security settings updated successfully');
+        return redirect()->back()->with('status', 'Security settings updated successfully');
     }
 
     public function clearCache()
     {
         try {
-            Artisan::call('cache:clear');
-            Artisan::call('config:clear');
-            Artisan::call('route:clear');
-            Artisan::call('view:clear');
+            Artisan::call('optimize:clear');
 
             AuditLogHelper::log('DELETE', 'Cache', 0, 'Cleared system cache');
 
-            return redirect()->back()->with('success', 'Cache cleared successfully');
+            return redirect()->back()->with('status', 'Cache cleared successfully.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to clear cache: ' . $e->getMessage());
         }
@@ -191,15 +193,17 @@ class SettingsController extends Controller
         try {
             $tables = DB::select('SHOW TABLES');
             $database = config('database.connections.mysql.database');
+            $optimizedCount = 0;
 
             foreach ($tables as $table) {
                 $tableName = $table->{'Tables_in_' . $database};
                 DB::statement("OPTIMIZE TABLE `{$tableName}`");
+                $optimizedCount++;
             }
 
             AuditLogHelper::log('UPDATE', 'Database', 0, 'Optimized database tables');
 
-            return redirect()->back()->with('success', 'Database optimized successfully');
+            return redirect()->back()->with('status', "Database optimized successfully ({$optimizedCount} table(s)).");
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to optimize database: ' . $e->getMessage());
         }
@@ -208,23 +212,26 @@ class SettingsController extends Controller
     public function clearLogs()
     {
         try {
+            $thirtyDaysAgo = now()->subDays(30);
+            $deletedLogFiles = 0;
+
             // Clear Laravel log files older than 30 days
             $logPath = storage_path('logs');
-            $files = File::files($logPath);
-            $thirtyDaysAgo = now()->subDays(30);
+            $files = File::glob($logPath . DIRECTORY_SEPARATOR . '*.log');
 
             foreach ($files as $file) {
                 if (File::lastModified($file) < $thirtyDaysAgo->timestamp) {
                     File::delete($file);
+                    $deletedLogFiles++;
                 }
             }
 
             // Optionally clear old audit logs
-            DB::table('audit_logs')->where('created_at', '<', $thirtyDaysAgo)->delete();
+            $deletedAuditLogs = DB::table('audit_logs')->where('created_at', '<', $thirtyDaysAgo)->delete();
 
             AuditLogHelper::log('DELETE', 'Logs', 0, 'Cleared old system logs (older than 30 days)');
 
-            return redirect()->back()->with('success', 'Old logs cleared successfully');
+            return redirect()->back()->with('status', "Old logs cleared successfully ({$deletedLogFiles} file(s), {$deletedAuditLogs} audit log record(s)).");
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to clear logs: ' . $e->getMessage());
         }
@@ -233,14 +240,76 @@ class SettingsController extends Controller
     public function terminateAllSessions()
     {
         try {
-            DB::table('sessions')->where('user_id', '!=', auth()->id())->delete();
+            if (config('session.driver') !== 'database') {
+                return redirect()->back()->with('warning', 'Session termination requires SESSION_DRIVER=database.');
+            }
+
+            $currentSessionId = session()->getId();
+            $deleted = DB::table('sessions')
+                ->where('user_id', auth()->id())
+                ->where('id', '!=', $currentSessionId)
+                ->delete();
 
             AuditLogHelper::log('DELETE', 'Sessions', 0, 'Terminated all other sessions');
 
-            return redirect()->back()->with('success', 'All other sessions terminated successfully');
+            return redirect()->back()->with('status', "Terminated {$deleted} other session(s) successfully.");
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to terminate sessions: ' . $e->getMessage());
         }
+    }
+
+    private function getSecuritySettings(): array
+    {
+        $defaults = [
+            'session_timeout' => (int) config('session.lifetime', 120),
+            'force_password_change' => false,
+            'two_factor_auth' => false,
+        ];
+
+        try {
+            if (!Storage::disk('local')->exists('security_settings.json')) {
+                return $defaults;
+            }
+
+            $decoded = json_decode((string) Storage::disk('local')->get('security_settings.json'), true);
+            if (!is_array($decoded)) {
+                return $defaults;
+            }
+
+            return [
+                'session_timeout' => (int) ($decoded['session_timeout'] ?? $defaults['session_timeout']),
+                'force_password_change' => (bool) ($decoded['force_password_change'] ?? false),
+                'two_factor_auth' => (bool) ($decoded['two_factor_auth'] ?? false),
+            ];
+        } catch (\Throwable $e) {
+            return $defaults;
+        }
+    }
+
+    private function getActiveSessions(): array
+    {
+        if (config('session.driver') !== 'database') {
+            return [];
+        }
+
+        $currentSessionId = session()->getId();
+
+        $rows = DB::table('sessions')
+            ->where('user_id', auth()->id())
+            ->orderByDesc('last_activity')
+            ->get(['id', 'ip_address', 'user_agent', 'last_activity']);
+
+        return $rows->map(function ($session) use ($currentSessionId) {
+            $userAgent = (string) ($session->user_agent ?? 'Unknown device');
+
+            return [
+                'id' => (string) $session->id,
+                'ip_address' => (string) ($session->ip_address ?? 'Unknown IP'),
+                'user_agent' => mb_strimwidth($userAgent, 0, 70, '...'),
+                'last_activity' => date('M d, Y h:i A', (int) $session->last_activity),
+                'is_current' => (string) $session->id === $currentSessionId,
+            ];
+        })->toArray();
     }
 
     private function getBackupFiles()
@@ -269,6 +338,33 @@ class SettingsController extends Controller
         });
 
         return $backups;
+    }
+
+    private function getMaintenanceInfo(): array
+    {
+        $connectionName = (string) config('database.default');
+        $driver = (string) config("database.connections.{$connectionName}.driver", 'unknown');
+
+        return [
+            'laravel_version' => app()->version(),
+            'php_version' => PHP_VERSION,
+            'database_driver' => strtoupper($driver),
+            'storage_used' => $this->formatBytes($this->calculateDirectorySize(storage_path())),
+        ];
+    }
+
+    private function calculateDirectorySize(string $directory): int
+    {
+        if (!File::exists($directory)) {
+            return 0;
+        }
+
+        $bytes = 0;
+        foreach (File::allFiles($directory) as $file) {
+            $bytes += $file->getSize();
+        }
+
+        return $bytes;
     }
 
     private function formatBytes($bytes, $precision = 2)

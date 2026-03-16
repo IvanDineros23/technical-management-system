@@ -192,7 +192,7 @@
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Session Timeout (minutes)</label>
-                                <input type="number" name="session_timeout" value="120" min="5" max="1440" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <input type="number" name="session_timeout" value="{{ $securitySettings['session_timeout'] ?? 120 }}" min="5" max="1440" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Users will be automatically logged out after this period of inactivity</p>
                             </div>
                             <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
@@ -201,7 +201,7 @@
                                     <p class="text-sm text-gray-600 dark:text-gray-400">Require users to change password every 90 days</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="force_password_change" value="1" class="sr-only peer" checked>
+                                    <input type="checkbox" name="force_password_change" value="1" class="sr-only peer" {{ !empty($securitySettings['force_password_change']) ? 'checked' : '' }}>
                                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                                 </label>
                             </div>
@@ -211,30 +211,36 @@
                                     <p class="text-sm text-gray-600 dark:text-gray-400">Enable 2FA for all admin accounts</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" name="two_factor_auth" value="1" class="sr-only peer">
+                                    <input type="checkbox" name="two_factor_auth" value="1" class="sr-only peer" {{ !empty($securitySettings['two_factor_auth']) ? 'checked' : '' }}>
                                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                                 </label>
                             </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Note: Force password change and 2FA flags are now saved and can be enforced by your auth flow.</p>
                         </div>
                     </div>
 
                     <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Active Sessions</h3>
                         <div class="space-y-3">
-                            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                                        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                        </svg>
+                            @forelse($activeSessions as $session)
+                                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-10 h-10 {{ $session['is_current'] ? 'bg-green-100 dark:bg-green-900' : 'bg-blue-100 dark:bg-blue-900' }} rounded-lg flex items-center justify-center">
+                                            <svg class="w-6 h-6 {{ $session['is_current'] ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-900 dark:text-white">{{ $session['is_current'] ? 'Current Session' : 'Other Session' }}</p>
+                                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ $session['ip_address'] }} • {{ $session['user_agent'] }}</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">Last active: {{ $session['last_activity'] }}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p class="font-medium text-gray-900 dark:text-white">Current Session</p>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">127.0.0.1 • Chrome • Active now</p>
-                                    </div>
+                                    <span class="px-3 py-1 {{ $session['is_current'] ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200' }} text-xs rounded-full">{{ $session['is_current'] ? 'Active' : 'Open' }}</span>
                                 </div>
-                                <span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">Active</span>
-                            </div>
+                            @empty
+                                <p class="text-sm text-gray-600 dark:text-gray-400">No active sessions found.</p>
+                            @endforelse
                         </div>
                     </div>
 
@@ -258,7 +264,7 @@
                                 <p class="font-medium text-gray-900 dark:text-white">Clear Cache</p>
                                 <p class="text-sm text-gray-600 dark:text-gray-400">Remove all cached data to improve performance</p>
                             </div>
-                            <form action="{{ route('admin.settings.cache.clear') }}" method="POST" class="inline">
+                            <form action="{{ route('admin.settings.cache.clear') }}" method="POST" class="inline" onsubmit="window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Clearing system cache...', type: 'info' } }));">
                                 @csrf
                                 <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Clear</button>
                             </form>
@@ -268,7 +274,7 @@
                                 <p class="font-medium text-gray-900 dark:text-white">Optimize Database</p>
                                 <p class="text-sm text-gray-600 dark:text-gray-400">Analyze and optimize database tables</p>
                             </div>
-                            <form action="{{ route('admin.settings.database.optimize') }}" method="POST" class="inline">
+                            <form action="{{ route('admin.settings.database.optimize') }}" method="POST" class="inline" onsubmit="if(!confirm('Optimize all database tables now?')) return false; window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Optimizing database tables...', type: 'info' } })); return true;">
                                 @csrf
                                 <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Optimize</button>
                             </form>
@@ -278,7 +284,7 @@
                                 <p class="font-medium text-gray-900 dark:text-white">Clear Logs</p>
                                 <p class="text-sm text-gray-600 dark:text-gray-400">Delete old system logs (older than 30 days)</p>
                             </div>
-                            <form action="{{ route('admin.settings.logs.clear') }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete old logs?')">
+                            <form action="{{ route('admin.settings.logs.clear') }}" method="POST" class="inline" onsubmit="if(!confirm('Are you sure you want to delete old logs?')) return false; window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Clearing old logs...', type: 'warning' } })); return true;">
                                 @csrf
                                 <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Clear</button>
                             </form>
@@ -291,19 +297,19 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                             <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Laravel Version</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-white">11.x</p>
+                            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ $maintenanceInfo['laravel_version'] ?? app()->version() }}</p>
                         </div>
                         <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                             <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">PHP Version</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ phpversion() }}</p>
+                            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ $maintenanceInfo['php_version'] ?? PHP_VERSION }}</p>
                         </div>
                         <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                             <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Database</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-white">MySQL</p>
+                            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ $maintenanceInfo['database_driver'] ?? 'UNKNOWN' }}</p>
                         </div>
                         <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                             <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Storage Used</p>
-                            <p class="text-lg font-semibold text-gray-900 dark:text-white">125 MB</p>
+                            <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ $maintenanceInfo['storage_used'] ?? '0 B' }}</p>
                         </div>
                     </div>
                 </div>
