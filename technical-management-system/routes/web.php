@@ -3733,6 +3733,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('/settings/general', [\App\Http\Controllers\SettingsController::class, 'updateGeneral'])->name('settings.general.update');
     Route::get('/settings/backup', [AdminBackupController::class, 'listBackups'])->name('settings.backup.index');
     Route::post('/settings/backup/create', [AdminBackupController::class, 'createBackup'])->name('settings.backup.create');
+    Route::post('/settings/backup/schedule', [\App\Http\Controllers\SettingsController::class, 'updateBackupSchedule'])->name('settings.backup.schedule.update');
     Route::get('/settings/backup/download/{file}', [AdminBackupController::class, 'downloadBackup'])->name('settings.backup.download');
     Route::post('/settings/backup/restore', [AdminBackupController::class, 'restoreBackup'])->name('settings.backup.restore');
     Route::delete('/settings/backup/delete/{file}', [AdminBackupController::class, 'deleteBackup'])->name('settings.backup.delete');

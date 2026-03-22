@@ -14,11 +14,44 @@ class SettingsController extends Controller
     public function index()
     {
         $backups = $this->getBackupFiles();
+        $backupSchedule = $this->getBackupScheduleSettings();
         $securitySettings = $this->getSecuritySettings();
         $activeSessions = $this->getActiveSessions();
         $maintenanceInfo = $this->getMaintenanceInfo();
 
-        return view('admin.settings', compact('backups', 'securitySettings', 'activeSessions', 'maintenanceInfo'));
+        return view('admin.settings', compact('backups', 'backupSchedule', 'securitySettings', 'activeSessions', 'maintenanceInfo'));
+    }
+
+    public function updateBackupSchedule(Request $request)
+    {
+        $validated = $request->validate([
+            'frequency' => 'required|in:daily,weekly,monthly',
+            'time' => 'required|date_format:H:i',
+            'day_of_week' => 'nullable|integer|between:0,6',
+            'day_of_month' => 'nullable|integer|between:1,28',
+        ]);
+
+        $schedule = $this->getBackupScheduleSettings();
+        $schedule['enabled'] = $request->has('enabled');
+        $schedule['frequency'] = (string) $validated['frequency'];
+        $schedule['time'] = (string) $validated['time'];
+        $schedule['updated_at'] = now()->toIso8601String();
+
+        if ($schedule['frequency'] === 'weekly') {
+            $schedule['day_of_week'] = (int) ($validated['day_of_week'] ?? 0);
+        }
+
+        if ($schedule['frequency'] === 'monthly') {
+            $schedule['day_of_month'] = (int) ($validated['day_of_month'] ?? 1);
+        }
+
+        Storage::disk('local')->put('backup_schedule.json', json_encode($schedule, JSON_PRETTY_PRINT));
+
+        AuditLogHelper::log('UPDATE', 'BackupSchedule', 0, 'Updated automatic backup schedule');
+
+        return redirect()->route('admin.settings.index', ['tab' => 'backup'])
+            ->with('settings_tab', 'backup')
+            ->with('status', 'Backup schedule updated successfully.');
     }
 
     public function updateGeneral(Request $request)
@@ -338,6 +371,46 @@ class SettingsController extends Controller
         });
 
         return $backups;
+    }
+
+    private function getBackupScheduleSettings(): array
+    {
+        $defaults = [
+            'enabled' => false,
+            'frequency' => 'daily',
+            'time' => '02:00',
+            'day_of_week' => 0,
+            'day_of_month' => 1,
+            'last_run_at' => null,
+            'last_run_status' => null,
+            'last_run_file' => null,
+            'last_error' => null,
+        ];
+
+        try {
+            if (!Storage::disk('local')->exists('backup_schedule.json')) {
+                return $defaults;
+            }
+
+            $decoded = json_decode((string) Storage::disk('local')->get('backup_schedule.json'), true);
+            if (!is_array($decoded)) {
+                return $defaults;
+            }
+
+            return [
+                'enabled' => (bool) ($decoded['enabled'] ?? $defaults['enabled']),
+                'frequency' => (string) ($decoded['frequency'] ?? $defaults['frequency']),
+                'time' => (string) ($decoded['time'] ?? $defaults['time']),
+                'day_of_week' => (int) ($decoded['day_of_week'] ?? $defaults['day_of_week']),
+                'day_of_month' => (int) ($decoded['day_of_month'] ?? $defaults['day_of_month']),
+                'last_run_at' => $decoded['last_run_at'] ?? null,
+                'last_run_status' => $decoded['last_run_status'] ?? null,
+                'last_run_file' => $decoded['last_run_file'] ?? null,
+                'last_error' => $decoded['last_error'] ?? null,
+            ];
+        } catch (\Throwable $e) {
+            return $defaults;
+        }
     }
 
     private function getMaintenanceInfo(): array

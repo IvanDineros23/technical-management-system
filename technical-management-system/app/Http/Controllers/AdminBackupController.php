@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\AuditLogHelper;
+use App\Services\BackupArchiveService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -10,6 +11,10 @@ use ZipArchive;
 
 class AdminBackupController extends Controller
 {
+    public function __construct(private BackupArchiveService $backupArchiveService)
+    {
+    }
+
     public function listBackups()
     {
         // Keep a single backup UI in the Settings page to avoid duplicate screens.
@@ -18,58 +23,10 @@ class AdminBackupController extends Controller
 
     public function createBackup()
     {
-        $this->ensureBackupsDirectoryExists();
-
-        $timestamp = now()->format('Y_m_d_H_i_s');
-        $zipFileName = "backup_{$timestamp}.zip";
-
-        // Build backup payload outside storage to avoid recursive self-copy.
-        $tempRoot = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'tms_backup_' . uniqid();
-        $tempBackupRoot = $tempRoot . DIRECTORY_SEPARATOR . 'backup';
-        $databaseDumpPath = $tempBackupRoot . DIRECTORY_SEPARATOR . 'database.sql';
-        $zipAbsolutePath = storage_path('app/backups/' . $zipFileName);
-
         try {
-            File::ensureDirectoryExists($tempBackupRoot);
-
-            $database = (string) env('DB_DATABASE');
-            $username = (string) env('DB_USERNAME');
-            $password = (string) env('DB_PASSWORD');
-            $host = (string) env('DB_HOST', '127.0.0.1');
-            $port = (string) env('DB_PORT', '3306');
-            $mysqldumpBinary = $this->resolveBinaryPath('mysqldump', (string) env('MYSQLDUMP_BINARY', ''));
-
-            $dumpCommand = sprintf(
-                '%s --host=%s --port=%s --user=%s --password=%s --add-drop-table --single-transaction --quick --lock-tables=false %s > %s 2>&1',
-                escapeshellarg($mysqldumpBinary),
-                escapeshellarg($host),
-                escapeshellarg($port),
-                escapeshellarg($username),
-                escapeshellarg($password),
-                escapeshellarg($database),
-                escapeshellarg($databaseDumpPath)
-            );
-
-            $this->runShellCommand($dumpCommand, 'Database dump failed.');
-
-            $storageSource = storage_path();
-            $storageDestination = $tempBackupRoot . DIRECTORY_SEPARATOR . 'storage';
-            if (!File::copyDirectory($storageSource, $storageDestination)) {
-                throw new \RuntimeException('Failed to include storage directory in backup.');
-            }
-
-            $envPath = base_path('.env');
-            if (File::exists($envPath)) {
-                File::copy($envPath, $tempBackupRoot . DIRECTORY_SEPARATOR . '.env');
-            }
-
-            $zip = new ZipArchive();
-            if ($zip->open($zipAbsolutePath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-                throw new \RuntimeException('Unable to create backup ZIP file.');
-            }
-
-            $this->addPathToZip($zip, $tempBackupRoot, 'backup');
-            $zip->close();
+            $backup = $this->backupArchiveService->createBackupArchive();
+            $zipFileName = $backup['filename'];
+            $zipAbsolutePath = $backup['absolute_path'];
 
             AuditLogHelper::log('CREATE', 'Backup', 0, "Backup created: {$zipFileName}");
             AuditLogHelper::log('VIEW', 'Backup', 0, "Backup downloaded: {$zipFileName}");
@@ -77,10 +34,6 @@ class AdminBackupController extends Controller
             return response()->download($zipAbsolutePath, $zipFileName);
         } catch (\Throwable $e) {
             return redirect()->route('admin.settings.index')->with('error', 'Backup failed: ' . $e->getMessage());
-        } finally {
-            if (File::exists($tempRoot)) {
-                File::deleteDirectory($tempRoot);
-            }
         }
     }
 

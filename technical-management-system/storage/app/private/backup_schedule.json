@@ -1,0 +1,12 @@
+{
+    "enabled": true,
+    "frequency": "daily",
+    "time": "02:00",
+    "day_of_week": 0,
+    "day_of_month": 1,
+    "last_run_at": "2026-03-23T07:26:49+08:00",
+    "last_run_status": "success",
+    "last_run_file": "backup_2026_03_23_07_26_49.zip",
+    "last_error": null,
+    "updated_at": "2026-03-23T07:28:05+08:00"
+}

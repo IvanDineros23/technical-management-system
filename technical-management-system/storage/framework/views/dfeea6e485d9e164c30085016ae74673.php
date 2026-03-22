@@ -11,7 +11,7 @@
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startSection('content'); ?>
-<div class="space-y-6" x-data="{ activeTab: 'general' }">
+<div class="space-y-6" x-data="{ activeTab: '<?php echo e(session('settings_tab', request('tab', 'general'))); ?>', showScheduleForm: false, scheduleFrequency: '<?php echo e($backupSchedule['frequency'] ?? 'daily'); ?>' }">
     <!-- Header -->
     <div>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">System Settings</h2>
@@ -115,9 +115,97 @@
                                     Create Backup Now
                                 </button>
                             </form>
-                            <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <button type="button" @click="showScheduleForm = !showScheduleForm" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                 Schedule
                             </button>
+                        </div>
+
+                        <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                            <p class="text-sm font-medium text-blue-900 dark:text-blue-200">Auto Backup Schedule</p>
+                            <?php if(!empty($backupSchedule['enabled'])): ?>
+                                <p class="text-xs text-blue-800 dark:text-blue-300 mt-1">
+                                    Enabled • <?php echo e(ucfirst($backupSchedule['frequency'])); ?> at <?php echo e($backupSchedule['time']); ?>
+
+                                    <?php if(($backupSchedule['frequency'] ?? 'daily') === 'weekly'): ?>
+                                        • Day: <?php echo e(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][(int) ($backupSchedule['day_of_week'] ?? 0)] ?? 'Sunday'); ?>
+
+                                    <?php endif; ?>
+                                    <?php if(($backupSchedule['frequency'] ?? 'daily') === 'monthly'): ?>
+                                        • Day <?php echo e((int) ($backupSchedule['day_of_month'] ?? 1)); ?> of month
+                                    <?php endif; ?>
+                                </p>
+                            <?php else: ?>
+                                <p class="text-xs text-blue-800 dark:text-blue-300 mt-1">Disabled</p>
+                            <?php endif; ?>
+                            <?php if(!empty($backupSchedule['last_run_at'])): ?>
+                                <p class="text-xs text-blue-800 dark:text-blue-300 mt-1">
+                                    Last Run: <?php echo e(\Carbon\Carbon::parse($backupSchedule['last_run_at'])->format('M d, Y h:i A')); ?>
+
+                                    <?php if(!empty($backupSchedule['last_run_status'])): ?>
+                                        • <?php echo e(ucfirst($backupSchedule['last_run_status'])); ?>
+
+                                    <?php endif; ?>
+                                    <?php if(!empty($backupSchedule['last_run_file'])): ?>
+                                        • <?php echo e($backupSchedule['last_run_file']); ?>
+
+                                    <?php endif; ?>
+                                </p>
+                            <?php endif; ?>
+                            <?php if(!empty($backupSchedule['last_error'])): ?>
+                                <p class="text-xs text-red-700 dark:text-red-300 mt-2">Last Error: <?php echo e($backupSchedule['last_error']); ?></p>
+                            <?php endif; ?>
+                        </div>
+
+                        <div x-show="showScheduleForm" x-cloak class="p-4 bg-gray-50 dark:bg-gray-700/40 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <form action="<?php echo e(route('admin.settings.backup.schedule.update')); ?>" method="POST" class="space-y-4">
+                                <?php echo csrf_field(); ?>
+                                <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">Enable Automatic Backup</p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400">When enabled, scheduled backups run automatically.</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" name="enabled" value="1" class="sr-only peer" <?php echo e(!empty($backupSchedule['enabled']) ? 'checked' : ''); ?>>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Frequency</label>
+                                        <select name="frequency" x-model="scheduleFrequency" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="daily">Daily</option>
+                                            <option value="weekly">Weekly</option>
+                                            <option value="monthly">Monthly</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time</label>
+                                        <input type="time" name="time" value="<?php echo e($backupSchedule['time'] ?? '02:00'); ?>" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </div>
+                                    <div x-show="scheduleFrequency === 'weekly'" x-cloak>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Day of Week</label>
+                                        <select name="day_of_week" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <?php $__currentLoopData = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $day): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <option value="<?php echo e($index); ?>" <?php echo e((int) ($backupSchedule['day_of_week'] ?? 0) === $index ? 'selected' : ''); ?>><?php echo e($day); ?></option>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                        </select>
+                                    </div>
+                                    <div x-show="scheduleFrequency === 'monthly'" x-cloak>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Day of Month</label>
+                                        <input type="number" name="day_of_month" min="1" max="28" value="<?php echo e($backupSchedule['day_of_month'] ?? 1); ?>" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </div>
+                                </div>
+
+                                <div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                                    <p class="text-xs text-yellow-800 dark:text-yellow-300">Important: Automatic backup runs through Laravel scheduler. Make sure server task scheduler executes <strong>php artisan schedule:run</strong> every minute.</p>
+                                </div>
+
+                                <div class="flex justify-end gap-2">
+                                    <button type="button" @click="showScheduleForm = false" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Save Schedule</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
