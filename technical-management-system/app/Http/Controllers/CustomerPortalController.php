@@ -31,7 +31,28 @@ class CustomerPortalController extends Controller
             ]);
         }
 
+        $minutesToShowCancelled = 60;
+
         $jobOrdersQuery = JobOrder::where('customer_id', $customer->id)->latest();
+        $openRequestStatuses = ['pending', 'for_accounting_approval', 'approved', 'assigned', 'in_progress'];
+        $visibleJobOrdersQuery = JobOrder::where('customer_id', $customer->id)
+            ->where(function ($qq) use ($minutesToShowCancelled) {
+                $qq->where('status', '!=', 'cancelled')
+                   ->orWhere(function ($q2) use ($minutesToShowCancelled) {
+                       $q2->where('status', 'cancelled')
+                          ->where(function ($q3) use ($minutesToShowCancelled) {
+                              $q3->whereExists(function ($sub) use ($minutesToShowCancelled) {
+                                  $sub->selectRaw(1)
+                                      ->from('job_order_statuses as jos')
+                                      ->whereColumn('jos.job_order_id', 'job_orders.id')
+                                      ->where('jos.status', 'cancelled')
+                                      ->where('jos.changed_at', '>=', now()->subMinutes($minutesToShowCancelled));
+                              })
+                              ->orWhere('job_orders.updated_at', '>=', now()->subMinutes($minutesToShowCancelled));
+                          });
+                   });
+            })
+            ->latest();
         $certificatesQuery = Certificate::with('jobOrder')
             ->where('is_current', true)
             ->whereHas('jobOrder', function ($query) use ($customer) {
@@ -39,15 +60,15 @@ class CustomerPortalController extends Controller
             });
 
         $stats = [
-            'total_requests' => (clone $jobOrdersQuery)->count(),
-            'pending_requests' => (clone $jobOrdersQuery)->whereIn('status', ['pending', 'for_accounting_approval'])->count(),
+            'total_requests' => (clone $visibleJobOrdersQuery)->count(),
+            'pending_requests' => (clone $jobOrdersQuery)->whereIn('status', $openRequestStatuses)->count(),
             'total_certificates' => (clone $certificatesQuery)->count(),
             'pending_certificates' => (clone $certificatesQuery)->whereNull('released_at')->count(),
             'released_certificates' => (clone $certificatesQuery)->whereNotNull('released_at')->count(),
         ];
 
         $pendingRequests = (clone $jobOrdersQuery)
-            ->whereIn('status', ['pending', 'for_accounting_approval'])
+            ->whereIn('status', $openRequestStatuses)
             ->take(5)
             ->get();
 
@@ -145,6 +166,59 @@ class CustomerPortalController extends Controller
         $certificates = $query->latest('generated_at')->paginate(20)->appends(['status' => $status]);
 
         return view('customer.certificates', compact('customer', 'certificates', 'status'));
+    }
+
+    public function requestPdf(Request $request, JobOrder $jobOrder)
+    {
+        $customer = $request->user()->customer;
+
+        if (!$customer || $jobOrder->customer_id !== $customer->id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        try {
+            $resolvedPath = null;
+
+            if (!empty($jobOrder->pdf_path) && file_exists($jobOrder->pdf_path)) {
+                $resolvedPath = $jobOrder->pdf_path;
+            }
+
+            if (!$resolvedPath && !empty($jobOrder->pdf_filename)) {
+                $candidatePath = storage_path('app/public/generated/' . $jobOrder->pdf_filename);
+                if (file_exists($candidatePath)) {
+                    $resolvedPath = $candidatePath;
+                }
+            }
+
+            if (!$resolvedPath) {
+                app(JobOrderPdfService::class)->generate($jobOrder->fresh(['customer', 'customer.contacts', 'items']));
+                $jobOrder->refresh();
+
+                if (!empty($jobOrder->pdf_path) && file_exists($jobOrder->pdf_path)) {
+                    $resolvedPath = $jobOrder->pdf_path;
+                } elseif (!empty($jobOrder->pdf_filename)) {
+                    $candidatePath = storage_path('app/public/generated/' . $jobOrder->pdf_filename);
+                    if (file_exists($candidatePath)) {
+                        $resolvedPath = $candidatePath;
+                    }
+                }
+            }
+
+            if (!$resolvedPath) {
+                return response('Request form PDF is not available yet.', 404);
+            }
+
+            return response()->file($resolvedPath, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . basename($resolvedPath) . '"',
+            ]);
+        } catch (\Throwable $e) {
+            \Log::warning('Customer request PDF preview failed: ' . $e->getMessage(), [
+                'job_order_id' => $jobOrder->id,
+            ]);
+
+            return response('Unable to load request form PDF right now.', 500);
+        }
     }
 
     public function storeRequest(Request $request)

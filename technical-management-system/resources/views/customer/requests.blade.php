@@ -204,6 +204,10 @@
                 class="px-4 py-2 rounded-lg text-xs font-semibold {{ $status === 'approved' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-700' }}">
                     Approved
                 </a>
+                <a href="{{ route('customer.requests', ['status' => 'assigned']) }}"
+                class="px-4 py-2 rounded-lg text-xs font-semibold {{ $status === 'assigned' ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-700' }}">
+                    Assigned
+                </a>
                 <a href="{{ route('customer.requests', ['status' => 'in_progress']) }}"
                 class="px-4 py-2 rounded-lg text-xs font-semibold {{ $status === 'in_progress' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700' }}">
                     In Progress
@@ -264,6 +268,7 @@
                                             'pending' => 'bg-amber-100 text-amber-700',
                                             'for_accounting_approval' => 'bg-violet-100 text-violet-700',
                                             'approved' => 'bg-emerald-100 text-emerald-700',
+                                            'assigned' => 'bg-indigo-100 text-indigo-700',
                                             'in_progress' => 'bg-blue-100 text-blue-700',
                                             'completed' => 'bg-emerald-100 text-emerald-700',
                                             'cancelled' => 'bg-rose-100 text-rose-700',
@@ -281,7 +286,7 @@
                                                 type="button"
                                                 @click="openView({
                                                     job_order_number: @js($order->job_order_number),
-                                                    pdf_url: @js(asset('storage/generated/' . $order->pdf_filename) . '#toolbar=0&navpanes=0'),
+                                                    pdf_url: @js(route('customer.requests.pdf', $order) . '#toolbar=0&navpanes=0'),
                                                 })"
                                                 class="inline-flex items-center justify-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-slate-700 hover:text-slate-900 dark:text-gray-200 dark:hover:text-white"
                                                 title="View PDF form"
