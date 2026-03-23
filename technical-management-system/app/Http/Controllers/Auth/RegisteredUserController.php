@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Auth;
 
 use App\Helpers\AuditLogHelper;
 use App\Http\Controllers\Controller;
+use App\Mail\RegistrationSuccessfulMail;
 use App\Models\Customer;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules;
@@ -77,6 +80,16 @@ class RegisteredUserController extends Controller
             'customer_id' => $customer?->id,
             'is_active' => false,
         ]);
+
+        try {
+            Mail::to($user->email)->send(new RegistrationSuccessfulMail($user));
+        } catch (\Throwable $e) {
+            Log::warning('Failed to send registration success email', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         event(new Registered($user));
 

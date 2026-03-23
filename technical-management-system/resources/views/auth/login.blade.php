@@ -90,6 +90,8 @@
                             id="remember_me"
                             type="checkbox"
                             name="remember"
+                            value="1"
+                            @checked(old('remember'))
                             class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         >
                         <span class="text-slate-600">Remember Me</span>
