@@ -177,6 +177,13 @@ class TimelineController extends Controller
             }
         }
 
+        if ($modelType === 'Certificate' && $modelId) {
+            $certificate = \App\Models\Certificate::with('jobOrder')->find($modelId);
+            if ($certificate?->jobOrder) {
+                return $certificate->jobOrder;
+            }
+        }
+
         if (in_array($modelType, ['JobAttachment', 'JobOrderAttachment'], true)) {
             $jobOrderId = data_get($auditLog->new_values, 'job_order_id')
                 ?? data_get($auditLog->old_values, 'job_order_id');
@@ -259,9 +266,9 @@ class TimelineController extends Controller
 
         $auditLogs = $query
             ->latest('created_at')
-            ->paginate(8);
+            ->get();
 
-        $timelines = $auditLogs->getCollection()->map(function ($auditLog) {
+        $timelines = $auditLogs->map(function ($auditLog) {
             return $this->formatAuditLogToTimeline($auditLog);
         });
         
@@ -274,7 +281,7 @@ class TimelineController extends Controller
         
         return [
             'timelines' => $timelines,
-            'pagination' => $auditLogs,
+            'pagination' => null,
             'stats' => $stats,
             'pendingCount' => $stats['pending'] ?? 0
         ];
@@ -308,9 +315,9 @@ class TimelineController extends Controller
 
         $auditLogs = $query
             ->latest('created_at')
-            ->paginate(8);
+            ->get();
 
-        $timelines = $auditLogs->getCollection()->map(function ($auditLog) {
+        $timelines = $auditLogs->map(function ($auditLog) {
             return $this->formatAuditLogToTimeline($auditLog);
         });
         
@@ -328,7 +335,7 @@ class TimelineController extends Controller
         
         return [
             'timelines' => $timelines,
-            'pagination' => $auditLogs,
+            'pagination' => null,
             'stats' => $stats,
             'pendingCount' => $stats['pending'] ?? 0
         ];
@@ -380,9 +387,9 @@ class TimelineController extends Controller
 
         $auditLogs = $query
             ->latest('created_at')
-            ->paginate(8);
+            ->get();
 
-        $timelines = $auditLogs->getCollection()
+        $timelines = $auditLogs
             ->map(function ($auditLog) {
                 return $this->formatAuditLogToTimeline($auditLog);
             })
@@ -404,7 +411,7 @@ class TimelineController extends Controller
         
         return [
             'timelines' => $timelines,
-            'pagination' => $auditLogs,
+            'pagination' => null,
             'stats' => $stats
         ];
     }
@@ -455,9 +462,9 @@ class TimelineController extends Controller
 
         $auditLogs = $query
             ->latest('created_at')
-            ->paginate(8);
+            ->get();
 
-        $timelines = $auditLogs->getCollection()->map(function ($auditLog) {
+        $timelines = $auditLogs->map(function ($auditLog) {
             return $this->formatAuditLogToTimeline($auditLog);
         });
         
@@ -470,7 +477,7 @@ class TimelineController extends Controller
         
         return [
             'timelines' => $timelines,
-            'pagination' => $auditLogs,
+            'pagination' => null,
             'stats' => $stats
         ];
     }
@@ -504,7 +511,7 @@ class TimelineController extends Controller
                 
                 // Activities related to this job (assignments, calculations, certificates, payments)
                 $query->orWhere(function($q) use ($jobOrder) {
-                    $q->whereIn('model_type', ['Assignment', 'Calibration', 'Certificate', 'Payment', 'Invoice', 'AccountingRelease', 'SignatoryApproval'])
+                    $q->whereIn('model_type', ['Assignment', 'Calibration', 'Report', 'Certificate', 'Payment', 'Invoice', 'AccountingRelease', 'SignatoryApproval'])
                       ->where('model_id', '>', 0);
                 });
             })
@@ -522,7 +529,13 @@ class TimelineController extends Controller
             })
             ->whereNotIn('description', ['User logged in', 'User logged out'])
             ->latest('created_at')
-            ->get();
+            ->get()
+            ->filter(function (AuditLog $auditLog) use ($jobOrder) {
+                $resolvedJobOrder = $this->resolveJobOrderFromAuditLog($auditLog);
+
+                return $resolvedJobOrder && (int) $resolvedJobOrder->id === (int) $jobOrder->id;
+            })
+            ->values();
 
         // Format each activity
         $formattedActivities = $allActivities->map(function ($auditLog) use ($jobOrder) {
@@ -534,9 +547,7 @@ class TimelineController extends Controller
         // Get stats for this specific job
         $stats = [
             'customer' => $jobOrder->customer?->name ?? 'N/A',
-            'total_activities' => AuditLog::where('model_type', 'JobOrder')
-                ->where('model_id', $jobOrder->id)
-                ->count(),
+            'total_activities' => $formattedActivities->count(),
             'current_status' => $jobOrder->status,
             'started_date' => AuditLog::where('model_type', 'JobOrder')
                 ->where('model_id', $jobOrder->id)

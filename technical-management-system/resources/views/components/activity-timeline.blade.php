@@ -208,11 +208,5 @@
             @endforelse
         </div>
         
-        <!-- Pagination -->
-        @if($pagination && $pagination->hasPages())
-            <div class="mt-6 mb-4">
-                {{ $pagination->links('pagination::tailwind') }}
-            </div>
-        @endif
     </div>
 </div>

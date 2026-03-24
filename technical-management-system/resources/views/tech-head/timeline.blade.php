@@ -77,30 +77,13 @@
             </div>
         </div>
         
-        <div class="space-y-4">
-            @forelse($timelines as $timeline)
-                <x-timeline-item :timeline="$timeline" />
-            @empty
-                <div class="text-center py-12">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No activities to monitor</h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Team activities will appear here.</p>
-                </div>
-            @endforelse
-        </div>
+        <x-timeline-accordion
+            :timelines="$timelines"
+            empty-title="No activities to monitor"
+            empty-text="Team activities will appear here."
+        />
         
-        <!-- Pagination -->
-        @if($pagination && $pagination->hasPages())
-            <div class="mt-6 mb-4">
-                {{ $pagination->links('pagination::tailwind') }}
-            </div>
-        @endif
     </div>
 </div>
 
-<!-- Job Audit Trail Modal -->
-<x-job-audit-modal />
 @endsection

@@ -449,7 +449,7 @@ class SignatoryController extends Controller
             $query->where('status', $request->status);
         }
         
-        $jobOrders = $query->latest()->paginate(15);
+        $jobOrders = $query->latest()->get();
         
         return view('signatory.all-timelines', compact('jobOrders'));
     }
