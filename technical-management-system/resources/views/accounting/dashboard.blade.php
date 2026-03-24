@@ -140,12 +140,13 @@
 
                 <div class="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white">Need Attention</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Pending approvals in current queue</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Pending accounting items (initial approval + certification review)</p>
                     <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ $pendingApprovals->total() }}</p>
                 </div>
 
                 <div class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
                     <p>• Review customer request form</p>
+                    <p>• Verify Tech Head approved reports for certification</p>
                     <p>• Approve if details are complete</p>
                     <p>• Return to marketing if revision needed</p>
                 </div>

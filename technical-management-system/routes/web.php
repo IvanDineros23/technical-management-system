@@ -116,13 +116,6 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
         // Hide cancelled job orders from marketing listing
         $query->where('status', '!=', 'cancelled');
 
-        // Keep customer request forms separate from the main Job Orders page.
-        $query->where(function ($separateQuery) {
-            $separateQuery->where('status', '!=', 'pending')
-                ->orWhereNull('pdf_path')
-                ->orWhereRaw("TRIM(pdf_path) = ''");
-        });
-
         $status = $request->string('status')->toString();
         $allowedStatuses = ['pending', 'for_accounting_approval', 'approved', 'in_progress', 'completed', 'rejected'];
         if (in_array($status, $allowedStatuses, true)) {
@@ -317,6 +310,26 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
             return back()->withErrors(['error' => 'Only pending requests can be approved.']);
         }
 
+        $existingSpecialInstructions = [];
+        if (is_string($jobOrder->special_instructions) && trim($jobOrder->special_instructions) !== '') {
+            $decodedSpecialInstructions = json_decode($jobOrder->special_instructions, true);
+            if (is_array($decodedSpecialInstructions)) {
+                $existingSpecialInstructions = $decodedSpecialInstructions;
+            }
+        }
+
+        $customerRequestOverrides = $existingSpecialInstructions['customer_request_pdf_overrides'] ?? [];
+        if (!is_array($customerRequestOverrides)) {
+            $customerRequestOverrides = [];
+        }
+
+        // Populate the "FOR GEI - MARKETING ONLY" received-by fields upon marketing approval.
+        $customerRequestOverrides['name_signature'] = (string) ($request->user()->name ?? '');
+        $customerRequestOverrides['date_2'] = now()->setTimezone('Asia/Manila')->format('m/d/Y');
+
+        $existingSpecialInstructions['customer_request_pdf_overrides'] = $customerRequestOverrides;
+        $specialInstructionsPayload = json_encode($existingSpecialInstructions, JSON_UNESCAPED_UNICODE);
+
         $jobOrder->update([
             'status' => 'for_accounting_approval',
             'approved_by' => null,
@@ -324,7 +337,19 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
             'rejected_by' => null,
             'rejected_at' => null,
             'rejection_reason' => null,
+            'special_instructions' => $specialInstructionsPayload,
         ]);
+
+        try {
+            app(\App\Services\JobOrderPdfService::class)->generate(
+                $jobOrder->fresh(['customer', 'customer.contacts', 'items']),
+                $request->user()
+            );
+        } catch (\Throwable $e) {
+            \Log::warning('Marketing approval PDF regeneration failed: ' . $e->getMessage(), [
+                'job_order_id' => $jobOrder->id,
+            ]);
+        }
 
         AuditLogHelper::log(
             action: 'APPROVE',
@@ -333,8 +358,10 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
             description: "Marketing approved customer request {$jobOrder->job_order_number}",
             newValues: [
                 'status' => 'for_accounting_approval',
+                'marketing_received_by' => (string) ($request->user()->name ?? ''),
+                'marketing_received_date' => now()->setTimezone('Asia/Manila')->format('m/d/Y'),
             ],
-            changedFields: ['status']
+            changedFields: ['status', 'special_instructions']
         );
 
         return back()->with('status', 'Request endorsed to accounting for approval.');
@@ -1076,10 +1103,14 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
 // Accounting Routes
 Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')->name('accounting.')->group(function () {
     Route::get('/dashboard', function (Illuminate\Http\Request $request) {
-        $pendingApprovals = \App\Models\JobOrder::where('status', 'for_accounting_approval')->latest()->paginate(1);
+        $pendingQueueStatuses = ['for_accounting_approval', 'pending_certification'];
+        $pendingApprovals = \App\Models\JobOrder::whereIn('status', $pendingQueueStatuses)
+            ->orderByRaw("CASE WHEN status = 'pending_certification' THEN 0 ELSE 1 END")
+            ->latest()
+            ->paginate(1);
 
         $stats = [
-            'new_requests' => \App\Models\JobOrder::where('status', 'for_accounting_approval')->count(),
+            'new_requests' => \App\Models\JobOrder::whereIn('status', $pendingQueueStatuses)->count(),
             'approved' => \App\Models\JobOrder::where('status', 'approved')->count(),
             'ongoing' => \App\Models\JobOrder::whereIn('status', ['assigned', 'in_progress', 'on_hold'])->count(),
             'completed' => \App\Models\JobOrder::where('status', 'completed')->count(),
@@ -1095,9 +1126,11 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
         $priority = $request->string('priority')->toString();
         $dateFrom = trim($request->string('date_from')->toString());
         $dateTo   = trim($request->string('date_to')->toString());
+        $pendingQueueStatuses = ['for_accounting_approval', 'pending_certification'];
 
         $query = \App\Models\JobOrder::with(['customer', 'creator'])
-            ->where('status', 'for_accounting_approval')
+            ->whereIn('status', $pendingQueueStatuses)
+            ->orderByRaw("CASE WHEN status = 'pending_certification' THEN 0 ELSE 1 END")
             ->latest();
 
         if ($search !== '') {
@@ -1126,7 +1159,7 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
 
         $jobOrders = $query->paginate(15)->appends($request->only(['q', 'priority', 'date_from', 'date_to']));
 
-        $totalPending = \App\Models\JobOrder::where('status', 'for_accounting_approval')->count();
+        $totalPending = \App\Models\JobOrder::whereIn('status', $pendingQueueStatuses)->count();
 
         return view('accounting.approvals', compact('jobOrders', 'search', 'priority', 'dateFrom', 'dateTo', 'totalPending'));
     })->name('approvals');
@@ -1189,7 +1222,28 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
 
     Route::get('/job-orders/{jobOrder}/customer-request-form', function (\App\Models\JobOrder $jobOrder) {
         try {
-            if (empty($jobOrder->pdf_path) || !file_exists($jobOrder->pdf_path)) {
+            $needsMarketingReceivedBackfill = false;
+            if (in_array($jobOrder->status, ['for_accounting_approval', 'approved', 'in_progress', 'completed', 'rejected'], true)) {
+                $decodedSpecialInstructions = null;
+                if (is_string($jobOrder->special_instructions) && trim($jobOrder->special_instructions) !== '') {
+                    $decodedSpecialInstructions = json_decode($jobOrder->special_instructions, true);
+                }
+
+                $customerRequestOverrides = is_array($decodedSpecialInstructions)
+                    ? ($decodedSpecialInstructions['customer_request_pdf_overrides'] ?? null)
+                    : null;
+
+                $marketingReceiverName = is_array($customerRequestOverrides)
+                    ? trim((string) ($customerRequestOverrides['name_signature'] ?? ''))
+                    : '';
+                $marketingReceiverDate = is_array($customerRequestOverrides)
+                    ? trim((string) ($customerRequestOverrides['date_2'] ?? ''))
+                    : '';
+
+                $needsMarketingReceivedBackfill = $marketingReceiverName === '' || $marketingReceiverDate === '';
+            }
+
+            if (empty($jobOrder->pdf_path) || !file_exists($jobOrder->pdf_path) || $needsMarketingReceivedBackfill) {
                 app(\App\Services\JobOrderPdfService::class)->generate($jobOrder->fresh(['customer', 'customer.contacts', 'items']));
                 $jobOrder->refresh();
             }
@@ -1210,6 +1264,50 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
             return response('Unable to load customer request form PDF right now.', 500);
         }
     })->name('job-orders.customer-request-form');
+
+    // Certifications for Review (jobs completed by Tech Head, awaiting certification)
+    Route::get('/certifications', function (Illuminate\Http\Request $request) {
+        $search = trim($request->string('q')->toString());
+        
+        $query = \App\Models\JobOrder::with(['customer', 'lastAssignment.technician', 'lastAssignment.report'])
+            ->where('status', 'pending_certification')
+            ->latest();
+
+        if ($search !== '') {
+            $query->where(function ($sub) use ($search) {
+                $sub->where('job_order_number', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($cq) use ($search) {
+                        $cq->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $jobOrders = $query->paginate(15)->appends($request->only(['q']));
+        $pendingCount = \App\Models\JobOrder::where('status', 'pending_certification')->count();
+
+        return view('accounting.certifications', compact('jobOrders', 'search', 'pendingCount'));
+    })->name('certifications');
+
+    // Approve job for certification (marks as ready for signatory)
+    Route::post('/certifications/{jobOrder}/approve', function (Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
+        abort_unless($jobOrder->status === 'pending_certification', 403);
+
+        $jobOrder->update([
+            'status' => 'ready_for_signing',
+        ]);
+
+        AuditLogHelper::log(
+            'UPDATE',
+            'JobOrder',
+            $jobOrder->id,
+            "Accounting verified and approved JO-" . $jobOrder->job_order_number . " (" . $jobOrder->customer->name . ") for certification signing. Ready for Signatory.",
+            ['status' => 'pending_certification'],
+            ['status' => 'ready_for_signing'],
+            ['status']
+        );
+
+        return redirect()->back()->with('status', 'Job approved for certification signing. Signatory will now proceed with signing.');
+    })->name('certifications.approve');
 });
 
 // Customer Routes
@@ -1233,8 +1331,14 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         $pendingJobs = \App\Models\JobOrder::where('status', 'pending')->count();
         $inProgressJobs = \App\Models\JobOrder::where('status', 'in_progress')->count();
         $completedJobs = \App\Models\JobOrder::where('status', 'completed')->count();
-        $recentAssignments = \App\Models\JobOrder::with('customer')
-            ->latest()
+        $recentAssignments = \App\Models\Assignment::with(['jobOrder.customer'])
+            ->where('assigned_to', $user->id)
+            ->whereIn('status', ['assigned', 'in_progress', 'on_hold', 'completed'])
+            ->whereHas('jobOrder', function ($query) {
+                $query->where('status', '!=', 'cancelled');
+            })
+            ->orderByDesc('assigned_at')
+            ->orderByDesc('id')
             ->take(5)
             ->get();
 
@@ -1305,7 +1409,7 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         // job orders in "approved" while assignment is already active for a technician.
         $currentUser = auth()->user();
 
-        $assignments = \App\Models\Assignment::with(['jobOrder.customer', 'jobOrder', 'assignedBy'])
+        $assignments = \App\Models\Assignment::with(['jobOrder.customer', 'jobOrder', 'assignedBy', 'report'])
             ->where('assigned_to', $currentUser->id)
             ->whereIn('status', ['assigned', 'in_progress', 'on_hold', 'completed'])
             ->whereHas('jobOrder', function ($query) {
@@ -1319,7 +1423,13 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
                 // Surface assignment metadata to the existing page without changing view contracts.
                 $job->assignment_id = $assignment->id;
                 $job->assigned_at = $assignment->assigned_at ?? $assignment->created_at;
-                $job->status = $assignment->status;
+                $job->report_status = optional($assignment->report)->status;
+                $job->report_review_notes = optional($assignment->report)->review_notes;
+                $job->status = match ($job->report_status) {
+                    'rejected' => 'rejected',
+                    'pending' => 'pending_review',
+                    default => $assignment->status,
+                };
                 $job->assigned_by_name = optional($assignment->assignedBy)->name;
 
                 return $job;
@@ -1328,19 +1438,104 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         return view('technician.assignments', compact('assignments'));
     })->name('assignments');
     
-    Route::get('/work-orders', function () {
-        // Show all work orders (broader view for reference)
-        $workOrders = \App\Models\JobOrder::with('customer')
-            ->whereIn('status', ['pending', 'assigned', 'in_progress', 'on_hold', 'completed'])
-            ->latest()
-            ->paginate(20);
-        return view('technician.work-orders', compact('workOrders'));
+    Route::get('/work-orders', function (\Illuminate\Http\Request $request) {
+        $currentUserId = auth()->id();
+        $search = trim($request->string('search')->toString());
+        $status = $request->string('status')->toString();
+        $priority = $request->string('priority')->toString();
+
+        $query = \App\Models\JobOrder::with([
+                'customer',
+                'assignments' => function ($assignmentQuery) use ($currentUserId) {
+                    $assignmentQuery->where('assigned_to', $currentUserId)
+                        ->with('report')
+                        ->orderByDesc('id');
+                },
+            ])
+            ->withCount([
+                'assignments as assignment_for_me_count' => function ($assignmentQuery) use ($currentUserId) {
+                    $assignmentQuery->where('assigned_to', $currentUserId)
+                        ->whereIn('status', ['assigned', 'in_progress', 'on_hold', 'completed']);
+                }
+            ])
+            ->where('status', '!=', 'cancelled');
+
+        if ($search !== '') {
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('job_order_number', 'like', "%{$search}%")
+                    ->orWhere('service_type', 'like', "%{$search}%")
+                    ->orWhere('service_description', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $allowedStatuses = ['pending', 'for_accounting_approval', 'approved', 'assigned', 'in_progress', 'on_hold', 'completed', 'rejected', 'pending_review'];
+        if (in_array($status, $allowedStatuses, true)) {
+            if ($status === 'pending_review') {
+                $query->whereHas('assignments', function ($assignmentQuery) use ($currentUserId) {
+                    $assignmentQuery->where('assigned_to', $currentUserId)
+                        ->whereHas('report', function ($reportQuery) {
+                            $reportQuery->where('status', 'pending');
+                        });
+                });
+            } elseif ($status === 'rejected') {
+                $query->where(function ($statusQuery) use ($currentUserId) {
+                    $statusQuery->where('status', 'rejected')
+                        ->orWhereHas('assignments', function ($assignmentQuery) use ($currentUserId) {
+                            $assignmentQuery->where('assigned_to', $currentUserId)
+                                ->whereHas('report', function ($reportQuery) {
+                                    $reportQuery->where('status', 'rejected');
+                                });
+                        });
+                });
+            } else {
+                $query->where('status', $status);
+            }
+        }
+
+        $allowedPriorities = ['low', 'normal', 'high', 'urgent'];
+        if (in_array($priority, $allowedPriorities, true)) {
+            $query->where('priority', $priority);
+        }
+
+        // Keep the newest/recent work orders at the top.
+        $workOrders = $query
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(7)
+            ->through(function ($order) {
+                $latestAssignment = $order->assignments->sortByDesc('id')->first();
+                $reportStatus = optional(optional($latestAssignment)->report)->status;
+
+                $technicianStatus = match ($reportStatus) {
+                    'pending' => 'pending_review',
+                    'rejected' => 'rejected',
+                    default => $latestAssignment?->status ?? $order->status,
+                };
+
+                $order->technician_status = $technicianStatus;
+                $order->technician_status_label = match ($technicianStatus) {
+                    'pending' => 'Waiting for Assignment',
+                    'approved' => 'Waiting for Assignment',
+                    'pending_review' => 'Pending Review',
+                    default => ucfirst(str_replace('_', ' ', $technicianStatus)),
+                };
+                $order->is_assigned_to_me = (bool) $latestAssignment;
+
+                return $order;
+            })
+            ->appends($request->only(['search', 'status', 'priority']));
+
+        return view('technician.work-orders', compact('workOrders', 'search', 'status', 'priority'));
     })->name('work-orders');
 
     Route::post('/work-orders/{jobOrder}/assign-to-me', function (\App\Models\JobOrder $jobOrder) {
         $currentUser = auth()->user();
 
-        if ($jobOrder->status !== 'pending') {
+        if (!in_array($jobOrder->status, ['pending', 'approved'], true)) {
             return back()->with('error', 'This work order is no longer available for self-assignment.');
         }
 
@@ -1403,7 +1598,14 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         $assignment = \App\Models\Assignment::with('report')
             ->where('job_order_id', $id)
             ->where('assigned_to', auth()->id())
+            ->whereIn('status', ['assigned', 'in_progress', 'on_hold', 'completed'])
+            ->latest('id')
             ->first();
+
+        if (!$assignment) {
+            return redirect()->route('technician.work-orders')
+                ->with('error', 'Please assign this work order to yourself first before opening full job details.');
+        }
         
         // Automatically add assigned technician to crew if not already added
         if ($assignment) {
@@ -1469,8 +1671,19 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         $job = \App\Models\JobOrder::findOrFail($jobId);
         $assignment = \App\Models\Assignment::where('job_order_id', $job->id)
             ->where('assigned_to', auth()->id())
+            ->latest('id')
             ->first();
         abort_if(!$assignment, 403, 'Not authorized to update crew members.');
+
+        $assignment->loadMissing('report');
+        $isLockedForTechnician = $assignment->report
+            && in_array($assignment->report->status, ['pending', 'approved'], true);
+        if ($isLockedForTechnician) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This job is already submitted for review. Only Tech Head can edit it now.'
+            ], 423);
+        }
 
         $data = $request->validate([
             'user_id' => 'nullable|exists:users,id',
@@ -1535,8 +1748,19 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         
         $assignment = \App\Models\Assignment::where('job_order_id', $member->job_order_id)
             ->where('assigned_to', auth()->id())
+            ->latest('id')
             ->first();
         abort_if(!$assignment, 403, 'Not authorized to update crew members.');
+
+        $assignment->loadMissing('report');
+        $isLockedForTechnician = $assignment->report
+            && in_array($assignment->report->status, ['pending', 'approved'], true);
+        if ($isLockedForTechnician) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This job is already submitted for review. Only Tech Head can edit it now.'
+            ], 423);
+        }
         
         // Prevent assigned technician from removing themselves
         if ($member->user_id === auth()->id()) {
@@ -1568,8 +1792,19 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         $job = \App\Models\JobOrder::findOrFail($jobId);
         $assignment = \App\Models\Assignment::where('job_order_id', $job->id)
             ->where('assigned_to', auth()->id())
+            ->latest('id')
             ->first();
         abort_if(!$assignment, 403, 'Not authorized to update checklist.');
+
+        $assignment->loadMissing('report');
+        $isLockedForTechnician = $assignment->report
+            && in_array($assignment->report->status, ['pending', 'approved'], true);
+        if ($isLockedForTechnician) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Checklist is locked after submit for review. Only Tech Head can edit it now.'
+            ], 423);
+        }
 
         $data = $request->validate([
             'description' => 'required|string|max:1000'
@@ -1607,8 +1842,19 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     Route::patch('/checklist-items/{item}', function (\Illuminate\Http\Request $request, \App\Models\ChecklistItem $item) {
         $assignment = \App\Models\Assignment::where('job_order_id', $item->job_order_id)
             ->where('assigned_to', auth()->id())
+            ->latest('id')
             ->first();
         abort_if(!$assignment, 403, 'Not authorized to update checklist.');
+
+        $assignment->loadMissing('report');
+        $isLockedForTechnician = $assignment->report
+            && in_array($assignment->report->status, ['pending', 'approved'], true);
+        if ($isLockedForTechnician) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Checklist is locked after submit for review. Only Tech Head can edit it now.'
+            ], 423);
+        }
 
         $data = $request->validate([
             'is_completed' => 'required|boolean'
@@ -1656,8 +1902,19 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     Route::delete('/checklist-items/{item}', function (\App\Models\ChecklistItem $item) {
         $assignment = \App\Models\Assignment::where('job_order_id', $item->job_order_id)
             ->where('assigned_to', auth()->id())
+            ->latest('id')
             ->first();
         abort_if(!$assignment, 403, 'Not authorized to update checklist.');
+
+        $assignment->loadMissing('report');
+        $isLockedForTechnician = $assignment->report
+            && in_array($assignment->report->status, ['pending', 'approved'], true);
+        if ($isLockedForTechnician) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Checklist is locked after submit for review. Only Tech Head can edit it now.'
+            ], 423);
+        }
 
         $snapshot = $item->toArray();
         $item->delete();
@@ -1679,6 +1936,7 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     Route::post('/job/{job}/submit-report', function (\Illuminate\Http\Request $request, \App\Models\JobOrder $job) {
         $assignment = \App\Models\Assignment::where('job_order_id', $job->id)
             ->where('assigned_to', auth()->id())
+            ->latest('id')
             ->firstOrFail();
 
         $validated = $request->validate([
@@ -1688,8 +1946,8 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         ]);
 
         $report = $assignment->report;
-        if ($report && $report->status === 'approved') {
-            return redirect()->back()->with('error', 'Report already approved and cannot be edited.');
+        if ($report && in_array($report->status, ['pending', 'approved'], true)) {
+            return redirect()->back()->with('error', 'Report already submitted for review. Only Tech Head can edit it now.');
         }
 
         if ($report) {
@@ -1750,10 +2008,10 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         ]);
 
         $report = $assignment->report;
-        if ($report && $report->status === 'approved') {
+        if ($report && in_array($report->status, ['pending', 'approved'], true)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Report already approved and cannot be edited.'
+                'message' => 'Report already submitted for review. Only Tech Head can edit it now.'
             ], 422);
         }
 
@@ -1820,6 +2078,17 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
                 $req->update(['returned_at' => now()]);
             });
 
+        // Log with descriptive message
+        AuditLogHelper::log(
+            'CREATE',
+            'Report',
+            $report->id,
+            "Technician " . auth()->user()->name . " submitted work report for JO-" . $job->job_order_number . " (" . $job->customer->name . "). Report is now pending Tech Head review.",
+            null,
+            ['work_summary' => $validated['work_summary'], 'parts_used' => $validated['parts_used'] ?? null, 'remarks' => $validated['remarks'] ?? null, 'status' => 'pending'],
+            ['work_summary', 'parts_used', 'remarks', 'status']
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Report submitted for review.'
@@ -1836,6 +2105,21 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         ]);
 
         $job = \App\Models\JobOrder::findOrFail($jobId);
+        $assignment = \App\Models\Assignment::with('report')
+            ->where('job_order_id', $job->id)
+            ->where('assigned_to', auth()->id())
+            ->latest('id')
+            ->first();
+        if (! $assignment) {
+            return redirect()->back()->with('error', 'Not authorized to upload attachments for this job.');
+        }
+
+        $isLockedForTechnician = $assignment->report
+            && in_array($assignment->report->status, ['pending', 'approved'], true);
+        if ($isLockedForTechnician) {
+            return redirect()->back()->with('error', 'This job is already submitted for review. Only Tech Head can edit it now.');
+        }
+
         $file = $request->file('file');
         $allowedExtensions = ['jpg', 'jpeg', 'png', 'xls', 'xlsx', 'xlsm', 'xlsb'];
         $extension = strtolower((string) $file->getClientOriginalExtension());
@@ -1876,11 +2160,18 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         // Only allow deleting attachments belonging to jobs the technician has access to
         $jobOrder = $attachment->jobOrder;
         $technicianId = auth()->id();
-        $hasAccess = \App\Models\Assignment::where('job_order_id', $jobOrder->id)
+        $assignment = \App\Models\Assignment::with('report')->where('job_order_id', $jobOrder->id)
             ->where('assigned_to', $technicianId)
-            ->exists();
-        if (! $hasAccess) {
+            ->latest('id')
+            ->first();
+        if (! $assignment) {
             abort(403, 'Unauthorized');
+        }
+
+        $isLockedForTechnician = $assignment->report
+            && in_array($assignment->report->status, ['pending', 'approved'], true);
+        if ($isLockedForTechnician) {
+            return redirect()->back()->with('error', 'This job is already submitted for review. Only Tech Head can edit it now.');
         }
 
         $snapshot = [
@@ -1914,53 +2205,87 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         $job = \App\Models\JobOrder::findOrFail($jobId);
         $assignment = \App\Models\Assignment::where('job_order_id', $job->id)
             ->where('assigned_to', auth()->id())
+            ->whereIn('status', ['assigned', 'in_progress', 'on_hold'])
             ->latest('id')
             ->first();
+
+        if (! $assignment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active assignment found for this work order.'
+            ], 403);
+        }
+
+        $assignment->loadMissing('report');
+        $isLockedForTechnician = $assignment->report
+            && in_array($assignment->report->status, ['pending', 'approved'], true);
+        if ($isLockedForTechnician) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This job is already submitted for review. Only Tech Head can edit it now.'
+            ], 423);
+        }
+
         $previousStatus = $job->status;
 
-        // Update job status to in_progress
+        // Start or resume work.
         $job->update([
             'status' => 'in_progress',
         ]);
 
-        if ($assignment) {
-            $assignment->update([
-                'status' => 'in_progress',
-                'started_at' => $assignment->started_at ?? now(),
-            ]);
-        }
+        $assignment->update([
+            'status' => 'in_progress',
+            'started_at' => $assignment->started_at ?? now(),
+        ]);
 
         \App\Helpers\AuditLogHelper::log(
             'UPDATE',
             'JobOrder',
             $jobId,
-            "Technician started work on Job Order {$job->job_order_number}",
+            "Technician started/resumed work on Job Order {$job->job_order_number}",
             ['status' => $previousStatus],
             ['status' => 'in_progress'],
             ['status']
         );
 
-        return response()->json(['success' => true, 'message' => 'Job started successfully']);
+        return response()->json(['success' => true, 'message' => 'Job is now in progress.']);
     })->name('job.start');
 
     Route::post('/job/{jobId}/pause', function ($jobId) {
         $job = \App\Models\JobOrder::findOrFail($jobId);
         $assignment = \App\Models\Assignment::where('job_order_id', $job->id)
             ->where('assigned_to', auth()->id())
+            ->whereIn('status', ['assigned', 'in_progress', 'on_hold'])
             ->latest('id')
             ->first();
+
+        if (! $assignment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active assignment found for this work order.'
+            ], 403);
+        }
+
+        $assignment->loadMissing('report');
+        $isLockedForTechnician = $assignment->report
+            && in_array($assignment->report->status, ['pending', 'approved'], true);
+        if ($isLockedForTechnician) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This job is already submitted for review. Only Tech Head can edit it now.'
+            ], 423);
+        }
+
         $previousStatus = $job->status;
 
-        // Update job status to on_hold
+        // Put work on hold without clearing recorded timestamps.
         $job->update([
             'status' => 'on_hold',
         ]);
 
-        if ($assignment) {
-            $assignment->update([
-                'status' => 'on_hold',
-            ]);
-        }
+        $assignment->update([
+            'status' => 'on_hold',
+        ]);
 
         \App\Helpers\AuditLogHelper::log(
             'UPDATE',
@@ -1972,8 +2297,81 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             ['status']
         );
 
-        return response()->json(['success' => true, 'message' => 'Job paused successfully']);
+        return response()->json(['success' => true, 'message' => 'Job paused successfully.']);
     })->name('job.pause');
+
+    Route::post('/job/{jobId}/tracking', function (\Illuminate\Http\Request $request, $jobId) {
+        $job = \App\Models\JobOrder::findOrFail($jobId);
+        $assignment = \App\Models\Assignment::where('job_order_id', $job->id)
+            ->where('assigned_to', auth()->id())
+            ->whereIn('status', ['assigned', 'in_progress', 'on_hold', 'completed'])
+            ->latest('id')
+            ->first();
+
+        if (! $assignment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No assignment found for this work order.'
+            ], 403);
+        }
+
+        $assignment->loadMissing('report');
+        $isLockedForTechnician = $assignment->report
+            && in_array($assignment->report->status, ['pending', 'approved'], true);
+        if ($isLockedForTechnician) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This job is already submitted for review. Only Tech Head can edit it now.'
+            ], 423);
+        }
+
+        $data = $request->validate([
+            'started_at' => 'nullable|date',
+            'completed_at' => 'nullable|date',
+        ]);
+
+        $startedAt = !empty($data['started_at'])
+            ? \Illuminate\Support\Carbon::parse($data['started_at'], 'Asia/Manila')
+            : null;
+        $completedAt = !empty($data['completed_at'])
+            ? \Illuminate\Support\Carbon::parse($data['completed_at'], 'Asia/Manila')
+            : null;
+
+        if ($startedAt && $completedAt && $completedAt->lt($startedAt)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Completed time must be later than start time.'
+            ], 422);
+        }
+
+        $before = [
+            'started_at' => optional($assignment->started_at)->toDateTimeString(),
+            'completed_at' => optional($assignment->completed_at)->toDateTimeString(),
+        ];
+
+        $assignment->update([
+            'started_at' => $startedAt,
+            'completed_at' => $completedAt,
+        ]);
+
+        \App\Helpers\AuditLogHelper::log(
+            'UPDATE',
+            'Assignment',
+            $assignment->id,
+            "Technician updated work tracking timestamps for Job Order {$job->job_order_number}",
+            $before,
+            [
+                'started_at' => optional($assignment->started_at)->toDateTimeString(),
+                'completed_at' => optional($assignment->completed_at)->toDateTimeString(),
+            ],
+            ['started_at', 'completed_at']
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Work tracking updated successfully.'
+        ]);
+    })->name('job.tracking.update');
     
     Route::get('/equipment', function () {
         $search = request('search');
@@ -2538,7 +2936,8 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             'attachments',
             'checklistItems.creator',
             'checklistItems.completer',
-            'assignments.assignedTo'
+            'assignments.assignedTo',
+            'assignments.report'
         ])->withCount('certificates');
 
         // Show all work orders (assigned and unassigned)
@@ -2565,7 +2964,11 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             $query->where('priority', $priority);
         }
         
-        $workOrders = $query->latest()->paginate(10)->appends([
+        $workOrders = $query
+            ->orderByRaw("CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END")
+            ->latest()
+            ->paginate(10)
+            ->appends([
             'search' => $search,
             'status' => $status,
             'priority' => $priority
@@ -2904,6 +3307,7 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         
         $assignment = \App\Models\Assignment::with(['report.submittedBy', 'assignedTo'])
             ->where('job_order_id', $id)
+            ->latest('id')
             ->first();
 
         if ($assignment && $assignment->assigned_to) {
@@ -3412,36 +3816,78 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
 
     // Reports approvals
     Route::post('/reports/{report}/approve', function (Report $report) {
+        $jobOrder = $report->assignment->jobOrder;
         $report->update([
             'status' => 'approved',
             'reviewed_by' => auth()->id(),
             'reviewed_at' => now(),
         ]);
-        // lock job as completed
-        $report->assignment->jobOrder->update(['status' => 'completed']);
-        return redirect()->route('tech-head.reports')->with('status', 'Report approved');
+        
+        // Move job to pending_certification status for accounting and signatory review
+        // This allows Accounting to verify payment and Signatory to sign the certificate
+        $jobOrder->update(['status' => 'pending_certification']);
+        
+        // Log with descriptive message
+        AuditLogHelper::log(
+            'UPDATE',
+            'Report',
+            $report->id,
+            "Tech Head " . auth()->user()->name . " approved the report for JO-" . $jobOrder->job_order_number . " submitted by " . optional($report->submittedBy)->name . ". Job is now pending Accounting review and certificate signing.",
+            ['status' => 'pending'],
+            ['status' => 'approved'],
+            ['status']
+        );
+        
+        return redirect()->route('tech-head.reports')->with('status', 'Report approved. Job is now pending Accounting review and certification.');
     })->name('reports.approve');
 
     Route::post('/reports/{report}/reject', function (\Illuminate\Http\Request $request, Report $report) {
         $data = $request->validate(['review_notes' => 'nullable|string']);
+        $jobOrder = $report->assignment->jobOrder;
         $report->update([
             'status' => 'rejected',
             'reviewed_by' => auth()->id(),
             'reviewed_at' => now(),
             'review_notes' => $data['review_notes'] ?? null,
         ]);
+        
+        // Log with descriptive message
+        AuditLogHelper::log(
+            'UPDATE',
+            'Report',
+            $report->id,
+            "Tech Head " . auth()->user()->name . " rejected the report for JO-" . $jobOrder->job_order_number . " submitted by " . optional($report->submittedBy)->name . ". Reason: " . ($data['review_notes'] ?? 'No reason provided') . ". Technician required to revise and resubmit.",
+            ['status' => 'pending'],
+            ['status' => 'rejected', 'review_notes' => $data['review_notes'] ?? null],
+            ['status', 'review_notes']
+        );
+        
         return redirect()->route('tech-head.reports')->with('status', 'Report rejected');
     })->name('reports.reject');
 
     Route::post('/reports/{report}/revise', function (\Illuminate\Http\Request $request, Report $report) {
-        $data = $request->validate(['review_notes' => 'required|string']);
+        $data = $request->validate(['review_notes' => 'nullable|string']);
+        $jobOrder = $report->assignment->jobOrder;
         $report->update([
-            'status' => 'pending',
+            // Use rejected state as "revision requested" so technician can edit and resubmit.
+            'status' => 'rejected',
             'reviewed_by' => auth()->id(),
             'reviewed_at' => now(),
-            'review_notes' => $data['review_notes'],
+            'review_notes' => $data['review_notes'] ?: 'Please revise and resubmit your report based on Tech Head review.',
         ]);
-        return redirect()->route('tech-head.reports')->with('status', 'Revision requested');
+        
+        // Log with descriptive message
+        AuditLogHelper::log(
+            'UPDATE',
+            'Report',
+            $report->id,
+            "Tech Head " . auth()->user()->name . " requested revision for JO-" . $jobOrder->job_order_number . " submitted by " . optional($report->submittedBy)->name . ". Notes: " . ($data['review_notes'] ?: 'Please revise and resubmit your report based on Tech Head review.') . ". Technician notified to revise and resubmit.",
+            ['status' => 'pending'],
+            ['status' => 'rejected', 'review_notes' => $data['review_notes'] ?: 'Please revise and resubmit your report based on Tech Head review.'],
+            ['status', 'review_notes']
+        );
+        
+        return redirect()->route('tech-head.reports')->with('status', 'Revision requested and sent back to technician.');
     })->name('reports.revise');
     
     Route::get('/equipment', function () {
@@ -3704,6 +4150,87 @@ Route::middleware(['auth', 'verified', 'role:signatory'])->prefix('signatory')->
     // Profile
     Route::get('/profile', [SignatoryController::class, 'profile'])->name('profile');
     Route::patch('/profile', [SignatoryController::class, 'updateProfile'])->name('profile.update');
+
+    // Job Completion Certificates for Signing
+    Route::get('/job-certifications', function (Illuminate\Http\Request $request) {
+        $search = trim($request->string('q')->toString());
+        
+        $query = \App\Models\JobOrder::with(['customer', 'lastAssignment.technician', 'lastAssignment.report'])
+            ->where('status', 'ready_for_signing')
+            ->latest();
+
+        if ($search !== '') {
+            $query->where(function ($sub) use ($search) {
+                $sub->where('job_order_number', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($cq) use ($search) {
+                        $cq->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $jobOrders = $query->paginate(15)->appends($request->only(['q']));
+        $pendingCount = \App\Models\JobOrder::where('status', 'ready_for_signing')->count();
+
+        return view('signatory.job-certifications', compact('jobOrders', 'search', 'pendingCount'));
+    })->name('job-certifications');
+
+    // Review job completion details before signing
+    Route::get('/job-certifications/{jobOrder}/review', function (\App\Models\JobOrder $jobOrder) {
+        abort_unless($jobOrder->status === 'ready_for_signing', 403);
+        
+        $assignment = $jobOrder->lastAssignment;
+        $report = $assignment?->report;
+
+        return view('signatory.job-certification-review', compact('jobOrder', 'assignment', 'report'));
+    })->name('job-certifications.review');
+
+    // Sign and finalize job completion (mark as completed)
+    Route::post('/job-certifications/{jobOrder}/sign', function (\Illuminate\Http\Request $request, \App\Models\JobOrder $jobOrder) {
+        abort_unless($jobOrder->status === 'ready_for_signing', 403);
+
+        $validated = $request->validate([
+            'signature_date' => 'required|date',
+            'signature_notes' => 'nullable|string|max:500',
+        ]);
+
+        // Create a certificate record for the completed job so it appears in Signatory certificates list.
+        $certificate = \App\Models\Certificate::create([
+            'certificate_number' => \App\Models\Certificate::generateCertificateNumber(),
+            'job_order_id' => $jobOrder->id,
+            'issue_date' => $validated['signature_date'],
+            'status' => 'approved',
+            'issued_by' => auth()->id(),
+            'reviewed_by' => auth()->id(),
+            'approved_by' => auth()->id(),
+            'signed_by' => auth()->id(),
+            'signed_at' => now(),
+            'generated_at' => now(),
+            'notes' => $validated['signature_notes'] ?? null,
+            'data' => json_encode([
+                'workflow' => 'job_completion_signing',
+                'job_order_number' => $jobOrder->job_order_number,
+            ]),
+        ]);
+
+        // Mark job as completed
+        $jobOrder->update([
+            'status' => 'completed',
+            'signed_by' => auth()->id(),
+            'signed_at' => now(),
+        ]);
+
+        AuditLogHelper::log(
+            'UPDATE',
+            'JobOrder',
+            $jobOrder->id,
+            "Signatory " . auth()->user()->name . " reviewed and signed completion certificate for JO-" . $jobOrder->job_order_number . " (" . $jobOrder->customer->name . "). Certificate #" . $certificate->certificate_number . " created. Job marked as COMPLETED. Customer can now download certificate.",
+            ['status' => 'ready_for_signing'],
+            ['status' => 'completed', 'signed_by' => auth()->id(), 'signed_at' => now()],
+            ['status', 'signed_by', 'signed_at']
+        );
+
+        return redirect()->route('signatory.job-certifications')->with('status', 'Certificate signed successfully! Job completed and customer can now download certificate.');
+    })->name('job-certifications.sign');
 });
 
 // Admin Routes

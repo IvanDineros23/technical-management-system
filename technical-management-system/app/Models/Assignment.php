@@ -25,6 +25,7 @@ class Assignment extends Model
     ];
 
     protected $casts = [
+        'assigned_at' => 'datetime',
         'scheduled_date' => 'date',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',

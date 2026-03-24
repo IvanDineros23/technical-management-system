@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AuditLog;
 use App\Models\JobOrder;
 use App\Models\User;
 use Symfony\Component\Process\Process;
@@ -75,7 +76,8 @@ class JobOrderPdfService
         $jobOrder->loadMissing(['customer.contacts', 'items']);
         $customer = $jobOrder->customer;
         $overrides = $this->extractCustomerRequestOverrides($jobOrder);
-        $marketingReceiverName = $overrides['name_signature'] ?? $this->resolveMarketingReceiverName($jobOrder, $generatedByUser);
+        $marketingReceiver = $this->resolveMarketingReceiverDetails($jobOrder, $generatedByUser);
+        $marketingReceiverName = $overrides['name_signature'] ?? $marketingReceiver['name'];
         $hasMarketingReceiver = trim($marketingReceiverName) !== '';
 
         $contact = $customer?->contacts?->first();
@@ -105,7 +107,11 @@ class JobOrderPdfService
                 $jobOrder->notes,
             ])),
             'Name and Signature' => $marketingReceiverName,
-            'Date_2' => $overrides['date_2'] ?? ($hasMarketingReceiver ? ($jobOrder->request_date ? $jobOrder->request_date->format('m/d/Y') : now()->format('m/d/Y')) : ''),
+            'Date_2' => $overrides['date_2'] ?? ($hasMarketingReceiver
+                ? ($marketingReceiver['date'] !== ''
+                    ? $marketingReceiver['date']
+                    : ($jobOrder->request_date ? $jobOrder->request_date->format('m/d/Y') : now()->format('m/d/Y')))
+                : ''),
             'Name and Signature2' => $overrides['name_signature_2'] ?? '',
             'Date_3' => $overrides['date_3'] ?? '',
             'Noted by' => $overrides['noted_by'] ?? '',
@@ -176,19 +182,44 @@ class JobOrderPdfService
         return is_array($overrides) ? $overrides : [];
     }
 
-    private function resolveMarketingReceiverName(JobOrder $jobOrder, ?User $generatedByUser = null): string
+    private function resolveMarketingReceiverDetails(JobOrder $jobOrder, ?User $generatedByUser = null): array
     {
         // Only marketing users should appear in the "FOR GEI - MARKETING ONLY" signature field.
         if ($generatedByUser && optional($generatedByUser->role)->slug === 'marketing') {
-            return (string) ($generatedByUser->name ?? '');
+            return [
+                'name' => (string) ($generatedByUser->name ?? ''),
+                'date' => now()->setTimezone('Asia/Manila')->format('m/d/Y'),
+            ];
         }
 
         $creator = $jobOrder->creator;
         if ($creator && optional($creator->role)->slug === 'marketing') {
-            return (string) ($creator->name ?? '');
+            return [
+                'name' => (string) ($creator->name ?? ''),
+                'date' => $jobOrder->request_date ? $jobOrder->request_date->format('m/d/Y') : '',
+            ];
         }
 
-        return '';
+        $marketingApprovalAudit = AuditLog::with('user.role')
+            ->where('model_type', 'JobOrder')
+            ->where('model_id', $jobOrder->id)
+            ->where('action', 'APPROVE')
+            ->whereHas('user.role', function ($roleQuery) {
+                $roleQuery->where('slug', 'marketing');
+            })
+            ->latest('created_at')
+            ->first();
+
+        if ($marketingApprovalAudit && $marketingApprovalAudit->user) {
+            return [
+                'name' => (string) ($marketingApprovalAudit->user->name ?? ''),
+                'date' => $marketingApprovalAudit->created_at
+                    ? $marketingApprovalAudit->created_at->setTimezone('Asia/Manila')->format('m/d/Y')
+                    : '',
+            ];
+        }
+
+        return ['name' => '', 'date' => ''];
     }
 
     /**

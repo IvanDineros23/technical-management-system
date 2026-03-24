@@ -2,7 +2,7 @@
 
 @section('title', 'Signatory Dashboard')
 @section('page-title', 'Signatory Dashboard')
-@section('page-subtitle', 'Review, approve, and sign calibration certificates')
+@section('page-subtitle', 'Review and sign job completion certificates')
 
 @section('sidebar-nav')
     @include('signatory.partials.sidebar')
@@ -72,8 +72,8 @@
         <!-- Recent Submissions for Review -->
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex items-center justify-between mb-6">
-                <h3 class="text-base font-bold text-slate-900 dark:text-white">📋 Recent Submissions for Review</h3>
-                <a href="{{ route('signatory.for-review') }}" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">View all →</a>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Recent Jobs Ready for Signing</h3>
+                <a href="{{ route('signatory.job-certifications') }}" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">View all →</a>
             </div>
 
             @if($recentSubmissions->count() > 0)
@@ -84,34 +84,34 @@
                                 <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">WO Number</th>
                                 <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">Customer</th>
                                 <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">Technician</th>
-                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">Calibration Date</th>
+                                <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">Submitted</th>
                                 <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400">Status</th>
                                 <th class="pb-3 text-right font-semibold text-gray-600 dark:text-gray-400">Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                            @foreach($recentSubmissions as $calibration)
+                            @foreach($recentSubmissions as $jobOrder)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                     <td class="py-3 text-sm font-semibold text-gray-900 dark:text-white">
-                                        {{ $calibration->assignment->jobOrder->job_order_number }}
+                                        {{ $jobOrder->job_order_number }}
                                     </td>
                                     <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
-                                        {{ $calibration->assignment->jobOrder->customer->name }}
+                                        {{ $jobOrder->customer->name ?? 'N/A' }}
                                     </td>
                                     <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
-                                        {{ $calibration->performedBy->name }}
+                                        {{ optional($jobOrder->lastAssignment)->technician->name ?? 'Not Assigned' }}
                                     </td>
                                     <td class="py-3 text-sm text-gray-700 dark:text-gray-300">
-                                        {{ $calibration->calibration_date->setTimezone('Asia/Manila')->format('M d, Y') }}
+                                        {{ optional($jobOrder->updated_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}
                                     </td>
                                     <td class="py-3">
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-                                            ⏳ For Review
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
+                                            Ready for Signing
                                         </span>
                                     </td>
                                     <td class="py-3 text-right">
-                                        <a href="{{ route('signatory.review', $calibration) }}" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">
-                                            Review →
+                                        <a href="{{ route('signatory.job-certifications.review', $jobOrder->id) }}" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">
+                                            Review & Sign →
                                         </a>
                                     </td>
                                 </tr>
@@ -121,7 +121,7 @@
                 </div>
             @else
                 <div class="text-center py-8">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">No calibrations pending review</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">No jobs are ready for signing yet</p>
                 </div>
             @endif
         </div>
@@ -129,8 +129,8 @@
         <!-- Quick Info -->
         <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/30 rounded-[20px] border border-purple-200 dark:border-purple-800 p-6">
             <h3 class="text-sm font-bold text-purple-900 dark:text-purple-200 mb-2">⚡ Quick Action</h3>
-            <a href="{{ route('signatory.for-review') }}" class="inline-block text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors">
-                View pending calibrations →
+            <a href="{{ route('signatory.job-certifications') }}" class="inline-block text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors">
+                View jobs ready for signing →
             </a>
         </div>
     </div>

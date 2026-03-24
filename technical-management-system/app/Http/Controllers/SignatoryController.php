@@ -14,21 +14,19 @@ class SignatoryController extends Controller
     public function dashboard()
     {
         $user = auth()->user();
+        $readyForSigningQuery = JobOrder::where('status', 'ready_for_signing');
 
         // Stats
         $stats = [
-            'for_review' => Calibration::where('status', 'approved')
-                ->whereDoesntHave('certificate')
-                ->count(),
-            'approved' => Calibration::where('status', 'approved')->count(),
+            'for_review' => (clone $readyForSigningQuery)->count(),
+            'approved' => Certificate::whereNotNull('signed_at')->count(),
             'returned' => Calibration::where('status', 'returned_for_revision')->count(),
             'signed' => Certificate::where('signed_by', $user->id)->count(),
         ];
 
         // Recent submissions for review
-        $recentSubmissions = Calibration::where('status', 'approved')
-            ->whereDoesntHave('certificate')
-            ->with(['assignment.jobOrder.customer', 'performedBy', 'measurementPoints'])
+        $recentSubmissions = JobOrder::with(['customer', 'lastAssignment.technician', 'lastAssignment.report'])
+            ->where('status', 'ready_for_signing')
             ->latest()
             ->take(5)
             ->get();
@@ -237,6 +235,34 @@ class SignatoryController extends Controller
      */
     public function certificates(Request $request)
     {
+        // Backfill legacy job-completion signatures that were marked completed without creating a certificate row.
+        JobOrder::query()
+            ->where('status', 'completed')
+            ->whereDoesntHave('certificates')
+            ->get()
+            ->each(function (JobOrder $jobOrder) {
+                $backfillTime = $jobOrder->updated_at ?? now();
+                $backfillUserId = auth()->id();
+
+                Certificate::create([
+                    'certificate_number' => Certificate::generateCertificateNumber(),
+                    'job_order_id' => $jobOrder->id,
+                    'issue_date' => $backfillTime->toDateString(),
+                    'status' => 'approved',
+                    'issued_by' => $backfillUserId,
+                    'reviewed_by' => $backfillUserId,
+                    'approved_by' => $backfillUserId,
+                    'signed_by' => $backfillUserId,
+                    'signed_at' => $backfillTime,
+                    'generated_at' => $backfillTime,
+                    'notes' => 'Auto-generated from completed job signing workflow (legacy backfill).',
+                    'data' => json_encode([
+                        'workflow' => 'job_completion_signing_backfill',
+                        'job_order_number' => $jobOrder->job_order_number,
+                    ]),
+                ]);
+            });
+
         $query = Certificate::with([
             'jobOrder.customer',
             'calibration.assignment.jobOrder.customer',

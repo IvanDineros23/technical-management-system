@@ -9,12 +9,21 @@
     <script>
         function workOrdersPage() {
             return {
-                filterStatus: 'all',
-                filterPriority: 'all',
-                searchQuery: '',
-                filterAssignments() {
-                    console.log('Filtering work orders...');
-                }
+                filterStatus: '{{ $status ?? "" }}',
+                filterPriority: '{{ $priority ?? "" }}',
+                searchQuery: '{{ $search ?? "" }}',
+                showPreviewModal: false,
+                previewOrder: null,
+                openPreview(order) {
+                    this.previewOrder = order;
+                    this.showPreviewModal = true;
+                    document.body.style.overflow = 'hidden';
+                },
+                closePreview() {
+                    this.showPreviewModal = false;
+                    this.previewOrder = null;
+                    document.body.style.overflow = 'auto';
+                },
             }
         }
     </script>
@@ -104,7 +113,7 @@
 @endsection
 
 @section('content')
-    <div x-data="workOrdersPage()">
+    <div x-data="workOrdersPage()" @keydown.escape.window="if (showPreviewModal) closePreview()">
         @if(session('status'))
             <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                 {{ session('status') }}
@@ -124,26 +133,35 @@
         </div>
 
         <!-- Filter Options -->
-        <div class="mb-12 flex gap-4 items-center">
-            <input type="text" x-model="searchQuery" placeholder="Search work orders..." 
-                   class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm placeholder-gray-500 dark:placeholder-gray-400">
+        <form method="GET" action="{{ route('technician.work-orders') }}" class="mb-12 flex flex-wrap gap-4 items-center">
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search work orders..." 
+                   class="flex-1 min-w-[260px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm placeholder-gray-500 dark:placeholder-gray-400">
             
-            <select x-model="filterStatus" @change="filterAssignments()" 
-                    class="px-4 py-2 pr-12 min-w-[150px] border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
-                <option value="all">All Status</option>
-                <option value="assigned">Assigned</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
+            <select name="status"
+                    class="px-4 py-2 pr-12 min-w-[170px] border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
+                <option value="">All Status</option>
+                <option value="pending" {{ ($status ?? '') === 'pending' ? 'selected' : '' }}>Waiting for Assignment</option>
+                <option value="for_accounting_approval" {{ ($status ?? '') === 'for_accounting_approval' ? 'selected' : '' }}>For Accounting Approval</option>
+                <option value="approved" {{ ($status ?? '') === 'approved' ? 'selected' : '' }}>Approved</option>
+                <option value="assigned" {{ ($status ?? '') === 'assigned' ? 'selected' : '' }}>Assigned</option>
+                <option value="in_progress" {{ ($status ?? '') === 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                <option value="on_hold" {{ ($status ?? '') === 'on_hold' ? 'selected' : '' }}>On Hold</option>
+                <option value="completed" {{ ($status ?? '') === 'completed' ? 'selected' : '' }}>Completed</option>
+                <option value="pending_review" {{ ($status ?? '') === 'pending_review' ? 'selected' : '' }}>Pending Review</option>
+                <option value="rejected" {{ ($status ?? '') === 'rejected' ? 'selected' : '' }}>Rejected</option>
             </select>
-            <select x-model="filterPriority" @change="filterAssignments()" 
+            <select name="priority"
                     class="px-4 py-2 pr-12 min-w-[150px] border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
-                <option value="all">All Priority</option>
-                <option value="urgent">Urgent</option>
-                <option value="high">High</option>
-                <option value="normal">Normal</option>
-                <option value="low">Low</option>
+                <option value="">All Priority</option>
+                <option value="urgent" {{ ($priority ?? '') === 'urgent' ? 'selected' : '' }}>Urgent</option>
+                <option value="high" {{ ($priority ?? '') === 'high' ? 'selected' : '' }}>High</option>
+                <option value="normal" {{ ($priority ?? '') === 'normal' ? 'selected' : '' }}>Normal</option>
+                <option value="low" {{ ($priority ?? '') === 'low' ? 'selected' : '' }}>Low</option>
             </select>
-        </div>
+
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">Filter</button>
+            <a href="{{ route('technician.work-orders') }}" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Clear</a>
+        </form>
 
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
             @if($workOrders->count() > 0)
@@ -154,7 +172,6 @@
                                 <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">WO Number</th>
                                 <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Description</th>
                                 <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Customer</th>
-                                <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Priority</th>
                                 <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Status</th>
                                 <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Date</th>
                                 <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Actions</th>
@@ -167,47 +184,67 @@
                                     <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $order->job_order_number }}</p>
                                 </td>
                                 <td class="py-3">
-                                    <p class="text-sm text-gray-900 dark:text-white">{{ Str::limit($order->description ?? 'N/A', 40) }}</p>
+                                    <p class="text-sm text-gray-900 dark:text-white">{{ Str::limit($order->service_description ?? $order->description ?? 'N/A', 40) }}</p>
                                 </td>
                                 <td class="py-3">
                                     <p class="text-sm text-gray-900 dark:text-white">{{ $order->customer->name ?? 'N/A' }}</p>
                                 </td>
                                 <td class="py-3">
+                                    @php
+                                        $statusValue = $order->technician_status ?? $order->status;
+                                        $statusLabel = $order->technician_status_label
+                                            ?? (in_array($order->status, ['pending', 'approved'], true) ? 'Waiting for Assignment' : ucfirst(str_replace('_', ' ', $order->status)));
+                                    @endphp
                                     <span class="px-2 py-1 text-xs font-medium rounded-full
-                                        {{ ($order->priority ?? 'normal') === 'urgent' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : '' }}
-                                        {{ ($order->priority ?? 'normal') === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' : '' }}
-                                        {{ ($order->priority ?? 'normal') === 'normal' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : '' }}
-                                        {{ ($order->priority ?? 'normal') === 'low' ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300' : '' }}">
-                                        {{ ucfirst($order->priority ?? 'Normal') }}
+                                        {{ in_array($statusValue, ['pending', 'approved'], true) ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300' : '' }}
+                                        {{ $statusValue === 'assigned' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : '' }}
+                                        {{ $statusValue === 'in_progress' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' : '' }}
+                                        {{ $statusValue === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : '' }}
+                                        {{ $statusValue === 'pending_review' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : '' }}
+                                        {{ $statusValue === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : '' }}">
+                                        {{ $statusLabel }}
                                     </span>
                                 </td>
                                 <td class="py-3">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full
-                                        {{ $order->status === 'pending' ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300' : '' }}
-                                        {{ $order->status === 'assigned' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : '' }}
-                                        {{ $order->status === 'in_progress' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' : '' }}
-                                        {{ $order->status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : '' }}">
-                                        {{ $order->status === 'pending' ? 'Waiting for Assignment' : ucfirst(str_replace('_', ' ', $order->status)) }}
-                                    </span>
-                                </td>
-                                <td class="py-3">
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $order->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</p>
                                 </td>
                                 <td class="py-3">
                                     <div class="flex items-center gap-3">
-                                        @if($order->status === 'pending')
-                                            <form method="POST" action="{{ route('technician.work-orders.assign-to-me', $order) }}" class="m-0">
-                                                @csrf
-                                                <button type="submit" class="text-emerald-600 dark:text-emerald-400 hover:underline text-sm font-semibold">
-                                                    Assign to Me
-                                                </button>
-                                            </form>
+                                        @if(!$order->is_assigned_to_me && in_array($order->status, ['pending', 'approved'], true))
+                                            <button
+                                                type="button"
+                                                data-id="{{ $order->id }}"
+                                                data-job-order-number="{{ $order->job_order_number }}"
+                                                data-customer-name="{{ $order->customer->name ?? 'N/A' }}"
+                                                data-service-type="{{ $order->service_type ?? 'N/A' }}"
+                                                data-service-description="{{ $order->service_description ?? 'N/A' }}"
+                                                data-status-label="{{ $statusLabel }}"
+                                                data-priority="{{ ucfirst($order->priority ?? 'normal') }}"
+                                                data-created-at="{{ $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}"
+                                                data-assign-url="{{ route('technician.work-orders.assign-to-me', $order) }}"
+                                                @click="openPreview({
+                                                    id: Number($el.dataset.id),
+                                                    job_order_number: $el.dataset.jobOrderNumber,
+                                                    customer_name: $el.dataset.customerName,
+                                                    service_type: $el.dataset.serviceType,
+                                                    service_description: $el.dataset.serviceDescription,
+                                                    status_label: $el.dataset.statusLabel,
+                                                    priority: $el.dataset.priority,
+                                                    created_at: $el.dataset.createdAt,
+                                                    assign_url: $el.dataset.assignUrl,
+                                                })"
+                                                class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+                                            >
+                                                Preview
+                                            </button>
+                                        @elseif(($order->is_assigned_to_me ?? false) || ($order->assignment_for_me_count ?? 0) > 0)
+                                            <a href="{{ route('technician.job-details', $order->id) }}" 
+                                               class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
+                                                View
+                                            </a>
+                                        @else
+                                            <span class="text-xs font-medium text-gray-400 dark:text-gray-500">Not Assigned</span>
                                         @endif
-
-                                        <a href="{{ route('technician.job-details', $order->id) }}" 
-                                           class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
-                                            View
-                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -229,6 +266,86 @@
                     <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No work orders available at this time.</p>
                 </div>
             @endif
+        </div>
+
+        <div
+            x-show="showPreviewModal"
+            x-cloak
+            x-transition.opacity.duration.200ms
+            class="fixed inset-0 z-50 overflow-y-auto"
+        >
+            <div
+                class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm"
+                x-transition.opacity.duration.200ms
+                @click="closePreview()"
+            ></div>
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div
+                    x-show="showPreviewModal"
+                    x-transition:enter="transform transition ease-out duration-250"
+                    x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+                    x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                    x-transition:leave="transform transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 scale-95 translate-y-2"
+                    @click.stop
+                    class="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700 p-6"
+                >
+                    <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4 mb-5">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Work Order Preview</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="previewOrder ? previewOrder.job_order_number : ''"></p>
+                        </div>
+                        <button type="button" @click="closePreview()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Customer</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.customer_name : 'N/A'"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.status_label : 'N/A'"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Priority</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.priority : 'N/A'"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Date Created</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.created_at : 'N/A'"></p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Service Type</p>
+                        <p class="text-sm text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.service_type : 'N/A'"></p>
+                    </div>
+
+                    <div class="mt-4">
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Service Description</p>
+                        <p class="text-sm text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.service_description : 'N/A'"></p>
+                    </div>
+
+                    <div class="mt-6 flex items-center justify-end gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <button type="button" @click="closePreview()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                            Close
+                        </button>
+
+                        <form method="POST" :action="previewOrder ? previewOrder.assign_url : '#'" class="m-0">
+                            @csrf
+                            <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 transition-colors">
+                                Assign to Me
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 @endsection

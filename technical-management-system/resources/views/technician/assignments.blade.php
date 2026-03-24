@@ -37,6 +37,7 @@
                         location: card.getAttribute('data-location') || 'N/A',
                         equipment: card.getAttribute('data-equipment') || 'N/A',
                         notes: card.getAttribute('data-notes') || 'No notes available',
+                        reviewNotes: card.getAttribute('data-review-notes') || '',
                         element: card
                     }));
                 },
@@ -78,7 +79,8 @@
                             createdAt: jobElement.getAttribute('data-created-at'),
                             location: jobElement.getAttribute('data-location') || 'N/A',
                             equipment: jobElement.getAttribute('data-equipment') || 'N/A',
-                            notes: jobElement.getAttribute('data-notes') || 'No notes available'
+                            notes: jobElement.getAttribute('data-notes') || 'No notes available',
+                            reviewNotes: jobElement.getAttribute('data-review-notes') || ''
                         };
                         this.showModal = true;
                     }
@@ -277,6 +279,14 @@
                 <p class="text-xs text-green-600 dark:text-green-400 font-semibold mb-1">Completed</p>
                 <p class="text-2xl font-bold text-green-900 dark:text-green-100">{{ $assignments->where('status', 'completed')->count() }}</p>
             </div>
+            <div class="flex-1 min-w-xs bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-200 dark:border-amber-800">
+                <p class="text-xs text-amber-600 dark:text-amber-400 font-semibold mb-1">Pending Review</p>
+                <p class="text-2xl font-bold text-amber-900 dark:text-amber-100">{{ $assignments->where('status', 'pending_review')->count() }}</p>
+            </div>
+            <div class="flex-1 min-w-xs bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-200 dark:border-red-800">
+                <p class="text-xs text-red-600 dark:text-red-400 font-semibold mb-1">Rejected</p>
+                <p class="text-2xl font-bold text-red-900 dark:text-red-100">{{ $assignments->where('status', 'rejected')->count() }}</p>
+            </div>
         </div>
 
         <!-- Filter and Search Options -->
@@ -290,6 +300,8 @@
                     <option value="in_progress">In Progress</option>
                     <option value="on_hold">On Hold</option>
                     <option value="completed">Completed</option>
+                    <option value="pending_review">Pending Review</option>
+                    <option value="rejected">Rejected</option>
                 </select>
             </div>
 
@@ -335,6 +347,7 @@
                          data-location="{{ $job->location ?? 'N/A' }}"
                          data-equipment="{{ $job->equipment ?? 'N/A' }}"
                          data-notes="{{ $job->notes ?? 'No notes available' }}"
+                         data-review-notes="{{ $job->report_review_notes ?? '' }}"
                          class="p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:shadow-md transition-shadow">
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
@@ -345,8 +358,10 @@
                                         {{ $job->status === 'assigned' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : '' }}
                                         {{ $job->status === 'in_progress' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' : '' }}
                                         {{ $job->status === 'on_hold' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' : '' }}
-                                        {{ $job->status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : '' }}">
-                                        {{ ucfirst(str_replace('_', ' ', $job->status)) }}
+                                        {{ $job->status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : '' }}
+                                        {{ $job->status === 'pending_review' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : '' }}
+                                        {{ $job->status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : '' }}">
+                                        {{ $job->status === 'pending_review' ? 'Pending Review' : ucfirst(str_replace('_', ' ', $job->status)) }}
                                     </span>
                                     @if($job->priority === 'urgent')
                                     <span class="px-2 py-1 text-xs font-bold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
@@ -387,6 +402,16 @@
                                         class="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors">
                                     Pause
                                 </button>
+                                @elseif($job->status === 'pending_review')
+                                <button type="button" disabled
+                                        class="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm font-medium cursor-not-allowed">
+                                    Pending Review
+                                </button>
+                                @elseif($job->status === 'rejected')
+                                <a href="{{ route('technician.job-details', ['id' => $job->id]) }}"
+                                   class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors text-center">
+                                    Revise & Resubmit
+                                </a>
                                 @endif
                                 <a href="{{ route('technician.job-details', ['id' => $job->id]) }}"
                                    class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center">
@@ -489,6 +514,12 @@
                         <p class="text-gray-700 dark:text-gray-300 text-base" x-text="selectedJob?.notes"></p>
                     </div>
 
+                    <!-- Rejection Notes -->
+                    <div x-show="selectedJob?.status === 'rejected'" class="rounded-lg border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 p-4">
+                        <p class="text-xs font-semibold text-red-700 dark:text-red-300 uppercase mb-2">Tech Head Rejection Reason</p>
+                        <p class="text-sm text-red-800 dark:text-red-200" x-text="selectedJob?.reviewNotes || 'No rejection reason provided.'"></p>
+                    </div>
+
                     <!-- Divider -->
                     <hr class="border-gray-200 dark:border-gray-700">
 
@@ -523,6 +554,12 @@
                                         class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
                                     Complete Job
                                 </button>
+                            </template>
+                            <template x-if="selectedJob?.status === 'rejected'">
+                                <a :href="`{{ route('technician.job-details', ['id' => '__ID__']) }}`.replace('__ID__', selectedJob.id)"
+                                   class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors inline-flex items-center">
+                                    Revise & Resubmit
+                                </a>
                             </template>
                         </div>
                     </div>

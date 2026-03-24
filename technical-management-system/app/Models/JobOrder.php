@@ -71,6 +71,11 @@ class JobOrder extends Model
         return $this->hasMany(Assignment::class);
     }
 
+    public function lastAssignment()
+    {
+        return $this->hasOne(Assignment::class)->latestOfMany();
+    }
+
     public function calibrations()
     {
         return $this->hasManyThrough(Calibration::class, Assignment::class);

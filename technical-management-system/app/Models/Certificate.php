@@ -44,6 +44,7 @@ class Certificate extends Model
         'expiry_date' => 'date',
         'valid_until' => 'date',
         'is_current' => 'boolean',
+        'signed_at' => 'datetime',
         'generated_at' => 'datetime',
         'released_at' => 'datetime',
     ];

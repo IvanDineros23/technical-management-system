@@ -10,6 +10,33 @@
                 showSubmitModal: false,
                 showViewModal: false,
                 selectedReport: null,
+                reportDetailsByAssignment: @js(
+                    $submittedReports->mapWithKeys(function ($assignment) {
+                        $reportStatus = $assignment->report->status ?? 'pending';
+                        $statusLabel = match ($reportStatus) {
+                            'approved' => 'Approved',
+                            'rejected' => 'Rejected',
+                            default => 'Pending Review',
+                        };
+
+                        return [
+                            $assignment->id => [
+                                'job_order_number' => $assignment->jobOrder->job_order_number ?? 'N/A',
+                                'service_type' => $assignment->jobOrder->service_type ?? 'N/A',
+                                'customer_name' => $assignment->jobOrder->customer->name ?? 'N/A',
+                                'location' => $assignment->location ?? 'N/A',
+                                'status' => $reportStatus,
+                                'status_label' => $statusLabel,
+                                'submitted_at' => optional($assignment->report->created_at)?->setTimezone('Asia/Manila')?->format('M d, Y h:i A') ?? 'N/A',
+                                'reviewed_at' => optional($assignment->report->reviewed_at)?->setTimezone('Asia/Manila')?->format('M d, Y h:i A') ?? null,
+                                'work_summary' => $assignment->report->work_summary ?? null,
+                                'parts_used' => $assignment->report->parts_used ?? null,
+                                'remarks' => $assignment->report->remarks ?? null,
+                                'review_notes' => $assignment->report->review_notes ?? null,
+                            ],
+                        ];
+                    })->all()
+                ),
                 selectedAssignmentId: null,
                 isSubmitting: false,
                 toast: {
@@ -37,8 +64,12 @@
                         this.selectedAssignmentId = null;
                     }, 250);
                 },
-                openViewModal(reportId) {
-                    this.selectedReport = reportId;
+                openViewModal(assignmentId) {
+                    this.selectedReport = this.reportDetailsByAssignment[assignmentId] || null;
+                    if (!this.selectedReport) {
+                        this.showToast('Unable to load report details.', 'error');
+                        return;
+                    }
                     this.showViewModal = true;
                     document.body.style.overflow = 'hidden';
                 },
@@ -271,7 +302,7 @@
                         <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                             <div class="flex-1">
                                 <div class="flex flex-wrap items-center gap-3 mb-2">
-                                    <h4 class="text-base md:text-lg font-bold text-gray-900 dark:text-white">{{ $assignment->jobOrder->jo_number }}</h4>
+                                    <h4 class="text-base md:text-lg font-bold text-gray-900 dark:text-white">{{ $assignment->jobOrder->job_order_number ?? 'N/A' }}</h4>
                                     <span class="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 text-xs font-semibold rounded-full">Report Pending</span>
                                 </div>
                                 <p class="text-sm md:text-base text-gray-600 dark:text-gray-400 mb-2">{{ $assignment->jobOrder->service_type }} - {{ $assignment->location }}</p>
@@ -320,7 +351,7 @@
                                 @foreach($submittedReports as $assignment)
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                         <td class="px-3 md:px-6 py-4 whitespace-nowrap">
-                                            <span class="font-mono text-xs md:text-sm font-semibold text-gray-900 dark:text-white">{{ $assignment->jobOrder->jo_number }}</span>
+                                            <span class="font-mono text-xs md:text-sm font-semibold text-gray-900 dark:text-white">{{ $assignment->jobOrder->job_order_number ?? 'N/A' }}</span>
                                         </td>
                                         <td class="px-3 md:px-6 py-4">
                                             <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $assignment->jobOrder->service_type }}</p>
@@ -329,8 +360,21 @@
                                         <td class="hidden lg:table-cell px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $assignment->jobOrder->customer->name ?? 'N/A' }}</td>
                                         <td class="hidden md:table-cell px-3 md:px-6 py-4 text-xs md:text-sm text-gray-600 dark:text-gray-400">{{ \Carbon\Carbon::parse($assignment->report->created_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</td>
                                         <td class="px-3 md:px-6 py-4">
-                                            <span class="px-2 md:px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full whitespace-nowrap">
-                                                Submitted
+                                            @php
+                                                $reportStatus = $assignment->report->status ?? 'pending';
+                                                $statusClasses = match ($reportStatus) {
+                                                    'approved' => 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+                                                    'rejected' => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+                                                    default => 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
+                                                };
+                                                $statusLabel = match ($reportStatus) {
+                                                    'approved' => 'Approved',
+                                                    'rejected' => 'Rejected',
+                                                    default => 'Pending Review',
+                                                };
+                                            @endphp
+                                            <span class="px-2 md:px-3 py-1 {{ $statusClasses }} text-xs font-semibold rounded-full whitespace-nowrap">
+                                                {{ $statusLabel }}
                                             </span>
                                         </td>
                                         <td class="px-3 md:px-6 py-4">
@@ -348,25 +392,26 @@
         @endif
     </div>
 
-    <!-- SUBMIT REPORT MODAL -->
-    <div x-show="showSubmitModal" x-cloak
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-150"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         style="display: none" 
-         class="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4">
-        <div x-show="showSubmitModal"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 scale-90"
-             x-transition:enter-end="opacity-100 scale-100"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100 scale-100"
-             x-transition:leave-end="opacity-0 scale-90"
-             @click.self="closeSubmitModal()"
-             class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[90vh] overflow-y-auto">
+        <!-- SUBMIT REPORT MODAL -->
+        <template x-teleport="body">
+        <div x-show="showSubmitModal" x-cloak
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            style="display: none" 
+            class="fixed inset-0 bg-black/50 dark:bg-black/70 z-[9999] flex items-center justify-center p-4">
+           <div x-show="showSubmitModal"
+               x-transition:enter="transition ease-out duration-300"
+               x-transition:enter-start="opacity-0 scale-90"
+               x-transition:enter-end="opacity-100 scale-100"
+               x-transition:leave="transition ease-in duration-200"
+               x-transition:leave-start="opacity-100 scale-100"
+               x-transition:leave-end="opacity-0 scale-90"
+               @click.self="closeSubmitModal()"
+               class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[90vh] overflow-y-auto">
             
             <!-- Modal Header -->
             <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between rounded-t-2xl sticky top-0 z-10">
@@ -433,33 +478,35 @@
                     </button>
                 </div>
             </form>
+           </div>
         </div>
-    </div>
+        </template>
 
     <!-- VIEW REPORT MODAL -->
-    <div x-show="showViewModal" x-cloak
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-150"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         style="display: none" 
-         class="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4">
-        <div x-show="showViewModal"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 scale-90"
-             x-transition:enter-end="opacity-100 scale-100"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100 scale-100"
-             x-transition:leave-end="opacity-0 scale-90"
-             @click.self="closeViewModal()"
-             class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[90vh] overflow-y-auto">
+        <template x-teleport="body">
+        <div x-show="showViewModal" x-cloak
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            style="display: none" 
+            class="fixed inset-0 bg-black/60 dark:bg-black/70 z-[9999] flex items-center justify-center p-4">
+           <div x-show="showViewModal"
+               x-transition:enter="transition ease-out duration-300"
+               x-transition:enter-start="opacity-0 scale-90"
+               x-transition:enter-end="opacity-100 scale-100"
+               x-transition:leave="transition ease-in duration-200"
+               x-transition:leave-start="opacity-100 scale-100"
+               x-transition:leave-end="opacity-0 scale-90"
+               @click.self="closeViewModal()"
+               class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-2xl shadow-2xl max-w-5xl w-full border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[95vh] overflow-y-auto">
             
             <!-- Modal Header -->
-            <div class="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between rounded-t-2xl sticky top-0 z-10">
+            <div class="bg-gray-50 dark:bg-gray-950 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between rounded-t-2xl sticky top-0 z-10">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">Report Details</h3>
-                <button @click="closeViewModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                <button @click="closeViewModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -467,15 +514,66 @@
             </div>
 
             <!-- Modal Content -->
-            <div class="p-6 space-y-6">
-                <div class="text-center py-12">
-                    <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <p class="text-gray-500 dark:text-gray-400">Report details would display here</p>
-                </div>
+            <div class="p-6 space-y-6 bg-white dark:bg-gray-900">
+                <template x-if="selectedReport">
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">JO Number</p>
+                                <p class="mt-1 font-mono text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedReport.job_order_number"></p>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</p>
+                                <p class="mt-1 text-sm font-semibold"
+                                   :class="selectedReport.status === 'rejected' ? 'text-red-600 dark:text-red-300' : (selectedReport.status === 'approved' ? 'text-green-600 dark:text-green-300' : 'text-yellow-600 dark:text-yellow-300')"
+                                   x-text="selectedReport.status_label"></p>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Service Type</p>
+                                <p class="mt-1 text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.service_type"></p>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Customer</p>
+                                <p class="mt-1 text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.customer_name"></p>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4 md:col-span-2">
+                                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Location</p>
+                                <p class="mt-1 text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.location"></p>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Submitted At</p>
+                                <p class="mt-1 text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.submitted_at"></p>
+                            </div>
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4" x-show="selectedReport.reviewed_at">
+                                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Reviewed At</p>
+                                <p class="mt-1 text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.reviewed_at"></p>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                            <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Work Summary</p>
+                            <p class="mt-2 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line" x-text="selectedReport.work_summary || 'No work summary provided.'"></p>
+                        </div>
+
+                        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                            <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Parts Used</p>
+                            <p class="mt-2 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line" x-text="selectedReport.parts_used || 'No parts listed.'"></p>
+                        </div>
+
+                        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                            <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Remarks</p>
+                            <p class="mt-2 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line" x-text="selectedReport.remarks || 'No remarks.'"></p>
+                        </div>
+
+                        <div x-show="selectedReport.status === 'rejected'" class="rounded-xl border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4">
+                            <p class="text-xs uppercase tracking-wide text-red-700 dark:text-red-300">Reason For Rejection (Tech Head)</p>
+                            <p class="mt-2 text-sm text-red-900 dark:text-red-100 whitespace-pre-line" x-text="selectedReport.review_notes || 'No rejection reason provided.'"></p>
+                        </div>
+                    </div>
+                </template>
             </div>
         </div>
     </div>
+    </template>
 </div>
 @endsection

@@ -5,6 +5,16 @@
 @section('page-title', 'Job Order Details')
 @section('page-subtitle', 'View and manage job order information')
 
+@php
+    $isTechnicianEditLocked = $assignment
+        && $assignment->report
+        && in_array($assignment->report->status, ['pending', 'approved'], true);
+    $reportStatus = $assignment?->report?->status;
+    $isReportRejected = $reportStatus === 'rejected';
+    $isJobCompleted = $job->status === 'completed';
+    $isTrackingLocked = $isTechnicianEditLocked || $isJobCompleted;
+@endphp
+
 @section('head')
     <script>
         function jobDetailsPage() {
@@ -25,13 +35,39 @@
                 showAttachmentRemoveModal: false,
                 attachmentRemoveUrl: '',
                 attachmentRemoveName: '',
-                timeStarted: null,
-                timeFinished: null,
-                remarks: '',
+                startWorkUrl: '{{ route('technician.job.start', $job->id) }}',
+                pauseWorkUrl: '{{ route('technician.job.pause', $job->id) }}',
+                trackingUpdateUrl: '{{ route('technician.job.tracking.update', $job->id) }}',
+                timelineUrl: '{{ route('technician.timeline') }}',
+                trackingStartAt: '{{ $assignment && $assignment->started_at ? $assignment->started_at->setTimezone('Asia/Manila')->format('Y-m-d\\TH:i') : '' }}',
+                trackingCompletedAt: '{{ $assignment && $assignment->completed_at ? $assignment->completed_at->setTimezone('Asia/Manila')->format('Y-m-d\\TH:i') : '' }}',
+                actionBusy: false,
+                trackingBusy: false,
+                showFeedbackModal: false,
+                feedbackTitle: '',
+                feedbackMessage: '',
+                feedbackType: 'success',
                 showEquipmentRequest: false,
                 eqSelectMode: 'existing',
                 eqId: '',
                 eqName: '',
+                isEditLocked: @json($isTechnicianEditLocked),
+                isJobCompleted: @json($isJobCompleted),
+                openFeedback(title, message, type = 'success') {
+                    this.feedbackTitle = title;
+                    this.feedbackMessage = message;
+                    this.feedbackType = type;
+                    this.showFeedbackModal = true;
+                },
+                closeFeedback() {
+                    this.showFeedbackModal = false;
+                    this.feedbackTitle = '';
+                    this.feedbackMessage = '';
+                    this.feedbackType = 'success';
+                },
+                goToTimeline() {
+                    window.location.href = this.timelineUrl;
+                },
                 async addTask() {
                     const text = this.newTaskText.trim();
                     if (!text) return;
@@ -170,13 +206,102 @@
 
                     this.crewMembers = this.crewMembers.filter(item => item.id !== member.id);
                 },
-                startTimer() {
-                    this.timeStarted = new Date().toLocaleString();
-                    alert('Timer started!');
+                async startWork() {
+                    if (this.actionBusy) return;
+                    this.actionBusy = true;
+
+                    try {
+                        const response = await fetch(this.startWorkUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            }
+                        });
+                        const data = await response.json();
+                        if (!response.ok || !data.success) {
+                            alert(data.message || 'Failed to start work.');
+                            return;
+                        }
+
+                        if (!this.trackingStartAt) {
+                            const now = new Date();
+                            const tzOffset = now.getTimezoneOffset() * 60000;
+                            this.trackingStartAt = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
+                        }
+
+                        window.location.reload();
+                    } catch (error) {
+                        alert('Failed to start work. Please try again.');
+                    } finally {
+                        this.actionBusy = false;
+                    }
                 },
-                stopTimer() {
-                    this.timeFinished = new Date().toLocaleString();
-                    alert('Timer stopped!');
+                async pauseWork() {
+                    if (this.actionBusy) return;
+                    this.actionBusy = true;
+
+                    try {
+                        const response = await fetch(this.pauseWorkUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            }
+                        });
+                        const data = await response.json();
+                        if (!response.ok || !data.success) {
+                            alert(data.message || 'Failed to pause work.');
+                            return;
+                        }
+
+                        window.location.reload();
+                    } catch (error) {
+                        alert('Failed to pause work. Please try again.');
+                    } finally {
+                        this.actionBusy = false;
+                    }
+                },
+                async saveTracking() {
+                    if (this.trackingBusy) return;
+                    if (this.isEditLocked || this.isJobCompleted) {
+                        this.openFeedback('Unable to Save', 'Tracking is locked because this job is already completed or under review.', 'error');
+                        return;
+                    }
+                    this.trackingBusy = true;
+
+                    try {
+                        const response = await fetch(this.trackingUpdateUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                started_at: this.trackingStartAt || null,
+                                completed_at: this.trackingCompletedAt || null,
+                            })
+                        });
+
+                        const data = await response.json();
+                        if (!response.ok || !data.success) {
+                            this.openFeedback('Unable to Save', data.message || 'Unable to save tracking details.', 'error');
+                            return;
+                        }
+
+                        this.openFeedback(
+                            'Tracking Saved',
+                            'Tracking details saved successfully. This update is now reflected in your timeline.',
+                            'success'
+                        );
+                    } catch (error) {
+                        this.openFeedback('Save Failed', 'Unable to save tracking details. Please try again.', 'error');
+                    } finally {
+                        this.trackingBusy = false;
+                    }
                 },
                 async toggleTask(task) {
                     const original = task.is_completed;
@@ -302,6 +427,20 @@
             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Job Order Details & Tracking</p>
         </div>
 
+        @if($isReportRejected)
+            <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                <p class="font-semibold">Report was rejected by Tech Head. Revision and resubmission is required.</p>
+                @if(!empty($assignment?->report?->review_notes))
+                    <p class="mt-1"><span class="font-medium">Reason:</span> {{ $assignment->report->review_notes }}</p>
+                @endif
+                <a href="#report-form-section" class="mt-2 inline-block text-rose-700 hover:underline font-medium">Go to Notes & Report section</a>
+            </div>
+        @elseif($isTechnicianEditLocked && $job->status !== 'completed')
+            <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                This job is already submitted for review. Technician edits are now locked. Only Tech Head can make changes.
+            </div>
+        @endif
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Main Content -->
             <div class="lg:col-span-2 space-y-5">
@@ -318,8 +457,9 @@
                             <span class="px-2 py-1 text-xs font-medium rounded-full
                                 {{ $job->status === 'assigned' ? 'bg-blue-100 text-blue-800' : '' }}
                                 {{ $job->status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' : '' }}
-                                {{ $job->status === 'completed' ? 'bg-green-100 text-green-800' : '' }}">
-                                {{ $job->status === 'pending' ? 'Waiting for Assignment' : ucfirst(str_replace('_', ' ', $job->status)) }}
+                                {{ $job->status === 'completed' ? 'bg-green-100 text-green-800' : '' }}
+                                {{ $isReportRejected ? 'bg-rose-100 text-rose-800' : '' }}">
+                                {{ $isReportRejected ? 'Rejected - Needs Revision' : ($job->status === 'pending' ? 'Waiting for Assignment' : ucfirst(str_replace('_', ' ', $job->status))) }}
                             </span>
                         </div>
                         <div>
@@ -339,14 +479,55 @@
                     </div>
                 </div>
 
+                <!-- Work Tracker -->
+                <div id="report-form-section" class="bg-white dark:bg-gray-800 rounded-[16px] shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Work Tracker</h3>
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">For Documentation</span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Record actual start and completion time for this job. These values are saved to assignment documentation.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Work Started At</label>
+                            <input type="datetime-local"
+                                   x-model="trackingStartAt"
+                                @if($isTrackingLocked) disabled @endif
+                                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Work Completed At</label>
+                            <input type="datetime-local"
+                                   x-model="trackingCompletedAt"
+                                @if($isTrackingLocked) disabled @endif
+                                   class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="mt-4 flex items-center justify-between gap-3">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ $isJobCompleted ? 'Tracking is locked because this job is already completed.' : ($isTechnicianEditLocked ? 'Tracking is locked while report is under Tech Head review.' : 'Tip: use Pause Work while waiting, then Resume Work when continuing.') }}
+                        </p>
+                        <button type="button"
+                                @click="saveTracking()"
+                                :disabled="trackingBusy || isEditLocked || isJobCompleted"
+                                @if($isTrackingLocked) disabled @endif
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                            <span x-text="trackingBusy ? 'Saving...' : 'Save Tracking'"></span>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Task Checklist -->
                 <div class="bg-white dark:bg-gray-800 rounded-[16px] shadow-md border border-gray-200 dark:border-gray-700 p-5">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">Task Checklist</h3>
                     <div class="flex flex-col sm:flex-row gap-3 mb-4">
                         <input type="text" x-model="newTaskText" @keydown.enter.prevent="addTask()"
                                placeholder="Add a checklist item..."
+                               @if($isTechnicianEditLocked) disabled @endif
                                class="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                         <button type="button" @click="addTask()"
+                                @if($isTechnicianEditLocked) disabled @endif
                                 class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
                             Add Item
                         </button>
@@ -355,10 +536,13 @@
                         <template x-for="task in checklist" :key="task.id">
                             <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                 <input type="checkbox" :checked="task.is_completed" @change="toggleTask(task)"
+                                       @if($isTechnicianEditLocked) disabled @endif
                                        class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                 <span :class="task.is_completed ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white'" class="text-sm" x-text="task.description"></span>
-                                <button type="button" @click="confirmRemove(task)"
-                                        class="ml-auto text-xs text-red-600 hover:text-red-700">Remove</button>
+                                @if(!$isTechnicianEditLocked)
+                                    <button type="button" @click="confirmRemove(task)"
+                                            class="ml-auto text-xs text-red-600 hover:text-red-700">Remove</button>
+                                @endif
                             </div>
                         </template>
                     </div>
@@ -439,6 +623,7 @@
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Work Summary *</label>
                             <textarea name="work_summary" required placeholder="Describe the work completed and key findings..."
+                                @if($isTechnicianEditLocked) readonly @endif
                                 class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 resize-none"
                                 rows="4">{{ old('work_summary', $assignment?->report?->work_summary) }}</textarea>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">This will be reviewed by the tech head.</p>
@@ -446,12 +631,14 @@
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Parts Used (Optional)</label>
                             <textarea name="parts_used" placeholder="List any parts used..."
+                                @if($isTechnicianEditLocked) readonly @endif
                                 class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 resize-none"
                                 rows="3">{{ old('parts_used', $assignment?->report?->parts_used) }}</textarea>
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Additional Remarks (Optional)</label>
                             <textarea name="remarks" placeholder="Any extra notes or observations..."
+                                @if($isTechnicianEditLocked) readonly @endif
                                 class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 resize-none"
                                 rows="3">{{ old('remarks', $assignment?->report?->remarks) }}</textarea>
                         </div>
@@ -486,26 +673,32 @@
                     @endif
                     
                     <!-- Upload Form -->
-                    <form action="{{ route('technician.job.attachments.upload', $job->id) }}" method="POST" enctype="multipart/form-data" class="mb-6">
-                        @csrf
-                        <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                            </svg>
-                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Upload one file at a time — Excel (XLS/XLSX/XLSM/XLSB) or image (JPG, JPEG, PNG) — max 10MB</p>
-                            <input type="file" name="file" accept=".jpg,.jpeg,.png,.xls,.xlsx,.xlsm,.xlsb"
-                                   class="hidden" id="fileInput" onchange="this.form.querySelector('.file-name').textContent = this.files[0] ? this.files[0].name : ''">
-                            <button type="button" onclick="document.getElementById('fileInput').click()"
-                                    class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
-                                Choose File
-                            </button>
-                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 file-name"></p>
-                            <button type="submit" class="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
-                                Upload File
-                            </button>
+                    @if(!$isTechnicianEditLocked && !$isJobCompleted)
+                        <form action="{{ route('technician.job.attachments.upload', $job->id) }}" method="POST" enctype="multipart/form-data" class="mb-6">
+                            @csrf
+                            <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Upload one file at a time — Excel (XLS/XLSX/XLSM/XLSB) or image (JPG, JPEG, PNG) — max 10MB</p>
+                                <input type="file" name="file" accept=".jpg,.jpeg,.png,.xls,.xlsx,.xlsm,.xlsb"
+                                       class="hidden" id="fileInput" onchange="this.form.querySelector('.file-name').textContent = this.files[0] ? this.files[0].name : ''">
+                                <button type="button" onclick="document.getElementById('fileInput').click()"
+                                        class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+                                    Choose File
+                                </button>
+                                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 file-name"></p>
+                                <button type="submit" class="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
+                                    Upload File
+                                </button>
+                            </div>
+                        </form>
+                    @elseif($isTechnicianEditLocked && !$isJobCompleted)
+                        <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                            Attachment uploads are locked after submit for review.
                         </div>
-                    </form>
+                    @endif
 
                     <!-- Existing Attachments -->
                     @if($job->attachments && $job->attachments->count() > 0)
@@ -527,11 +720,13 @@
                                    class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
                                     Download
                                 </a>
-                                <button type="button"
-                                        @click="openAttachmentRemoveModal(@js(route('technician.attachments.delete', $attachment->id)), @js($attachment->file_name))"
-                                        class="text-red-600 dark:text-red-400 hover:underline text-sm font-medium">
-                                    Remove
-                                </button>
+                                @if(!$isTechnicianEditLocked && !$isJobCompleted)
+                                    <button type="button"
+                                            @click="openAttachmentRemoveModal(@js(route('technician.attachments.delete', $attachment->id)), @js($attachment->file_name))"
+                                            class="text-red-600 dark:text-red-400 hover:underline text-sm font-medium">
+                                        Remove
+                                    </button>
+                                @endif
                             </div>
                         </div>
                         @endforeach
@@ -548,21 +743,57 @@
                 <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
                     <div class="space-y-2">
-                        @if($job->status === 'assigned')
-                        <button class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                            Start Work
-                        </button>
+                        @if($isReportRejected)
+                            <button type="button" disabled class="w-full px-4 py-2 bg-rose-100 text-rose-800 rounded-lg font-medium cursor-not-allowed">
+                                Report Rejected - Please Revise
+                            </button>
+                        @elseif($isTechnicianEditLocked && $job->status !== 'completed')
+                            <button type="button" disabled class="w-full px-4 py-2 bg-amber-100 text-amber-800 rounded-lg font-medium cursor-not-allowed">
+                                Awaiting Tech Head Review
+                            </button>
+                        @elseif(in_array($job->status, ['assigned', 'on_hold'], true))
+                            <button type="button"
+                                    @click="startWork()"
+                                    :disabled="actionBusy"
+                                    class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                                <span x-text="actionBusy ? 'Please wait...' : '{{ $job->status === 'on_hold' ? 'Resume Work' : 'Start Work' }}'"></span>
+                            </button>
+                        @elseif($job->status === 'in_progress')
+                            <button type="button"
+                                    @click="pauseWork()"
+                                    :disabled="actionBusy"
+                                    class="w-full px-4 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                                <span x-text="actionBusy ? 'Please wait...' : 'Pause Work'"></span>
+                            </button>
+                        @elseif($job->status === 'completed')
+                            <button type="button" disabled class="w-full px-4 py-2 bg-emerald-100 text-emerald-800 rounded-lg font-medium cursor-not-allowed">
+                                Work Completed
+                            </button>
+                        @else
+                            <button type="button" disabled class="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 rounded-lg font-medium cursor-not-allowed">
+                                No Action Available
+                            </button>
                         @endif
 
                         @if($assignment)
-                            @if($assignment->report && $assignment->report->status === 'approved')
-                                <button type="button" disabled class="w-full px-4 py-2 bg-green-200 text-green-900 rounded-lg font-medium cursor-not-allowed">
-                                    Report Approved
-                                </button>
-                            @else
-                                <button type="submit" form="jobReportForm" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
-                                    Submit for Review
-                                </button>
+                            @if($job->status !== 'completed')
+                                @if($assignment->report && $assignment->report->status === 'approved')
+                                    <button type="button" disabled class="w-full px-4 py-2 bg-green-200 text-green-900 rounded-lg font-medium cursor-not-allowed">
+                                        Report Approved
+                                    </button>
+                                @elseif($assignment->report && $assignment->report->status === 'pending')
+                                    <button type="button" disabled class="w-full px-4 py-2 bg-amber-200 text-amber-900 rounded-lg font-medium cursor-not-allowed">
+                                        Submitted for Review
+                                    </button>
+                                @elseif($assignment->report && $assignment->report->status === 'rejected')
+                                    <button type="submit" form="jobReportForm" class="w-full px-4 py-2 bg-rose-600 text-white rounded-lg font-medium hover:bg-rose-700 transition-colors">
+                                        Revise & Resubmit Report
+                                    </button>
+                                @else
+                                    <button type="submit" form="jobReportForm" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
+                                        Submit for Review
+                                    </button>
+                                @endif
                             @endif
                         @else
                             <div class="text-xs text-gray-500 dark:text-gray-400 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -570,12 +801,21 @@
                             </div>
                         @endif
 
-                        <a href="{{ route('technician.inventory') }}" class="block w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center">
-                            Request Materials
-                        </a>
-                        <button type="button" @click="showEquipmentRequest=true" class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
-                            Request Equipment
-                        </button>
+                        @if($isTechnicianEditLocked || $job->status === 'completed')
+                            <button type="button" disabled class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300 rounded-lg font-medium cursor-not-allowed">
+                                Request Materials (Locked)
+                            </button>
+                            <button type="button" disabled class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300 rounded-lg font-medium cursor-not-allowed">
+                                Request Equipment (Locked)
+                            </button>
+                        @else
+                            <a href="{{ route('technician.inventory') }}" class="block w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center">
+                                Request Materials
+                            </a>
+                            <button type="button" @click="showEquipmentRequest=true" class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
+                                Request Equipment
+                            </button>
+                        @endif
                     </div>
                 </div>
 
@@ -590,6 +830,7 @@
                                 <input type="checkbox"
                                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                        :checked="isCrewSelected(tech.id)"
+                                        @if($isTechnicianEditLocked) disabled @endif
                                        @change="toggleCrew(tech)">
                                 <span x-text="tech.name"></span>
                             </label>
@@ -602,8 +843,10 @@
                         <div class="flex gap-2">
                             <input type="text" x-model="newCrewName" @keydown.enter.prevent="addCrewName()"
                                    placeholder="Enter name..."
+                                   @if($isTechnicianEditLocked) disabled @endif
                                    class="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                             <button type="button" @click="addCrewName()"
+                                    @if($isTechnicianEditLocked) disabled @endif
                                     class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
                                 Add
                             </button>
@@ -619,9 +862,11 @@
                                         <span x-text="member.name"></span>
                                         <span x-show="member.user_id === currentUserId" class="text-xs text-blue-600 dark:text-blue-400 ml-1">(You)</span>
                                     </p>
-                                    <button type="button" @click="removeCrew(member)"
-                                            x-show="member.user_id !== currentUserId"
-                                            class="text-xs text-red-600 hover:text-red-700">Remove</button>
+                                    @if(!$isTechnicianEditLocked)
+                                        <button type="button" @click="removeCrew(member)"
+                                                x-show="member.user_id !== currentUserId"
+                                                class="text-xs text-red-600 hover:text-red-700">Remove</button>
+                                    @endif
                                 </div>
                             </template>
                         </div>
@@ -705,9 +950,11 @@
                         <p class="text-sm text-gray-500 dark:text-gray-400">No equipment listed for this job.</p>
                     @endif
 
-                    <button type="button" @click="showEquipmentRequest=true" class="mt-4 w-full px-3 py-2 border-2 border-dashed border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
-                        + Request Equipment
-                    </button>
+                    @if(!$isTechnicianEditLocked)
+                        <button type="button" @click="showEquipmentRequest=true" class="mt-4 w-full px-3 py-2 border-2 border-dashed border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+                            + Request Equipment
+                        </button>
+                    @endif
                 </div>
 
             </div>
@@ -807,6 +1054,63 @@
             </div>
         </div>
     </div>
+
+        <!-- Tracking Feedback Modal -->
+        <div
+            x-show="showFeedbackModal"
+            x-cloak
+            @keydown.escape.window="closeFeedback()"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 z-50 overflow-y-auto"
+        >
+            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="closeFeedback()"></div>
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div
+                    x-transition:enter="transform transition ease-out duration-250"
+                    x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+                    x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                    x-transition:leave="transform transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 scale-95 translate-y-2"
+                    class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700 p-6"
+                >
+                    <div class="flex items-start gap-3">
+                        <div class="mt-0.5 w-9 h-9 rounded-full flex items-center justify-center"
+                             :class="feedbackType === 'success' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'">
+                            <svg x-show="feedbackType === 'success'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <svg x-show="feedbackType !== 'success'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white" x-text="feedbackTitle"></h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" x-text="feedbackMessage"></p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center justify-end gap-3">
+                        <button type="button"
+                                @click="closeFeedback()"
+                                class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                            Close
+                        </button>
+                        <button type="button"
+                                x-show="feedbackType === 'success'"
+                                @click="goToTimeline()"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
+                            View Timeline
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Remove Attachment Modal -->
         <div

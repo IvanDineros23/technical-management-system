@@ -265,6 +265,18 @@
                                 {{ ucfirst(str_replace('_', ' ', $assignment->status)) }}
                             </span>
                         </div>
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Started At</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                {{ $assignment->started_at ? $assignment->started_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') : 'Not set' }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Completed At</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                {{ $assignment->completed_at ? $assignment->completed_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') : 'Not set' }}
+                            </p>
+                        </div>
                     </div>
                 </div>
                 @endif

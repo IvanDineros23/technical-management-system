@@ -360,43 +360,43 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                                @foreach($recentAssignments as $job)
+                                @foreach($recentAssignments as $assignment)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                     <td class="py-3">
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $job->job_order_number }}</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ Str::limit($job->description ?? 'No description', 30) }}</p>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $assignment->jobOrder->job_order_number ?? 'N/A' }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ Str::limit($assignment->jobOrder->description ?? 'No description', 30) }}</p>
                                     </td>
                                     <td class="py-3">
-                                        <p class="text-sm text-gray-900 dark:text-white">{{ $job->customer->name ?? 'N/A' }}</p>
+                                        <p class="text-sm text-gray-900 dark:text-white">{{ $assignment->jobOrder->customer->name ?? 'N/A' }}</p>
                                     </td>
                                     <td class="py-3">
                                         <span :class="{
-                                            'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300': '{{ $job->status }}' === 'pending',
-                                            'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300': '{{ $job->status }}' === 'assigned',
-                                            'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300': '{{ $job->status }}' === 'in_progress',
-                                            'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': '{{ $job->status }}' === 'completed',
-                                            'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300': '{{ $job->status }}' === 'on_hold'
+                                            'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300': '{{ $assignment->status }}' === 'assigned',
+                                            'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300': '{{ $assignment->status }}' === 'in_progress',
+                                            'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': '{{ $assignment->status }}' === 'completed',
+                                            'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300': '{{ $assignment->status }}' === 'on_hold',
+                                            'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300': !['assigned','in_progress','completed','on_hold'].includes('{{ $assignment->status }}')
                                         }" class="px-2 py-1 text-xs font-medium rounded-full">
-                                            {{ $job->status === 'pending' ? 'Waiting for Assignment' : ucfirst(str_replace('_', ' ', $job->status)) }}
+                                            {{ ucfirst(str_replace('_', ' ', $assignment->status)) }}
                                         </span>
                                     </td>
                                     <td class="py-3">
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $job->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $assignment->assigned_at ? $assignment->assigned_at->setTimezone('Asia/Manila')->format('M d, Y') : $assignment->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                                     </td>
                                     <td class="py-3">
                                         <button @click="openJobDetails({{ json_encode([
-                                            'id' => $job->id,
-                                            'job_order_number' => $job->job_order_number ?? 'N/A',
-                                            'customer' => $job->customer->name ?? 'N/A',
-                                            'service_type' => $job->service_type ?? 'N/A',
-                                            'service_description' => $job->service_description ?? 'No description',
-                                            'service_address' => $job->service_address ?? 'N/A',
-                                            'priority' => $job->priority ?? 'normal',
-                                            'status' => $job->status,
-                                            'scheduled_date' => $job->expected_start_date ? $job->expected_start_date->setTimezone('Asia/Manila')->format('M d, Y') : 'Not scheduled',
+                                            'id' => $assignment->jobOrder->id ?? null,
+                                            'job_order_number' => $assignment->jobOrder->job_order_number ?? 'N/A',
+                                            'customer' => $assignment->jobOrder->customer->name ?? 'N/A',
+                                            'service_type' => $assignment->jobOrder->service_type ?? 'N/A',
+                                            'service_description' => $assignment->jobOrder->service_description ?? ($assignment->jobOrder->description ?? 'No description'),
+                                            'service_address' => $assignment->jobOrder->service_address ?? 'N/A',
+                                            'priority' => $assignment->priority ?? ($assignment->jobOrder->priority ?? 'normal'),
+                                            'status' => $assignment->status,
+                                            'scheduled_date' => $assignment->scheduled_date ? $assignment->scheduled_date->setTimezone('Asia/Manila')->format('M d, Y') : (($assignment->jobOrder && $assignment->jobOrder->expected_start_date) ? $assignment->jobOrder->expected_start_date->setTimezone('Asia/Manila')->format('M d, Y') : 'Not scheduled'),
                                             'scheduled_time' => '--',
-                                            'notes' => $job->notes ?? 'No notes',
-                                            'created_at' => $job->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')
+                                            'notes' => $assignment->jobOrder->notes ?? 'No notes',
+                                            'created_at' => ($assignment->assigned_at ?? $assignment->created_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A')
                                         ]) }})" 
                                            class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
                                             View Details

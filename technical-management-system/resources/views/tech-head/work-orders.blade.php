@@ -86,10 +86,24 @@
         normalizeStatus(status) {
             return status === 'pending_approval' ? 'for_accounting_approval' : status;
         },
-        statusLabel(status) {
+        hasPendingTechHeadReview(order) {
+            if (!order || !order.assignments || order.assignments.length === 0) {
+                return false;
+            }
+
+            return order.assignments.some(assignment => assignment && assignment.report_status === 'pending');
+        },
+        statusLabel(status, order = null) {
             const normalizedStatus = this.normalizeStatus(status);
+            const hasAssignments = Boolean(order && order.assignments && order.assignments.length > 0);
+            const hasPendingTechHeadReview = this.hasPendingTechHeadReview(order)
+                || Boolean(order && order.has_pending_tech_head_review);
 
             if (normalizedStatus === 'pending') {
+                if (hasAssignments && hasPendingTechHeadReview) {
+                    return 'Pending Tech Head Review';
+                }
+
                 return 'Waiting for Assignment';
             }
 
@@ -119,15 +133,25 @@
         },
         calibrationTimelineLabel(order) {
             const normalizedStatus = this.normalizeStatus(order ? order.status : null);
+            const hasAssignments = Boolean(order && order.assignments && order.assignments.length > 0);
+
+            if (!hasAssignments) {
+                return 'Not yet started';
+            }
 
             if (['in_progress', 'for_accounting_approval', 'approved', 'completed'].includes(normalizedStatus)) {
-                return this.statusLabel(normalizedStatus);
+                return this.statusLabel(normalizedStatus, order);
             }
 
             return 'Not yet started';
         },
         reportTimelineLabel(order) {
             const normalizedStatus = this.normalizeStatus(order ? order.status : null);
+            const hasAssignments = Boolean(order && order.assignments && order.assignments.length > 0);
+
+            if (!hasAssignments) {
+                return 'Awaiting report';
+            }
 
             if (['for_accounting_approval', 'approved', 'completed'].includes(normalizedStatus)) {
                 return 'Submitted for accounting approval';
@@ -141,6 +165,11 @@
         },
         approvalTimelineLabel(order) {
             const normalizedStatus = this.normalizeStatus(order ? order.status : null);
+            const hasAssignments = Boolean(order && order.assignments && order.assignments.length > 0);
+
+            if (!hasAssignments) {
+                return 'Pending approval';
+            }
 
             if (normalizedStatus === 'for_accounting_approval') {
                 return 'Awaiting accounting approval';
@@ -169,8 +198,12 @@
             }
 
             if (step === 'assigned') {
+                if (!hasAssignments && ['pending', 'approved'].includes(normalizedStatus)) {
+                    return 'current';
+                }
+
                 if (!hasAssignments) {
-                    return normalizedStatus === 'pending' ? 'current' : 'pending';
+                    return 'pending';
                 }
 
                 return normalizedStatus === 'assigned' ? 'current' : 'completed';
@@ -181,23 +214,25 @@
                     return 'current';
                 }
 
-                return ['for_accounting_approval', 'approved', 'completed'].includes(normalizedStatus) ? 'completed' : 'pending';
+                return hasAssignments && ['for_accounting_approval', 'approved', 'completed'].includes(normalizedStatus)
+                    ? 'completed'
+                    : 'pending';
             }
 
             if (step === 'report') {
-                if (normalizedStatus === 'for_accounting_approval') {
-                    return 'completed';
-                }
-
-                return ['approved', 'completed'].includes(normalizedStatus) ? 'completed' : 'pending';
+                return hasAssignments && ['for_accounting_approval', 'approved', 'completed'].includes(normalizedStatus)
+                    ? 'completed'
+                    : 'pending';
             }
 
             if (step === 'approval') {
-                if (normalizedStatus === 'for_accounting_approval') {
+                if (hasAssignments && normalizedStatus === 'for_accounting_approval') {
                     return 'current';
                 }
 
-                return ['approved', 'completed'].includes(normalizedStatus) ? 'completed' : 'pending';
+                return hasAssignments && ['approved', 'completed'].includes(normalizedStatus)
+                    ? 'completed'
+                    : 'pending';
             }
 
             if (step === 'certificate_generated') {
@@ -205,7 +240,7 @@
                     return normalizedStatus === 'completed' ? 'completed' : 'current';
                 }
 
-                return normalizedStatus === 'approved' ? 'current' : 'pending';
+                return hasAssignments && normalizedStatus === 'approved' ? 'current' : 'pending';
             }
 
             if (step === 'certificate_released') {
@@ -238,6 +273,10 @@
 
             if (hasCertificate) {
                 return 'Certificate Generated';
+            }
+
+            if (normalizedStatus === 'approved' && !hasAssignments) {
+                return 'Ready for Assignment';
             }
 
             if (normalizedStatus === 'approved') {
@@ -439,7 +478,6 @@
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Customer</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Assigned To</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Service Type</th>
-                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Priority</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Status</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Date</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Actions</th>
@@ -448,6 +486,10 @@
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                         @forelse($workOrders as $order)
                             @php
+                                $hasPendingTechHeadReview = $order->assignments->contains(function ($assignment) {
+                                    return optional($assignment->report)->status === 'pending';
+                                });
+
                                 $orderPayload = [
                                     'id' => $order->id,
                                     'job_order_number' => $order->job_order_number,
@@ -463,6 +505,7 @@
                                     'notes' => $order->notes ?? '',
                                     'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
                                     'certificates_count' => (int) $order->certificates_count,
+                                    'has_pending_tech_head_review' => $hasPendingTechHeadReview,
                                     'attachments' => $order->attachments->map(function ($attachment) {
                                         return [
                                             'id' => $attachment->id,
@@ -486,6 +529,9 @@
                                             'id' => $assignment->id,
                                             'technician' => optional($assignment->assignedTo)->name ?? 'N/A',
                                             'status' => $assignment->status,
+                                            'report_status' => optional($assignment->report)->status,
+                                            'started_at' => $assignment->started_at ? $assignment->started_at->setTimezone('Asia/Manila')->toDateTimeString() : null,
+                                            'completed_at' => $assignment->completed_at ? $assignment->completed_at->setTimezone('Asia/Manila')->toDateTimeString() : null,
                                         ];
                                     })->values(),
                                 ];
@@ -541,15 +587,6 @@
                                 </td>
                                 <td class="py-3 text-center">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full
-                                        {{ ($order->priority ?? 'normal') === 'urgent' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200' : '' }}
-                                        {{ ($order->priority ?? 'normal') === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200' : '' }}
-                                        {{ ($order->priority ?? 'normal') === 'normal' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' : '' }}
-                                        {{ ($order->priority ?? 'normal') === 'low' ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-200' : '' }}">
-                                        {{ ucfirst($order->priority ?? 'Normal') }}
-                                    </span>
-                                </td>
-                                <td class="py-3 text-center">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full
                                         {{ $order->status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200' : '' }}
                                         {{ $order->status === 'assigned' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' : '' }}
                                         {{ $order->status === 'for_accounting_approval' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200' : '' }}
@@ -557,7 +594,7 @@
                                         {{ $order->status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' : '' }}
                                         {{ $order->status === 'completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' : '' }}
                                         {{ $order->status === 'cancelled' ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200' : '' }}">
-                                        {{ $order->status === 'pending' ? 'Waiting for Assignment' : ($order->status === 'approved' ? 'Ready for Assignment' : ($order->status === 'for_accounting_approval' ? 'For Accounting Approval' : ucfirst(str_replace('_', ' ', $order->status)))) }}
+                                        {{ $order->status === 'pending' ? ($hasPendingTechHeadReview ? 'Pending Tech Head Review' : 'Waiting for Assignment') : ($order->status === 'approved' ? 'Ready for Assignment' : ($order->status === 'for_accounting_approval' ? 'For Accounting Approval' : ucfirst(str_replace('_', ' ', $order->status)))) }}
                                     </span>
                                 </td>
                                 <td class="py-3 text-center">
@@ -625,7 +662,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="py-12 text-center">
+                                <td colspan="7" class="py-12 text-center">
                                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                     </svg>
@@ -694,7 +731,7 @@
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</p>
-                                <span class="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200" x-text="selectedOrder ? statusLabel(selectedOrder.status) : 'N/A'"></span>
+                                <span class="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200" x-text="selectedOrder ? statusLabel(selectedOrder.status, selectedOrder) : 'N/A'"></span>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Required Date</p>
@@ -738,6 +775,8 @@
                                             <div>
                                                 <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="assignment.technician"></p>
                                                 <p class="text-xs text-gray-500 dark:text-gray-400" x-text="'Status: ' + assignment.status"></p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400" x-show="assignment.started_at" x-text="'Started: ' + new Date(assignment.started_at).toLocaleString('en-US')"></p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400" x-show="assignment.completed_at" x-text="'Completed: ' + new Date(assignment.completed_at).toLocaleString('en-US')"></p>
                                             </div>
                                             <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200" x-text="assignment.status"></span>
                                         </div>
@@ -1237,7 +1276,7 @@
                             <div class="md:col-span-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-900/50 dark:bg-blue-900/20">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Current Stage</p>
                                 <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white" x-text="currentTimelineStage(selectedOrder)"></p>
-                                <p class="mt-1 text-sm text-blue-700 dark:text-blue-300" x-text="selectedOrder ? statusLabel(selectedOrder.status) : 'N/A'"></p>
+                                <p class="mt-1 text-sm text-blue-700 dark:text-blue-300" x-text="selectedOrder ? statusLabel(selectedOrder.status, selectedOrder) : 'N/A'"></p>
                             </div>
                             <div class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-700/50">
                                 <div class="flex items-center justify-between">
