@@ -99,12 +99,11 @@ class AuditLogMiddleware
 
         $changedFields = array_keys($payload);
         $humanFields = empty($changedFields) ? 'no payload fields' : implode(', ', $changedFields);
-        $description = sprintf(
-            '%s on %s via %s (fields: %s)',
-            $action,
-            $routeUri,
-            $routeName,
-            $humanFields
+        $description = $this->buildDescription(
+            action: $action,
+            routeUri: $routeUri,
+            routeName: $routeName,
+            humanFields: $humanFields
         );
 
         AuditLog::create([
@@ -232,5 +231,23 @@ class AuditLogMiddleware
         }
 
         return 'Unknown';
+    }
+
+    /**
+     * Build human-readable audit description.
+     */
+    private function buildDescription(string $action, string $routeUri, string $routeName, string $humanFields): string
+    {
+        if ($routeName === 'verification.send') {
+            return 'Resent verification link to the user\'s email address.';
+        }
+
+        return sprintf(
+            '%s on %s via %s (fields: %s)',
+            $action,
+            $routeUri,
+            $routeName,
+            $humanFields
+        );
     }
 }

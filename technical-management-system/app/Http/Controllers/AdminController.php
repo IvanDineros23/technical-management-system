@@ -10,6 +10,7 @@ use App\Helpers\AuditLogHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
@@ -178,6 +179,20 @@ class AdminController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        $verificationTriggered = false;
+        if (($validated['status'] === 'active') && $user->hasRole('customer') && !$user->hasVerifiedEmail()) {
+            try {
+                $user->sendEmailVerificationNotification();
+                $verificationTriggered = true;
+            } catch (\Throwable $exception) {
+                Log::warning('Failed to send customer verification email after admin user creation.', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
         // Log the user creation
         AuditLogHelper::log(
             action: 'CREATE',
@@ -193,8 +208,13 @@ class AdminController extends Controller
             changedFields: ['name', 'email', 'role_id', 'is_active', 'password']
         );
 
+        $statusMessage = 'User created successfully.';
+        if ($verificationTriggered) {
+            $statusMessage .= ' Verification email sent to the customer.';
+        }
+
         return redirect()->route('admin.users.index')
-            ->with('status', 'User created successfully.');
+            ->with('status', $statusMessage);
     }
 
     public function updateUser(Request $request, User $user)
@@ -236,6 +256,8 @@ class AdminController extends Controller
         if ($user->role_id !== $validated['role_id']) $changedFields[] = 'role_id';
         if ($user->is_active !== ($validated['status'] === 'active')) $changedFields[] = 'is_active';
 
+        $statusChangedToActive = !$user->is_active && ($validated['status'] === 'active');
+
         $user->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -271,8 +293,27 @@ class AdminController extends Controller
             changedFields: $changedFields
         );
 
+        $verificationTriggered = false;
+        if ($statusChangedToActive && $user->hasRole('customer') && !$user->hasVerifiedEmail()) {
+            try {
+                $user->sendEmailVerificationNotification();
+                $verificationTriggered = true;
+            } catch (\Throwable $exception) {
+                Log::warning('Failed to send customer verification email after admin approval.', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        $statusMessage = 'User updated successfully.';
+        if ($verificationTriggered) {
+            $statusMessage .= ' Verification email sent to the customer.';
+        }
+
         return redirect()->route('admin.users.index')
-            ->with('status', 'User updated successfully.');
+            ->with('status', $statusMessage);
     }
 
     public function deactivateUser(User $user)

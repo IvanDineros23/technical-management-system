@@ -90,12 +90,16 @@ class CustomerPortalController extends Controller
     {
         $user = $request->user();
         $customer = $user->customer;
+        $missingProfileFields = $user->missingCustomerProfileFields();
+        $isCustomerProfileComplete = $user->hasCompleteCustomerProfile();
 
         if (!$customer) {
             return view('customer.requests', [
                 'customer' => null,
                 'jobOrders' => collect(),
                 'status' => '',
+                'isCustomerProfileComplete' => false,
+                'missingProfileFields' => $missingProfileFields,
             ]);
         }
 
@@ -132,7 +136,7 @@ class CustomerPortalController extends Controller
 
         $jobOrders = $query->paginate(20)->appends(['status' => $status]);
 
-        return view('customer.requests', compact('customer', 'jobOrders', 'status'));
+        return view('customer.requests', compact('customer', 'jobOrders', 'status', 'isCustomerProfileComplete', 'missingProfileFields'));
     }
 
     public function certificates(Request $request)
@@ -228,6 +232,15 @@ class CustomerPortalController extends Controller
 
         if (!$customer) {
             return back()->withErrors(['error' => 'No customer profile linked to your account. Please contact support.']);
+        }
+
+        $missingProfileFields = $user->missingCustomerProfileFields();
+        if (!empty($missingProfileFields)) {
+            return redirect()
+                ->route('customer.requests')
+                ->withErrors([
+                    'error' => 'Please complete your customer profile first before creating a request. Missing: ' . implode(', ', $missingProfileFields),
+                ]);
         }
 
         $validated = $request->validate([

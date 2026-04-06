@@ -1311,8 +1311,11 @@ Route::middleware(['auth', 'verified', 'role:accounting'])->prefix('accounting')
 });
 
 // Customer Routes
-Route::middleware(['auth', 'verified', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
+Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/dashboard', [CustomerPortalController::class, 'dashboard'])->name('dashboard');
+});
+
+Route::middleware(['auth', 'customer.verified', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/requests', [CustomerPortalController::class, 'requests'])->name('requests');
     Route::get('/requests/{jobOrder}/pdf', [CustomerPortalController::class, 'requestPdf'])->name('requests.pdf');
     Route::get('/requests/{jobOrder}/edit', [CustomerPortalController::class, 'editRequest'])->name('requests.edit');

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\BrandedVerifyEmailNotification;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -104,5 +105,68 @@ class User extends Authenticatable
     public function assignmentsAsAssignee()
     {
         return $this->hasMany(Assignment::class, 'assigned_to');
+    }
+
+    /**
+     * Required customer profile fields before allowing service requests.
+     *
+     * @return array<string, string>
+     */
+    public function requiredCustomerProfileFields(): array
+    {
+        return [
+            'email' => 'Email',
+            'phone' => 'Phone',
+            'address' => 'Address',
+            'city' => 'City',
+            'state' => 'Province/State',
+            'postal_code' => 'Postal Code',
+            'contact_person' => 'Contact Person',
+            'tax_id' => 'Tax ID',
+        ];
+    }
+
+    /**
+     * Return missing required customer profile fields for this user.
+     *
+     * @return array<int, string>
+     */
+    public function missingCustomerProfileFields(): array
+    {
+        if (!$this->hasRole('customer')) {
+            return [];
+        }
+
+        $requiredFields = $this->requiredCustomerProfileFields();
+        $customerProfile = $this->customer;
+
+        if (!$customerProfile) {
+            return array_values($requiredFields);
+        }
+
+        $missingFields = [];
+        foreach ($requiredFields as $field => $label) {
+            if (blank($customerProfile->{$field})) {
+                $missingFields[] = $label;
+            }
+        }
+
+        return $missingFields;
+    }
+
+    /**
+     * Check if a customer profile has all required details.
+     */
+    public function hasCompleteCustomerProfile(): bool
+    {
+        return count($this->missingCustomerProfileFields()) === 0;
+    }
+
+    /**
+     * Send branded email verification notification.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new BrandedVerifyEmailNotification());
     }
 }

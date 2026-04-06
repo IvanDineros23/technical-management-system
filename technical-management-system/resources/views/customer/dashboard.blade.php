@@ -44,6 +44,27 @@
 @endsection
 
 @section('content')
+    @if(!auth()->user()->hasVerifiedEmail())
+        <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-500/40 dark:bg-amber-900/20 dark:text-amber-100">
+            <p class="text-sm font-semibold">Verify your email to unlock full customer access.</p>
+            <p class="text-xs mt-1 text-amber-800 dark:text-amber-200/90">Requests and certificates remain locked until your email is verified.</p>
+
+            <form method="POST" action="{{ route('verification.send') }}" class="mt-3 inline-flex">
+                @csrf
+                <button
+                    type="submit"
+                    class="px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors dark:bg-amber-500 dark:text-slate-900 dark:hover:bg-amber-400"
+                >
+                    Resend Verification Email
+                </button>
+            </form>
+
+            @if (session('status') === 'verification-link-sent')
+                <p class="text-xs mt-2 text-emerald-700 dark:text-emerald-300">A new verification link has been sent to your email address.</p>
+            @endif
+        </div>
+    @endif
+
     @if(!$customer)
         <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
             <p class="text-sm font-semibold">No customer profile linked to this account yet.</p>

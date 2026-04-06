@@ -176,8 +176,13 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             @if(session('status'))
+                @php
+                    $statusToastMessage = session('status') === 'verification-link-sent'
+                        ? 'The verification link has been sent to your email address.'
+                        : session('status');
+                @endphp
                 window.dispatchEvent(new CustomEvent('toast', { 
-                    detail: { message: '{{ session('status') }}', type: 'success' } 
+                    detail: { message: @js($statusToastMessage), type: 'success' } 
                 }));
             @endif
             @if(session('error'))

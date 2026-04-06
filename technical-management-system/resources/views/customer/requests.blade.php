@@ -51,6 +51,21 @@
             </div>
         @endif
 
+        @if($customer && !$isCustomerProfileComplete)
+            <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                <p class="text-sm font-semibold">Customer profile is incomplete.</p>
+                <p class="text-xs mt-1">Please update your profile before creating a service request.</p>
+                @if(!empty($missingProfileFields))
+                    <p class="text-xs mt-2">
+                        Missing: {{ implode(', ', $missingProfileFields) }}
+                    </p>
+                @endif
+                <a href="{{ route('profile.show') }}" class="inline-flex items-center mt-3 text-xs font-semibold text-amber-800 underline hover:text-amber-900">
+                    Complete Profile Details
+                </a>
+            </div>
+        @endif
+
         @if($errors->any())
             <div class="mb-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-900">
                 <p class="text-sm font-semibold">Unable to submit service request.</p>
@@ -173,7 +188,7 @@
                             class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                     </div>
-                    @if($customer)
+                    @if($customer && $isCustomerProfileComplete)
                         <button
                             @click="showCreateModal = true"
                             class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
@@ -183,6 +198,13 @@
                             </svg>
                             Create Request
                         </button>
+                    @elseif($customer)
+                        <a
+                            href="{{ route('profile.show') }}"
+                            class="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-semibold hover:bg-amber-600 transition-colors flex items-center gap-2"
+                        >
+                            Complete Profile First
+                        </a>
                     @endif
                 </div>
             </div>
