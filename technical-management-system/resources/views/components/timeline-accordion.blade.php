@@ -64,6 +64,9 @@
         })
         ->sortByDesc('latest_date')
         ->values();
+
+    $groupKeys = $grouped->pluck('key')->values();
+    $totalActivities = $entries->count();
 @endphp
 
 @if($grouped->isEmpty())
@@ -75,7 +78,53 @@
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $emptyText }}</p>
     </div>
 @else
-    <div x-data="{ openGroup: '{{ $grouped->first()['key'] }}' }" class="space-y-3">
+    <div
+        x-data="{
+            openGroups: @js($groupKeys),
+            allGroupKeys: @js($groupKeys),
+            isOpen(key) {
+                return this.openGroups.includes(key);
+            },
+            toggleGroup(key) {
+                if (this.isOpen(key)) {
+                    this.openGroups = this.openGroups.filter(groupKey => groupKey !== key);
+                    return;
+                }
+
+                this.openGroups = [...this.openGroups, key];
+            },
+            expandAll() {
+                this.openGroups = [...this.allGroupKeys];
+            },
+            collapseAll() {
+                this.openGroups = [];
+            }
+        }"
+        class="space-y-3"
+    >
+        <div class="flex items-center justify-between px-1">
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ $grouped->count() }} {{ Str::plural('job group', $grouped->count()) }}
+                • {{ $totalActivities }} {{ Str::plural('activity', $totalActivities) }}
+            </p>
+            <div class="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <button
+                    type="button"
+                    @click="expandAll"
+                    class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                    Expand all
+                </button>
+                <button
+                    type="button"
+                    @click="collapseAll"
+                    class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                    Collapse all
+                </button>
+            </div>
+        </div>
+
         @foreach($grouped as $group)
             @php
                 $groupStatus = $group['status'] ?? 'pending';
@@ -91,7 +140,7 @@
             <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
                 <button
                     type="button"
-                    @click="openGroup = openGroup === '{{ $group['key'] }}' ? '' : '{{ $group['key'] }}'"
+                    @click="toggleGroup('{{ $group['key'] }}')"
                     class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
                     <div class="flex items-center gap-3 min-w-0">
@@ -113,14 +162,14 @@
                             {{ ucfirst(str_replace('_', ' ', $groupStatus)) }}
                         </span>
                         <svg class="w-4 h-4 text-gray-500 dark:text-gray-400 transform transition-transform"
-                            :class="openGroup === '{{ $group['key'] }}' ? 'rotate-180' : ''"
+                            :class="isOpen('{{ $group['key'] }}') ? 'rotate-180' : ''"
                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </div>
                 </button>
 
-                <div x-show="openGroup === '{{ $group['key'] }}'"
+                <div x-show="isOpen('{{ $group['key'] }}')"
                     x-transition:enter="transition ease-out duration-200"
                     x-transition:enter-start="opacity-0 -translate-y-1"
                     x-transition:enter-end="opacity-100 translate-y-0"
@@ -141,10 +190,20 @@
                                 };
                                 $metaName = data_get($entry, 'metadata.user_name');
                                 $metaRole = data_get($entry, 'metadata.user_role');
+                                $metaAction = data_get($entry, 'metadata.action');
+                                $metaModelType = data_get($entry, 'metadata.model_type');
                                 $entryDate = data_get($entry, 'date');
-                                $dateLabel = $entryDate instanceof \Carbon\Carbon
-                                    ? $entryDate->setTimezone('Asia/Manila')->format('M d, Y h:i A')
-                                    : (string) $entryDate;
+                                if ($entryDate instanceof \Carbon\Carbon) {
+                                    $dateLabel = $entryDate->copy()->setTimezone('Asia/Manila')->format('M d, Y h:i A');
+                                } elseif (is_string($entryDate) && trim($entryDate) !== '') {
+                                    try {
+                                        $dateLabel = \Carbon\Carbon::parse($entryDate)->setTimezone('Asia/Manila')->format('M d, Y h:i A');
+                                    } catch (\Throwable $e) {
+                                        $dateLabel = $entryDate;
+                                    }
+                                } else {
+                                    $dateLabel = '';
+                                }
                             @endphp
 
                             <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
@@ -173,6 +232,16 @@
                                     @endif
                                     @if($metaRole)
                                         <span>{{ $metaRole }}</span>
+                                    @endif
+                                    @if($metaModelType)
+                                        <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                                            {{ $metaModelType }}
+                                        </span>
+                                    @endif
+                                    @if($metaAction)
+                                        <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                                            {{ strtoupper($metaAction) }}
+                                        </span>
                                     @endif
                                     <span class="inline-flex items-center gap-1">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

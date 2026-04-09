@@ -242,6 +242,11 @@ class AuditLogMiddleware
             return 'Resent verification link to the user\'s email address.';
         }
 
+        $friendlyDescription = $this->buildFriendlyRouteDescription($action, $routeUri, $routeName, $humanFields);
+        if ($friendlyDescription !== null) {
+            return $friendlyDescription;
+        }
+
         return sprintf(
             '%s on %s via %s (fields: %s)',
             $action,
@@ -249,5 +254,63 @@ class AuditLogMiddleware
             $routeName,
             $humanFields
         );
+    }
+
+    private function buildFriendlyRouteDescription(string $action, string $routeUri, string $routeName, string $humanFields): ?string
+    {
+        $scope = strtolower($routeName . ' ' . $routeUri);
+        $friendlyFields = $this->humanizeFieldList($humanFields);
+        $verb = match (strtoupper($action)) {
+            'CREATE' => 'created',
+            'UPDATE' => 'updated',
+            'DELETE' => 'removed',
+            default => strtolower($action),
+        };
+
+        $messages = [
+            'submit-report' => 'Technician submitted a job report',
+            'pause' => 'Technician paused the job order',
+            'resume' => 'Technician resumed job work',
+            'start' => 'Technician started job work',
+            'approve' => 'Approval action was recorded',
+            'reject' => 'Rejection action was recorded',
+            'sign' => 'Signatory action was recorded',
+            'invoice' => 'Invoice record was updated',
+            'payment' => 'Payment record was updated',
+        ];
+
+        foreach ($messages as $pattern => $message) {
+            if (str_contains($scope, $pattern)) {
+                if ($friendlyFields !== '') {
+                    return $message . ' (details: ' . $friendlyFields . ').';
+                }
+
+                return $message . '.';
+            }
+        }
+
+        if (str_contains($scope, 'job') || str_contains($scope, 'job-order') || str_contains($scope, 'job_order')) {
+            if ($friendlyFields !== '') {
+                return 'Job order ' . $verb . ' (details: ' . $friendlyFields . ').';
+            }
+
+            return 'Job order ' . $verb . '.';
+        }
+
+        return null;
+    }
+
+    private function humanizeFieldList(string $humanFields): string
+    {
+        $fields = array_filter(array_map('trim', explode(',', $humanFields)));
+        if (empty($fields)) {
+            return '';
+        }
+
+        $fields = array_map(function (string $field) {
+            return str_replace('_', ' ', $field);
+        }, $fields);
+
+        return implode(', ', $fields);
     }
 }

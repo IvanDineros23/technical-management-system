@@ -5,11 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\JobOrder;
 use App\Models\JobOrderAttachment;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TimelineController extends Controller
 {
+    private array $jobOrderResolutionCache = [];
+
     /**
      * Display timeline for the authenticated user based on their role
      */
@@ -103,6 +108,7 @@ class TimelineController extends Controller
                 $description .= "{$modelType}";
             }
         }
+        $description = $this->humanizeTimelineDescription((string) $description);
         
         // Determine status and type from action
         $status = 'pending';
@@ -144,43 +150,123 @@ class TimelineController extends Controller
         ];
     }
 
+    private function humanizeTimelineDescription(string $description): string
+    {
+        $normalized = trim($description);
+        if ($normalized === '') {
+            return $normalized;
+        }
+
+        if (!preg_match('/^(CREATE|UPDATE|DELETE) on (.+?) via ([^ ]+) \(fields: (.+)\)$/i', $normalized, $matches)) {
+            return $normalized;
+        }
+
+        $action = strtoupper($matches[1]);
+        $routeUri = strtolower($matches[2]);
+        $routeName = strtolower($matches[3]);
+        $rawFields = trim($matches[4]);
+
+        $fieldText = '';
+        if ($rawFields !== '' && strtolower($rawFields) !== 'no payload fields') {
+            $readableFields = array_filter(array_map('trim', explode(',', $rawFields)));
+            $readableFields = array_map(function (string $field) {
+                return str_replace('_', ' ', $field);
+            }, $readableFields);
+            $fieldText = implode(', ', $readableFields);
+        }
+
+        $scope = $routeName . ' ' . $routeUri;
+        $verb = match ($action) {
+            'CREATE' => 'created',
+            'UPDATE' => 'updated',
+            'DELETE' => 'removed',
+            default => strtolower($action),
+        };
+
+        $messageMap = [
+            'submit-report' => 'Technician submitted a job report',
+            'pause' => 'Technician paused the job order',
+            'resume' => 'Technician resumed job work',
+            'start' => 'Technician started job work',
+            'approve' => 'Approval action was recorded',
+            'reject' => 'Rejection action was recorded',
+            'sign' => 'Signatory action was recorded',
+            'invoice' => 'Invoice record was updated',
+            'payment' => 'Payment record was updated',
+        ];
+
+        $message = null;
+        foreach ($messageMap as $pattern => $mapped) {
+            if (str_contains($scope, $pattern)) {
+                $message = $mapped;
+                break;
+            }
+        }
+
+        if ($message === null) {
+            if (str_contains($scope, 'job') || str_contains($scope, 'job-order') || str_contains($scope, 'job_order')) {
+                $message = 'Job order ' . $verb;
+            } else {
+                return $normalized;
+            }
+        }
+
+        if ($fieldText !== '') {
+            return $message . ' (details: ' . $fieldText . ').';
+        }
+
+        return $message . '.';
+    }
+
     /**
      * Resolve the related job order for an audit log record.
      */
     private function resolveJobOrderFromAuditLog(AuditLog $auditLog): ?JobOrder
     {
+        $cacheKey = md5(json_encode([
+            $auditLog->model_type,
+            $auditLog->model_id,
+            $auditLog->description,
+            data_get($auditLog->new_values, 'job_order_id'),
+            data_get($auditLog->old_values, 'job_order_id'),
+        ]));
+
+        if (array_key_exists($cacheKey, $this->jobOrderResolutionCache)) {
+            return $this->jobOrderResolutionCache[$cacheKey];
+        }
+
         $modelType = $auditLog->model_type ?? '';
         $modelId = $auditLog->model_id ?? 0;
 
         if ($modelType === 'JobOrder' && $modelId) {
-            return JobOrder::find($modelId);
+            return $this->jobOrderResolutionCache[$cacheKey] = JobOrder::find($modelId);
         }
 
         if ($modelType === 'Assignment' && $modelId) {
             $assignment = \App\Models\Assignment::with('jobOrder')->find($modelId);
             if ($assignment?->jobOrder) {
-                return $assignment->jobOrder;
+                return $this->jobOrderResolutionCache[$cacheKey] = $assignment->jobOrder;
             }
         }
 
         if ($modelType === 'Calibration' && $modelId) {
             $calibration = \App\Models\Calibration::with('assignment.jobOrder')->find($modelId);
             if ($calibration?->assignment?->jobOrder) {
-                return $calibration->assignment->jobOrder;
+                return $this->jobOrderResolutionCache[$cacheKey] = $calibration->assignment->jobOrder;
             }
         }
 
         if ($modelType === 'Report' && $modelId) {
             $report = \App\Models\Report::with('assignment.jobOrder')->find($modelId);
             if ($report?->assignment?->jobOrder) {
-                return $report->assignment->jobOrder;
+                return $this->jobOrderResolutionCache[$cacheKey] = $report->assignment->jobOrder;
             }
         }
 
         if ($modelType === 'Certificate' && $modelId) {
             $certificate = \App\Models\Certificate::with('jobOrder')->find($modelId);
             if ($certificate?->jobOrder) {
-                return $certificate->jobOrder;
+                return $this->jobOrderResolutionCache[$cacheKey] = $certificate->jobOrder;
             }
         }
 
@@ -192,18 +278,127 @@ class TimelineController extends Controller
                 $jobOrderId = JobOrderAttachment::find($modelId)?->job_order_id;
             }
 
-            return $jobOrderId ? JobOrder::find($jobOrderId) : null;
+            return $this->jobOrderResolutionCache[$cacheKey] = ($jobOrderId ? JobOrder::find($jobOrderId) : null);
         }
 
         // Fallback: extract JO number from description (e.g., JO-00018).
         $description = (string) ($auditLog->description ?? '');
         if ($description !== '' && preg_match('/\b(JO-[A-Za-z0-9-]+)\b/i', $description, $matches)) {
             $joNumber = strtoupper($matches[1]);
+            $normalizedJoNumber = preg_replace('/^JO-/i', '', $joNumber);
 
-            return JobOrder::whereRaw('UPPER(job_order_number) = ?', [$joNumber])->first();
+            return $this->jobOrderResolutionCache[$cacheKey] = JobOrder::query()
+                ->whereRaw('UPPER(job_order_number) = ?', [$joNumber])
+                ->orWhereRaw("REPLACE(UPPER(job_order_number), 'JO-', '') = ?", [strtoupper($normalizedJoNumber)])
+                ->first();
+        }
+
+        return $this->jobOrderResolutionCache[$cacheKey] = null;
+    }
+
+    private function extractJobSearchToken(?string $search): ?string
+    {
+        $normalized = trim((string) $search);
+        if ($normalized === '') {
+            return null;
+        }
+
+        if (preg_match('/^JO-?([A-Za-z0-9-]+)$/i', $normalized, $matches)) {
+            return strtoupper($matches[1]);
+        }
+
+        if (is_numeric($normalized)) {
+            return strtoupper($normalized);
         }
 
         return null;
+    }
+
+    private function applyAuditLogSearch(Builder $query, ?string $search): void
+    {
+        $search = trim((string) $search);
+        if ($search === '') {
+            return;
+        }
+
+        $jobToken = $this->extractJobSearchToken($search);
+        if (! $jobToken) {
+            $query->where('description', 'like', "%{$search}%");
+            return;
+        }
+
+        $jobOrders = JobOrder::query()
+            ->where('job_order_number', 'like', "%{$jobToken}%")
+            ->orWhereRaw("REPLACE(UPPER(job_order_number), 'JO-', '') like ?", ['%' . strtoupper($jobToken) . '%'])
+            ->pluck('id');
+
+        $query->where(function (Builder $q) use ($search, $jobOrders) {
+            $q->where('description', 'like', "%{$search}%");
+
+            if ($jobOrders->isNotEmpty()) {
+                $q->orWhere(function (Builder $inner) use ($jobOrders) {
+                    $inner->where('model_type', 'JobOrder')
+                        ->whereIn('model_id', $jobOrders);
+                });
+            }
+        });
+    }
+
+    private function timelineContainsJobToken(array $timeline, string $jobToken): bool
+    {
+        $candidate = strtoupper((string) data_get($timeline, 'job_order.job_order_number', ''));
+        if ($candidate !== '') {
+            $normalizedCandidate = str_replace('JO-', '', $candidate);
+            if (str_contains($normalizedCandidate, strtoupper($jobToken))) {
+                return true;
+            }
+        }
+
+        $haystack = strtoupper(implode(' ', [
+            (string) data_get($timeline, 'title', ''),
+            (string) data_get($timeline, 'description', ''),
+        ]));
+
+        preg_match('/\bJO-([A-Za-z0-9-]+)\b/', $haystack, $matches);
+        if (! empty($matches[1])) {
+            return str_contains(strtoupper($matches[1]), strtoupper($jobToken));
+        }
+
+        return false;
+    }
+
+    private function applyTimelineFilters(Collection $timelines, array $filters = []): Collection
+    {
+        $status = trim((string) ($filters['status'] ?? ''));
+        if ($status !== '') {
+            $timelines = $timelines->filter(function ($timeline) use ($status) {
+                return (string) data_get($timeline, 'status', '') === $status;
+            });
+        }
+
+        $search = trim((string) ($filters['search'] ?? ''));
+        if ($search !== '') {
+            $jobToken = $this->extractJobSearchToken($search);
+            $needle = mb_strtolower($search);
+
+            $timelines = $timelines->filter(function ($timeline) use ($jobToken, $needle) {
+                if ($jobToken && $this->timelineContainsJobToken((array) $timeline, $jobToken)) {
+                    return true;
+                }
+
+                $haystack = mb_strtolower(implode(' ', [
+                    (string) data_get($timeline, 'title', ''),
+                    (string) data_get($timeline, 'description', ''),
+                    (string) data_get($timeline, 'customer', ''),
+                    (string) data_get($timeline, 'metadata.user_name', ''),
+                    (string) data_get($timeline, 'metadata.user_role', ''),
+                ]));
+
+                return str_contains($haystack, $needle);
+            });
+        }
+
+        return $timelines->values();
     }
 
     /**
@@ -250,18 +445,7 @@ class TimelineController extends Controller
             ->whereNotIn('description', ['User logged in', 'User logged out']);
 
         if ($search) {
-            // Search by JO number through related JobOrder
-            if (is_numeric($search)) {
-                $jobOrders = JobOrder::where('job_order_number', 'like', "%{$search}%")
-                    ->pluck('id');
-                if ($jobOrders->isNotEmpty()) {
-                    $query->whereIn('model_id', $jobOrders);
-                } else {
-                    $query->where('description', 'like', "%{$search}%");
-                }
-            } else {
-                $query->where('description', 'like', "%{$search}%");
-            }
+            $this->applyAuditLogSearch($query, $search);
         }
 
         $auditLogs = $query
@@ -271,6 +455,7 @@ class TimelineController extends Controller
         $timelines = $auditLogs->map(function ($auditLog) {
             return $this->formatAuditLogToTimeline($auditLog);
         });
+        $timelines = $this->applyTimelineFilters($timelines, $filters);
         
         $stats = [
             'total_jobs' => JobOrder::count(),
@@ -300,17 +485,7 @@ class TimelineController extends Controller
             ->whereNotIn('description', ['User logged in', 'User logged out']);
 
         if ($search) {
-            if (is_numeric($search)) {
-                $jobOrders = JobOrder::where('job_order_number', 'like', "%{$search}%")
-                    ->pluck('id');
-                if ($jobOrders->isNotEmpty()) {
-                    $query->wherein('model_id', $jobOrders);
-                } else {
-                    $query->where('description', 'like', "%{$search}%");
-                }
-            } else {
-                $query->where('description', 'like', "%{$search}%");
-            }
+            $this->applyAuditLogSearch($query, $search);
         }
 
         $auditLogs = $query
@@ -320,6 +495,7 @@ class TimelineController extends Controller
         $timelines = $auditLogs->map(function ($auditLog) {
             return $this->formatAuditLogToTimeline($auditLog);
         });
+        $timelines = $this->applyTimelineFilters($timelines, $filters);
         
         $stats = [
             'today_tasks' => AuditLog::whereDate('created_at', today())
@@ -372,17 +548,7 @@ class TimelineController extends Controller
             ->whereNotIn('description', ['User logged in', 'User logged out']);
 
         if ($search) {
-            if (is_numeric($search)) {
-                $jobOrders = JobOrder::where('job_order_number', 'like', "%{$search}%")
-                    ->pluck('id');
-                if ($jobOrders->isNotEmpty()) {
-                    $query->wherein('model_id', $jobOrders);
-                } else {
-                    $query->where('description', 'like', "%{$search}%");
-                }
-            } else {
-                $query->where('description', 'like', "%{$search}%");
-            }
+            $this->applyAuditLogSearch($query, $search);
         }
 
         $auditLogs = $query
@@ -401,6 +567,7 @@ class TimelineController extends Controller
                     || str_contains((string) ($timeline['description'] ?? ''), 'JO-');
             })
             ->values();
+        $timelines = $this->applyTimelineFilters($timelines, $filters);
         
         $stats = [
             'total_active' => JobOrder::whereIn('status', ['pending', 'in_progress'])->count(),
@@ -447,17 +614,7 @@ class TimelineController extends Controller
             ->whereNotIn('description', ['User logged in', 'User logged out']);
 
         if ($search) {
-            if (is_numeric($search)) {
-                $jobOrders = JobOrder::where('job_order_number', 'like', "%{$search}%")
-                    ->pluck('id');
-                if ($jobOrders->isNotEmpty()) {
-                    $query->wherein('model_id', $jobOrders);
-                } else {
-                    $query->where('description', 'like', "%{$search}%");
-                }
-            } else {
-                $query->where('description', 'like', "%{$search}%");
-            }
+            $this->applyAuditLogSearch($query, $search);
         }
 
         $auditLogs = $query
@@ -467,6 +624,7 @@ class TimelineController extends Controller
         $timelines = $auditLogs->map(function ($auditLog) {
             return $this->formatAuditLogToTimeline($auditLog);
         });
+        $timelines = $this->applyTimelineFilters($timelines, $filters);
         
         $stats = [
             'total_jobs' => JobOrder::count(),
