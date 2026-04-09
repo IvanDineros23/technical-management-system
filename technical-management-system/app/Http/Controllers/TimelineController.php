@@ -79,7 +79,8 @@ class TimelineController extends Controller
         // Resolve the job order for direct or related audit log records.
         $jobOrder = $this->resolveJobOrderFromAuditLog($auditLog);
         if ($jobOrder) {
-            $joNumber = $jobOrder->job_order_number;
+            $jobOrderNumber = strtoupper(trim((string) $jobOrder->job_order_number));
+            $joNumber = preg_replace('/^JO-/i', '', $jobOrderNumber) ?? $jobOrderNumber;
             $customerName = $jobOrder->customer?->name ?? 'Unknown Customer';
             $jobStatus = $jobOrder->status ?? 'pending';
         }
@@ -156,6 +157,8 @@ class TimelineController extends Controller
         if ($normalized === '') {
             return $normalized;
         }
+
+        $normalized = preg_replace('/\b(?:JO-){2,}/i', 'JO-', $normalized) ?? $normalized;
 
         if (!preg_match('/^(CREATE|UPDATE|DELETE) on (.+?) via ([^ ]+) \(fields: (.+)\)$/i', $normalized, $matches)) {
             return $normalized;
@@ -439,6 +442,8 @@ class TimelineController extends Controller
     {
         $search = $filters['search'] ?? null;
 
+        $visibleJobOrdersQuery = JobOrder::query()->where('status', '!=', 'cancelled');
+
         // Get audit logs for customer request activities (JobOrder creation, updates)
         $query = AuditLog::with(['user' => function($q) { $q->with('role'); }])
             ->where('model_type', 'JobOrder')
@@ -458,10 +463,10 @@ class TimelineController extends Controller
         $timelines = $this->applyTimelineFilters($timelines, $filters);
         
         $stats = [
-            'total_jobs' => JobOrder::count(),
-            'pending' => JobOrder::where('status', 'pending')->count(),
-            'in_progress' => JobOrder::where('status', 'in_progress')->count(),
-            'completed' => JobOrder::where('status', 'completed')->count(),
+            'total_jobs' => (clone $visibleJobOrdersQuery)->count(),
+            'pending' => (clone $visibleJobOrdersQuery)->where('status', 'pending')->count(),
+            'in_progress' => (clone $visibleJobOrdersQuery)->where('status', 'in_progress')->count(),
+            'completed' => (clone $visibleJobOrdersQuery)->where('status', 'completed')->count(),
         ];
         
         return [

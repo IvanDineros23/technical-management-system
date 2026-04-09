@@ -105,7 +105,7 @@
         <div class="flex items-center justify-between px-1">
             <p class="text-xs text-gray-500 dark:text-gray-400">
                 {{ $grouped->count() }} {{ Str::plural('job group', $grouped->count()) }}
-                • {{ $totalActivities }} {{ Str::plural('activity', $totalActivities) }}
+                | {{ $totalActivities }} {{ Str::plural('activity', $totalActivities) }}
             </p>
             <div class="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <button
