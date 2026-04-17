@@ -64,18 +64,19 @@ class TimelineController extends Controller
     private function formatAuditLogToTimeline($auditLog)
     {
         $user = $auditLog->user;
-        $userName = $user?->name ?? 'Unknown User';
-        $userRole = $user?->role?->name ?? 'Unknown Role';
+        $isSystemGenerated = !$user;
+        $userName = $user?->name ?? 'System';
+        $userRole = $user?->role?->name ?? 'System';
         $userDept = $user?->department ?? '';
         $modelType = $auditLog->model_type ?? 'Unknown';
         $modelId = $auditLog->model_id ?? 0;
-        
+
         // Initialize customer name and job order reference
         $customerName = 'N/A';
         $joNumber = '';
         $jobStatus = 'pending';
         $jobOrder = null;
-        
+
         // Resolve the job order for direct or related audit log records.
         $jobOrder = $this->resolveJobOrderFromAuditLog($auditLog);
         if ($jobOrder) {
@@ -84,25 +85,25 @@ class TimelineController extends Controller
             $customerName = $jobOrder->customer?->name ?? 'Unknown Customer';
             $jobStatus = $jobOrder->status ?? 'pending';
         }
-        
+
         // Map action to human-readable format
         $actionMap = [
             'CREATE' => 'created',
             'UPDATE' => 'updated',
             'DELETE' => 'deleted',
         ];
-        
+
         $action = $actionMap[$auditLog->action] ?? strtolower($auditLog->action);
-        
+
         // Build description with audit log format
         $description = $auditLog->description;
         if (!$description) {
-            $description = "{$userRole} {$userName}";
+            $description = $isSystemGenerated ? 'System generated activity' : "{$userRole} {$userName}";
             if ($userDept) {
                 $description .= " ({$userDept})";
             }
             $description .= " {$action} ";
-            
+
             if ($modelType === 'JobOrder' && $joNumber) {
                 $description .= "request JO-{$joNumber}";
             } else {
@@ -110,25 +111,25 @@ class TimelineController extends Controller
             }
         }
         $description = $this->humanizeTimelineDescription((string) $description);
-        
+
         // Determine status and type from action
         $status = 'pending';
         $type = 'system';
-        
+
         if ($jobOrder) {
             $type = 'job_order';
             $status = $jobStatus;
         }
-        
+
         // Determine color based on action type
         $actionColor = $this->getActionColor($auditLog->action, $modelType, $jobStatus);
-        
+
         // Extract JO number for title
-        $title = "{$userName} - {$userRole}";
+        $title = $isSystemGenerated ? 'System Activity' : "{$userName} - {$userRole}";
         if ($joNumber) {
             $title = "JO-{$joNumber}";
         }
-        
+
         return [
             'id' => $auditLog->id,
             'type' => $type,
@@ -144,6 +145,7 @@ class TimelineController extends Controller
                 'user_name' => $userName,
                 'user_role' => $userRole,
                 'user_dept' => $userDept,
+                'is_system_generated' => $isSystemGenerated,
                 'action' => $auditLog->action,
                 'model_type' => $modelType,
                 'model_id' => $modelId,

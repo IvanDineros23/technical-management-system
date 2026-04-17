@@ -190,7 +190,7 @@
                     <thead class="border-b border-gray-200 dark:border-gray-700">
                         <tr>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Certificate No.</th>
-                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Work Order</th>
+                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Job Order</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Customer</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Generated Date</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Status</th>
@@ -346,13 +346,13 @@
                                     'text-blue-600 dark:text-blue-400': selectedCertificate?.job_order_id,
                                     'text-orange-600 dark:text-orange-400': !selectedCertificate?.job_order_id
                                 }">
-                                    <span x-show="selectedCertificate?.job_order_id">📋 Generated from Work Order</span>
+                                    <span x-show="selectedCertificate?.job_order_id">📋 Generated from Job Order</span>
                                     <span x-show="!selectedCertificate?.job_order_id">✍️ Manually Created Certificate</span>
                                 </p>
                             </div>
                             
                             <div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Work Order</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Job Order</p>
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedCertificate?.job_order?.job_order_number || 'N/A (Manual Entry)'"></p>
                             </div>
                             <div>
@@ -562,7 +562,7 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="col-span-2">
                                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        Work Order (Optional)
+                                        Job Order (Optional)
                                         <span class="text-xs font-normal text-gray-500">- Leave blank for standalone certificate</span>
                                     </label>
                                     <select 
@@ -570,7 +570,7 @@
                                         @change="hasWorkOrder = $event.target.value !== ''"
                                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     >
-                                        <option value="">-- Manual Entry (No Work Order) --</option>
+                                        <option value="">-- Manual Entry (No Job Order) --</option>
                                         @foreach($jobOrders as $order)
                                             <option value="{{ $order->id }}">{{ $order->job_order_number }} - {{ $order->customer->name ?? 'N/A' }}</option>
                                         @endforeach

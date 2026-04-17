@@ -177,7 +177,7 @@
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Technician Assignments</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Active assigned work orders per technician</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Active assigned job orders per technician</p>
                 </div>
                 <span class="text-xs px-3 py-1.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 font-semibold">
                     {{ $technicianSchedules->count() }} Technicians
@@ -713,7 +713,7 @@
                         
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Work Order Number</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Job Order Number</p>
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedAssignment?.wo_number"></p>
                             </div>
                             <div>

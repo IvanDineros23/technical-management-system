@@ -99,7 +99,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
-        Work Orders
+        Job Orders
     </a>
 
     <a href="{{ route('tech-head.technicians') }}"
@@ -172,10 +172,10 @@
     <!-- ===================== SUMMARY CARDS ===================== -->
     <div class="mb-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Active Work Orders -->
+            <!-- Active Job Orders -->
             <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20 rounded-[20px] shadow-md p-5 border border-blue-200 dark:border-blue-800">
                 <div class="flex flex-col h-full">
-                    <p class="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-2">Active Work Orders</p>
+                    <p class="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-2">Active Job Orders</p>
                     <h3 class="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">{{ $summary['activeWorkOrders'] }}</h3>
                     <p class="text-xs text-blue-600 dark:text-blue-400 mt-auto">Approved + Pending + In Progress</p>
                 </div>
@@ -221,10 +221,10 @@
                 Alerts & Critical Issues
             </h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- Overdue Work Orders -->
+                <!-- Overdue Job Orders -->
                 <div class="rounded-lg bg-rose-50 dark:bg-rose-900/20 border-l-4 border-rose-500 p-4">
                     <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-semibold text-rose-900 dark:text-rose-100">Overdue Work Orders</p>
+                        <p class="text-sm font-semibold text-rose-900 dark:text-rose-100">Overdue Job Orders</p>
                         <span class="inline-block px-2.5 py-0.5 bg-rose-600 text-white text-xs font-bold rounded-full">{{ $overdueWorkOrders->count() }}</span>
                     </div>
                     @forelse($overdueWorkOrders->take(3) as $job)
@@ -280,7 +280,7 @@
         </div>
     </div>
 
-    <!-- ===================== TECHNICIAN OVERVIEW & WORK ORDERS ===================== -->
+    <!-- ===================== TECHNICIAN OVERVIEW & JOB ORDERS ===================== -->
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
         <!-- Technician Overview -->
         <div class="xl:col-span-1">
@@ -320,11 +320,11 @@
             </div>
         </div>
 
-        <!-- Work Orders Overview -->
+        <!-- Job Orders Overview -->
         <div class="xl:col-span-2">
             <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6 h-full">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Work Orders Overview</h3>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Job Orders Overview</h3>
                     <div class="flex gap-2">
                         <a href="{{ route('tech-head.dashboard', ['status' => '']) }}" class="px-3 py-1 text-xs font-medium rounded-full {{ empty($statusFilter) ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">All</a>
                         <a href="{{ route('tech-head.dashboard', ['status' => 'pending']) }}" class="px-3 py-1 text-xs font-medium rounded-full {{ $statusFilter === 'pending' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">Pending</a>
@@ -337,7 +337,7 @@
                         <table class="w-full text-sm">
                             <thead class="border-b border-gray-200 dark:border-gray-700">
                                 <tr class="text-left text-xs text-gray-600 dark:text-gray-400">
-                                    <th class="pb-2 font-semibold">Work Order</th>
+                                    <th class="pb-2 font-semibold">Job Order</th>
                                     <th class="pb-2 font-semibold">Client</th>
                                     <th class="pb-2 font-semibold">Type</th>
                                     <th class="pb-2 font-semibold">Technician</th>
@@ -385,7 +385,7 @@
                         </table>
                     </div>
                 @else
-                    <p class="text-center text-gray-500 dark:text-gray-400 py-8">No work orders found</p>
+                    <p class="text-center text-gray-500 dark:text-gray-400 py-8">No job orders found</p>
                 @endif
             </div>
         </div>
@@ -420,7 +420,7 @@
                                 <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $event['title'] }}</p>
                                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ optional($event['timestamp'])->diffForHumans() }}</span>
                             </div>
-                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ optional($event['job'])->job_order_number ?? 'Work order' }} • {{ optional(optional($event['job'])->customer)->name ?? 'N/A' }}</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ optional($event['job'])->job_order_number ?? 'Job Order' }} • {{ optional(optional($event['job'])->customer)->name ?? 'N/A' }}</p>
                         </div>
                     </div>
                 @empty
@@ -514,7 +514,7 @@
                 <svg class="w-8 h-8 text-blue-600 dark:text-blue-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
-                <p class="text-xs font-semibold text-blue-900 dark:text-blue-200 text-center">Create Work Order</p>
+                <p class="text-xs font-semibold text-blue-900 dark:text-blue-200 text-center">Create Job Order</p>
             </a>
             <a href="{{ route('tech-head.work-orders') }}" class="flex flex-col items-center p-4 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl transition-colors border-2 border-indigo-200 dark:border-indigo-700">
                 <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -544,7 +544,7 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
-                    Create Work Order
+                    Create Job Order
                 </a>
                 <a href="{{ route('tech-head.work-orders') }}"
                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-600 text-indigo-700 dark:text-white text-sm font-semibold shadow hover:bg-indigo-100 dark:hover:bg-indigo-700 transition-colors border-2 border-indigo-200 dark:border-indigo-500">
@@ -568,7 +568,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4">
         <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-2">
-                <p class="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">Active Work Orders</p>
+                <p class="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">Active Job Orders</p>
                 <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                 </svg>
@@ -645,7 +645,7 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="rounded-xl border-2 border-rose-300 dark:border-rose-700 bg-rose-50 dark:bg-rose-900/30 p-4">
-                        <p class="text-sm font-semibold text-rose-900 dark:text-rose-100 mb-3">Overdue work orders</p>
+                        <p class="text-sm font-semibold text-rose-900 dark:text-rose-100 mb-3">Overdue job orders</p>
                         <div class="space-y-3">
                             @forelse($overdueWorkOrders as $job)
                                 <div class="flex items-start justify-between bg-white dark:bg-gray-700/50 rounded-lg p-3 border border-rose-200 dark:border-rose-800/50">
@@ -659,7 +659,7 @@
                                     </div>
                                 </div>
                             @empty
-                                <p class="text-sm text-gray-600 dark:text-gray-300">No overdue work orders</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-300">No overdue job orders</p>
                             @endforelse
                         </div>
                     </div>
@@ -713,7 +713,7 @@
             <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow p-5">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Work Orders Overview</h3>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Job Orders Overview</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400">Quick filters and latest jobs</p>
                     </div>
                     <div class="flex flex-wrap gap-2">
@@ -747,7 +747,7 @@
                     <table class="w-full text-sm">
                         <thead>
                         <tr class="text-left text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/40 border-b-2 border-gray-200 dark:border-gray-700 uppercase tracking-wide">
-                            <th class="px-3 py-3">Work Order</th>
+                            <th class="px-3 py-3">Job Order</th>
                             <th class="px-3 py-3">Client / Location</th>
                             <th class="px-3 py-3">Type</th>
                             <th class="px-3 py-3">Technician</th>
@@ -798,7 +798,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-3 py-8 text-center text-gray-600 dark:text-gray-400 font-medium">No work orders found</td>
+                                <td colspan="7" class="px-3 py-8 text-center text-gray-600 dark:text-gray-400 font-medium">No job orders found</td>
                             </tr>
                         @endforelse
                         </tbody>
@@ -864,7 +864,7 @@
                                 @forelse($items as $assignment)
                                     <div class="flex items-center justify-between text-sm bg-gray-50 dark:bg-gray-900/40 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
                                         <div>
-                                            <p class="font-semibold text-gray-900 dark:text-gray-100">{{ $assignment->jobOrder?->job_order_number ?? 'Work Order' }}</p>
+                                            <p class="font-semibold text-gray-900 dark:text-gray-100">{{ $assignment->jobOrder?->job_order_number ?? 'Job Order' }}</p>
                                             <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ $assignment->jobOrder?->customer?->name ?? 'N/A' }} • {{ $assignment->location ?? 'On-site' }}</p>
                                         </div>
                                         <p class="text-xs text-gray-700 dark:text-gray-300 font-semibold">{{ $assignment->scheduled_time ? \Carbon\Carbon::parse($assignment->scheduled_time)->setTimezone('Asia/Manila')->format('h:i A') : '--' }}</p>
@@ -922,7 +922,7 @@
                                 <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $event['title'] }}</p>
                                 <span class="text-[11px] text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap">{{ optional($event['timestamp'])->diffForHumans() }}</span>
                             </div>
-                            <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">{{ optional($event['job'])->job_order_number ?? 'Work order' }} • {{ optional(optional($event['job'])->customer)->name ?? 'N/A' }}</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">{{ optional($event['job'])->job_order_number ?? 'Job Order' }} • {{ optional(optional($event['job'])->customer)->name ?? 'N/A' }}</p>
                             <div class="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] text-gray-600 dark:text-gray-400">
                                 <span class="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-semibold">{{ ucfirst(str_replace('_', ' ', $event['status'] ?? '')) }}</span>
                                 @if(!empty($event['user']))
@@ -945,7 +945,7 @@
             <div class="grid grid-cols-1 gap-3">
                 <button type="button" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-600 text-blue-700 dark:text-white font-semibold shadow hover:bg-blue-100 dark:hover:bg-blue-700 transition-colors border-2 border-blue-600 dark:border-blue-500">
                     <span class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-500 text-blue-700 dark:text-white flex items-center justify-center font-bold">+</span>
-                    Create Work Order
+                    Create Job Order
                 </button>
                 <button type="button" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-600 text-amber-700 dark:text-white font-semibold shadow hover:bg-amber-100 dark:hover:bg-amber-700 transition-colors border-2 border-amber-600 dark:border-amber-500">
                     <span class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500 text-amber-700 dark:text-white flex items-center justify-center font-bold">⇄</span>

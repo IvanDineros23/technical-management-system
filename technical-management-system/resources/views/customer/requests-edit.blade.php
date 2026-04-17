@@ -36,7 +36,7 @@
        class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 12l2 2 4-4M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  d="M9 12.75L11.25 15 15 9.75M12 3l7.5 4.5v5.25c0 4.5-3.09 8.69-7.5 9.75-4.41-1.06-7.5-5.25-7.5-9.75V7.5L12 3z"/>
         </svg>
         Verify Certificate
     </a>

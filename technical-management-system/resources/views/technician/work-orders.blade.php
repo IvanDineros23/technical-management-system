@@ -1,9 +1,8 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Work Orders')
+@section('title', 'Job Orders')
 
-@section('page-title', 'Work Orders')
-@section('page-subtitle', 'View all work orders')
+@section('page-title', 'Job Orders')
 
 @section('head')
     <script>
@@ -54,7 +53,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
-        Work Orders
+        Job Orders
     </a>
 
     <a href="{{ route('technician.equipment') }}"
@@ -128,13 +127,13 @@
 
         <!-- Header -->
         <div class="mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Work Orders</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">All work orders you're involved with</p>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Job Orders</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">All job orders you're involved with</p>
         </div>
 
         <!-- Filter Options -->
         <form method="GET" action="{{ route('technician.work-orders') }}" class="mb-12 flex flex-wrap gap-4 items-center">
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search work orders..." 
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search job orders..." 
                    class="flex-1 min-w-[260px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm placeholder-gray-500 dark:placeholder-gray-400">
             
             <select name="status"
@@ -262,8 +261,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                     </svg>
-                    <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No work orders found</h3>
-                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No work orders available at this time.</p>
+                    <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No job orders found</h3>
+                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No job orders available at this time.</p>
                 </div>
             @endif
         </div>
@@ -293,7 +292,7 @@
                 >
                     <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4 mb-5">
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Work Order Preview</h3>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Job Order Preview</h3>
                             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="previewOrder ? previewOrder.job_order_number : ''"></p>
                         </div>
                         <button type="button" @click="closePreview()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">

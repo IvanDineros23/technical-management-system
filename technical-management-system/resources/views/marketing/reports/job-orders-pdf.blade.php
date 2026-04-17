@@ -137,7 +137,7 @@
                                 {{ ucfirst(str_replace('_', ' ', $jo->status)) }}
                             </span>
                         </td>
-                        <td>₱{{ number_format($jo->grand_total, 2) }}</td>
+                        <td>₱{{ number_format((float) ($jo->grand_total ?? $jo->total_amount ?? 0), 2) }}</td>
                         <td>{{ $jo->created_at->format('M d, Y') }}</td>
                     </tr>
                 @endforeach
@@ -147,8 +147,8 @@
         <div class="summary">
             <h3>Summary</h3>
             <p><strong>Total Job Orders:</strong> {{ $jobOrders->count() }}</p>
-            <p><strong>Total Amount:</strong> ₱{{ number_format($jobOrders->sum('grand_total'), 2) }}</p>
-            <p><strong>Average Amount:</strong> ₱{{ number_format($jobOrders->avg('grand_total'), 2) }}</p>
+            <p><strong>Total Amount:</strong> ₱{{ number_format((float) $jobOrders->sum(function ($jobOrder) { return $jobOrder->grand_total ?? $jobOrder->total_amount ?? 0; }), 2) }}</p>
+            <p><strong>Average Amount:</strong> ₱{{ number_format((float) $jobOrders->avg(function ($jobOrder) { return $jobOrder->grand_total ?? $jobOrder->total_amount ?? 0; }), 2) }}</p>
             <p><strong>Completed:</strong> {{ $jobOrders->where('status', 'completed')->count() }}</p>
             <p><strong>In Progress:</strong> {{ $jobOrders->where('status', 'in_progress')->count() }}</p>
             <p><strong>Pending:</strong> {{ $jobOrders->where('status', 'pending')->count() }}</p>

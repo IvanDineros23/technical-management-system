@@ -371,116 +371,107 @@
             @endif
         </form>
 
-        <!-- Customers Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            @forelse($customers as $customer)
-            <!-- Customer Card -->
-            <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                        <span class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ strtoupper(substr($customer->name, 0, 2)) }}</span>
-                    </div>
-                    <!-- Menu Button -->
-                    <div class="relative" data-menu>
-                        <button @click="toggleMenu({{ $customer->id }})" 
-                                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
-                            </svg>
-                        </button>
-                        
-                            <!-- Dropdown Menu -->
-                            <div x-show="openMenuId === {{ $customer->id }}" x-cloak
-                             x-transition:enter="transition ease-out duration-100"
-                             x-transition:enter-start="opacity-0 scale-95"
-                             x-transition:enter-end="opacity-100 scale-100"
-                             x-transition:leave="transition ease-in duration-75"
-                             x-transition:leave-start="opacity-100 scale-100"
-                             x-transition:leave-end="opacity-0 scale-95"
-                             class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-2 z-40">
-                            
-                            <button @click="openEditModal({
-                                id: {{ $customer->id }},
-                                name: '{{ $customer->name }}',
-                                email: '{{ $customer->email }}',
-                                phone: '{{ $customer->phone }}',
-                                address: '{{ $customer->address }}',
-                                city: '{{ $customer->city }}',
-                                country: '{{ $customer->country }}',
-                                contact_person: '{{ $customer->contact_person }}',
-                                tax_id: '{{ $customer->tax_id }}'
-                            })"
-                                    class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                </svg>
-                                Edit
-                            </button>
-                            
-                            <button @click="deleteCustomer({{ $customer->id }}, '{{ $customer->name }}')"
-                                    class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                </svg>
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">{{ $customer->name }}</h3>
-                
-                <div class="space-y-2 text-sm">
-                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                        </svg>
-                        {{ $customer->email ?? 'N/A' }}
-                    </div>
-                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                        </svg>
-                        {{ $customer->phone ?? 'N/A' }}
-                    </div>
-                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        {{ $customer->address ?? 'N/A' }}
-                    </div>
-                </div>
-
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-600 dark:text-gray-400">Total Orders:</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">{{ $customer->job_orders_count ?? 0 }}</span>
-                    </div>
-                </div>
-
-                <div class="mt-4 flex gap-2">
-                    <button @click='openDetailsModal(@json($customer))' class="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                        View Details
-                    </button>
-                    <a href="{{ route('marketing.create-job-order', [
-                        'customer_name' => $customer->name,
-                        'email' => $customer->email,
-                        'phone' => $customer->phone,
-                        'service_address' => $customer->address,
-                        'city' => $customer->city,
-                        'province' => $customer->province ?? null
-                    ]) }}" class="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center">
-                        Create JO
-                    </a>
-                </div>
+        <!-- Customers List -->
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-900/30 border-b border-gray-200 dark:border-gray-700">
+                        <tr>
+                            <th class="px-6 py-3 text-center text-xs font-semibold tracking-wide uppercase text-gray-500 dark:text-gray-400">Customer</th>
+                            <th class="px-6 py-3 text-center text-xs font-semibold tracking-wide uppercase text-gray-500 dark:text-gray-400">Contact</th>
+                            <th class="px-6 py-3 text-center text-xs font-semibold tracking-wide uppercase text-gray-500 dark:text-gray-400">Address</th>
+                            <th class="px-6 py-3 text-center text-xs font-semibold tracking-wide uppercase text-gray-500 dark:text-gray-400">Orders</th>
+                            <th class="px-6 py-3 text-center text-xs font-semibold tracking-wide uppercase text-gray-500 dark:text-gray-400">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        @forelse($customers as $customer)
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                                            <span class="text-sm font-bold text-blue-600 dark:text-blue-400">{{ strtoupper(substr($customer->name, 0, 2)) }}</span>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $customer->name }}</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $customer->business_name ?: 'No business name' }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="text-sm text-gray-700 dark:text-gray-200">{{ $customer->email ?? 'N/A' }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $customer->phone ?? 'N/A' }}</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="text-sm text-gray-700 dark:text-gray-200">{{ $customer->address ?? 'N/A' }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ trim(($customer->city ?? '') . ', ' . ($customer->state ?? ''), ', ') ?: 'No city/state' }}</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                        {{ $customer->job_orders_count ?? 0 }} total
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button @click='openDetailsModal(@json($customer))' class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                            View Details
+                                        </button>
+                                        <a href="{{ route('marketing.create-job-order', [
+                                            'customer_name' => $customer->name,
+                                            'email' => $customer->email,
+                                            'phone' => $customer->phone,
+                                            'service_address' => $customer->address,
+                                            'city' => $customer->city,
+                                            'province' => $customer->province ?? null
+                                        ]) }}" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                            Create JO
+                                        </a>
+                                        <div class="relative" data-menu>
+                                            <button @click="toggleMenu({{ $customer->id }})" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                                                </svg>
+                                            </button>
+                                            <div x-show="openMenuId === {{ $customer->id }}" x-cloak
+                                                x-transition:enter="transition ease-out duration-100"
+                                                x-transition:enter-start="opacity-0 scale-95"
+                                                x-transition:enter-end="opacity-100 scale-100"
+                                                x-transition:leave="transition ease-in duration-75"
+                                                x-transition:leave-start="opacity-100 scale-100"
+                                                x-transition:leave-end="opacity-0 scale-95"
+                                                class="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-2 z-40">
+                                                <button @click="openEditModal(@json($customer))" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                    </svg>
+                                                    Edit
+                                                </button>
+                                                <button @click="deleteCustomer({{ $customer->id }}, '{{ $customer->name }}')" class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors flex items-center gap-2">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                    </svg>
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">No customers found</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-        @empty
-            <div class="col-span-3 p-12 text-center text-gray-500 dark:text-gray-400">
-                <p>No customers found</p>
-            </div>
-        @endforelse
-    </div>
+
+            @if($customers->hasPages())
+                <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+                    {{ $customers->links() }}
+                </div>
+            @endif
+        </div>
 
     <!-- Add Customer Modal -->
     <div x-show="showModal" 
@@ -490,7 +481,7 @@
          role="dialog" 
          aria-modal="true">
         <!-- Background overlay -->
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-center justify-center min-h-screen p-4 text-center">
             <div x-show="showModal" 
                  x-transition:enter="ease-out duration-300"
                  x-transition:enter-start="opacity-0"
@@ -714,7 +705,7 @@
          role="dialog" 
          aria-modal="true">
         <!-- Background overlay -->
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-center justify-center min-h-screen p-4 text-center">
             <div x-show="showEditModal" 
                  x-transition:enter="ease-out duration-300"
                  x-transition:enter-start="opacity-0"
@@ -938,7 +929,7 @@
          role="dialog" 
          aria-modal="true">
         <!-- Background overlay -->
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-center justify-center min-h-screen w-full p-4 text-center">
             <div x-show="showDeleteModal" 
                  x-transition:enter="ease-out duration-300"
                  x-transition:enter-start="opacity-0"
@@ -1024,7 +1015,7 @@
          x-cloak
          class="fixed inset-0 z-50 overflow-y-auto"
          role="dialog" aria-modal="true">
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-center justify-center min-h-screen w-full px-4 py-6 text-center">
             <div x-show="showDetailsModal"
                  x-transition:enter="ease-out duration-300"
                  x-transition:enter-start="opacity-0"
@@ -1035,8 +1026,6 @@
                  @click="closeDetailsModal()"
                  class="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 transition-opacity" aria-hidden="true"></div>
 
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
             <div x-show="showDetailsModal"
                  x-transition:enter="ease-out duration-300"
                  x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
@@ -1044,7 +1033,7 @@
                  x-transition:leave="ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                  class="mx-auto w-[96vw] max-w-6xl bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all flex flex-col max-h-[88vh]">
 
                 <!-- Modal Header -->
                 <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
@@ -1064,8 +1053,8 @@
                 </div>
 
                 <!-- Modal Body -->
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2" x-text="detailsCustomer.name"></h3>
+                <div class="p-6 overflow-y-auto">
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2" x-text="detailsCustomer.name"></h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400" x-show="detailsCustomer.business_name" x-text="detailsCustomer.business_name"></p>
 
                     <div x-show="missingFields.length" class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
@@ -1076,61 +1065,67 @@
                         </button>
                     </div>
 
-                    <div class="space-y-2 text-sm">
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 text-sm">
+                        <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400 lg:col-span-2 rounded-lg bg-gray-50 dark:bg-gray-700/40 px-3 py-2">
+                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                             </svg>
+                            </span>
                             <span x-text="detailsCustomer.email ?? 'N/A'"></span>
                         </div>
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400 rounded-lg bg-gray-50 dark:bg-gray-700/40 px-3 py-2">
+                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                             </svg>
+                            </span>
                             <span x-text="detailsCustomer.phone ?? 'N/A'"></span>
                         </div>
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <div class="flex items-center gap-3 text-gray-600 dark:text-gray-400 rounded-lg bg-gray-50 dark:bg-gray-700/40 px-3 py-2">
+                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                             </svg>
+                            </span>
                             <span x-text="detailsCustomer.address ?? 'N/A'"></span>
                         </div>
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <span class="font-medium">City:</span>
+                        <div class="rounded-lg bg-gray-50 dark:bg-gray-700/40 px-3 py-2 flex items-center justify-between text-gray-600 dark:text-gray-300">
+                            <span class="font-medium">City</span>
                             <span x-text="detailsCustomer.city ?? 'N/A'"></span>
                         </div>
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <span class="font-medium">Province/State:</span>
+                        <div class="rounded-lg bg-gray-50 dark:bg-gray-700/40 px-3 py-2 flex items-center justify-between text-gray-600 dark:text-gray-300">
+                            <span class="font-medium">Province/State</span>
                             <span x-text="detailsCustomer.state ?? 'N/A'"></span>
                         </div>
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <span class="font-medium">Postal Code:</span>
+                        <div class="rounded-lg bg-gray-50 dark:bg-gray-700/40 px-3 py-2 flex items-center justify-between text-gray-600 dark:text-gray-300">
+                            <span class="font-medium">Postal Code</span>
                             <span x-text="detailsCustomer.postal_code ?? 'N/A'"></span>
                         </div>
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <span class="font-medium">Country:</span>
+                        <div class="rounded-lg bg-gray-50 dark:bg-gray-700/40 px-3 py-2 flex items-center justify-between text-gray-600 dark:text-gray-300">
+                            <span class="font-medium">Country</span>
                             <span x-text="detailsCustomer.country ?? 'Philippines'"></span>
                         </div>
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <span class="font-medium">Contact Person:</span>
+                        <div class="rounded-lg bg-gray-50 dark:bg-gray-700/40 px-3 py-2 flex items-center justify-between text-gray-600 dark:text-gray-300">
+                            <span class="font-medium">Contact Person</span>
                             <span x-text="detailsCustomer.contact_person ?? 'N/A'"></span>
                         </div>
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <span class="font-medium">Industry:</span>
+                        <div class="rounded-lg bg-gray-50 dark:bg-gray-700/40 px-3 py-2 flex items-center justify-between text-gray-600 dark:text-gray-300">
+                            <span class="font-medium">Industry</span>
                             <span x-text="detailsCustomer.industry_type ?? 'N/A'"></span>
                         </div>
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <span class="font-medium">Tax ID:</span>
+                        <div class="rounded-lg bg-gray-50 dark:bg-gray-700/40 px-3 py-2 flex items-center justify-between text-gray-600 dark:text-gray-300">
+                            <span class="font-medium">Tax ID</span>
                             <span x-text="detailsCustomer.tax_id ?? 'N/A'"></span>
                         </div>
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <span class="font-medium">Credit Terms:</span>
+                        <div class="rounded-lg bg-gray-50 dark:bg-gray-700/40 px-3 py-2 flex items-center justify-between text-gray-600 dark:text-gray-300">
+                            <span class="font-medium">Credit Terms</span>
                             <span x-text="detailsCustomer.credit_terms ?? 'N/A'"></span>
                         </div>
-                        <div class="flex items-start gap-2 text-gray-600 dark:text-gray-400">
-                            <span class="font-medium">Notes:</span>
-                            <span x-text="detailsCustomer.notes ?? 'N/A'"></span>
+                        <div class="rounded-lg bg-gray-50 dark:bg-gray-700/40 px-3 py-2 flex items-start justify-between text-gray-600 dark:text-gray-300 lg:col-span-2">
+                            <span class="font-medium">Notes</span>
+                            <span class="ml-4 text-right" x-text="detailsCustomer.notes ?? 'N/A'"></span>
                         </div>
                     </div>
 

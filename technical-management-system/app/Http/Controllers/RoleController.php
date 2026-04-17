@@ -16,13 +16,10 @@ class RoleController extends Controller
 
         // Define all available modules/processes in the system
         $modules = [
-            'View Job Orders' => 'view_job_orders',
-            'Create Job Orders' => 'create_job_orders',
-            'Edit Job Orders' => 'edit_job_orders',
+            'View Job Orders' => 'view_work_orders',
+            'Create Job Orders' => 'create_work_orders',
+            'Edit Job Orders' => 'edit_work_orders',
             'Approve Job Orders' => 'approve_job_orders',
-            'View Work Orders' => 'view_work_orders',
-            'Create Work Orders' => 'create_work_orders',
-            'Edit Work Orders' => 'edit_work_orders',
             'View Calibrations' => 'view_calibrations',
             'Perform Calibrations' => 'perform_calibrations',
             'Edit Calibrations' => 'edit_calibrations',
@@ -54,9 +51,9 @@ class RoleController extends Controller
         $permissions = [
             'Administrator' => array_values($modules), // Full access
             'Marketing' => [
-                'view_job_orders', 
-                'create_job_orders', 
-                'edit_job_orders',
+                'view_work_orders', 
+                'create_work_orders', 
+                'edit_work_orders',
                 'view_customers',
                 'view_reports',
             ],
@@ -99,7 +96,7 @@ class RoleController extends Controller
                 'manage_schedule',
             ],
             'Signatory' => [
-                'view_job_orders', 
+                'view_work_orders', 
                 'approve_job_orders',
                 'view_work_orders',
                 'view_calibrations',
@@ -110,7 +107,7 @@ class RoleController extends Controller
                 'view_timeline',
             ],
             'Accounting' => [
-                'view_job_orders',
+                'view_work_orders',
                 'view_accounting',
                 'create_accounting',
                 'edit_accounting',
@@ -121,7 +118,7 @@ class RoleController extends Controller
                 'view_timeline',
             ],
             'Customer' => [
-                'view_job_orders',
+                'view_work_orders',
                 'view_certificates',
             ],
         ];

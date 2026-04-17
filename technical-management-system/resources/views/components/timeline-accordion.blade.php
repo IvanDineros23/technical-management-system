@@ -190,6 +190,7 @@
                                 };
                                 $metaName = data_get($entry, 'metadata.user_name');
                                 $metaRole = data_get($entry, 'metadata.user_role');
+                                $isSystemGenerated = (bool) data_get($entry, 'metadata.is_system_generated', false);
                                 $metaAction = data_get($entry, 'metadata.action');
                                 $metaModelType = data_get($entry, 'metadata.model_type');
                                 $entryDate = data_get($entry, 'date');
@@ -227,11 +228,11 @@
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7"/>
                                             </svg>
-                                            {{ $metaName }}
+                                            {{ $isSystemGenerated ? 'System' : $metaName }}
                                         </span>
                                     @endif
                                     @if($metaRole)
-                                        <span>{{ $metaRole }}</span>
+                                        <span>{{ $isSystemGenerated ? 'Automated' : $metaRole }}</span>
                                     @endif
                                     @if($metaModelType)
                                         <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">

@@ -113,13 +113,15 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
     Route::get('/job-orders', function (Illuminate\Http\Request $request) {
         $query = \App\Models\JobOrder::with(['customer', 'creator.role', 'items']);
 
-        // Hide cancelled job orders from marketing listing
-        $query->where('status', '!=', 'cancelled');
-
         $status = $request->string('status')->toString();
-        $allowedStatuses = ['pending', 'for_accounting_approval', 'approved', 'in_progress', 'completed', 'rejected'];
-        if (in_array($status, $allowedStatuses, true)) {
+        $allowedStatuses = ['pending', 'for_accounting_approval', 'approved', 'in_progress', 'completed', 'rejected', 'cancelled'];
+        if ($status === 'cancelled') {
+            $query->where('status', 'cancelled');
+        } elseif (in_array($status, $allowedStatuses, true)) {
             $query->where('status', $status);
+        } else {
+            // Hide cancelled job orders from the default listing
+            $query->where('status', '!=', 'cancelled');
         }
 
         $search = trim($request->string('q')->toString());
@@ -919,7 +921,7 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
             });
         }
         
-        $customers = $query->get();
+        $customers = $query->orderBy('name')->paginate(8)->withQueryString();
         return view('marketing.customers', compact('customers'));
     })->name('customers');
     
@@ -2945,6 +2947,13 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
 
         // Show all work orders (assigned and unassigned)
         
+        // Default listing should exclude cancelled work orders unless explicitly filtered
+        if ($status === 'cancelled') {
+            $query->where('status', 'cancelled');
+        } else {
+            $query->where('status', '!=', 'cancelled');
+        }
+
         // Search filter
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -2958,7 +2967,7 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         }
         
         // Status filter
-        if ($status) {
+        if ($status && $status !== 'cancelled') {
             $query->where('status', $status);
         }
         

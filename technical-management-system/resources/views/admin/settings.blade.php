@@ -11,7 +11,7 @@
 @endsection
 
 @section('content')
-<div class="space-y-6" x-data="{ activeTab: '{{ session('settings_tab', request('tab', 'general')) }}', showScheduleForm: false, scheduleFrequency: '{{ $backupSchedule['frequency'] ?? 'daily' }}' }">
+<div class="space-y-6" x-data="{ activeTab: '{{ session('settings_tab', request('tab', 'general')) }}', showScheduleForm: false, scheduleFrequency: '{{ $backupSchedule['frequency'] ?? 'daily' }}', showOptimizeDatabaseModal: false, showClearLogsModal: false }">
     <!-- Header -->
     <div>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">System Settings</h2>
@@ -357,7 +357,7 @@
                                 <p class="font-medium text-gray-900 dark:text-white">Optimize Database</p>
                                 <p class="text-sm text-gray-600 dark:text-gray-400">Analyze and optimize database tables</p>
                             </div>
-                            <form action="{{ route('admin.settings.database.optimize') }}" method="POST" class="inline" onsubmit="if(!confirm('Optimize all database tables now?')) return false; window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Optimizing database tables...', type: 'info' } })); return true;">
+                            <form x-ref="optimizeDatabaseForm" action="{{ route('admin.settings.database.optimize') }}" method="POST" class="inline" @submit.prevent="showOptimizeDatabaseModal = true">
                                 @csrf
                                 <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Optimize</button>
                             </form>
@@ -367,7 +367,7 @@
                                 <p class="font-medium text-gray-900 dark:text-white">Clear Logs</p>
                                 <p class="text-sm text-gray-600 dark:text-gray-400">Delete old system logs (older than 30 days)</p>
                             </div>
-                            <form action="{{ route('admin.settings.logs.clear') }}" method="POST" class="inline" onsubmit="if(!confirm('Are you sure you want to delete old logs?')) return false; window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Clearing old logs...', type: 'warning' } })); return true;">
+                            <form x-ref="clearLogsForm" action="{{ route('admin.settings.logs.clear') }}" method="POST" class="inline" @submit.prevent="showClearLogsModal = true">
                                 @csrf
                                 <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Clear</button>
                             </form>
@@ -399,5 +399,71 @@
             </div>
         </div>
     </div>
+
+    <template x-teleport="body">
+        <div
+            x-show="showOptimizeDatabaseModal"
+            x-cloak
+            x-transition.opacity
+            class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4"
+            @keydown.escape.window="showOptimizeDatabaseModal = false"
+            @click.self="showOptimizeDatabaseModal = false"
+        >
+            <div x-transition class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-800">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Optimize Database</h3>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Optimize all database tables now?</p>
+
+                <div class="mt-6 flex justify-end gap-3">
+                    <button
+                        type="button"
+                        class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                        @click="showOptimizeDatabaseModal = false"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                        @click="window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Optimizing database tables...', type: 'info' } })); showOptimizeDatabaseModal = false; $refs.optimizeDatabaseForm.submit();"
+                    >
+                        Yes, optimize now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template x-teleport="body">
+        <div
+            x-show="showClearLogsModal"
+            x-cloak
+            x-transition.opacity
+            class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4"
+            @keydown.escape.window="showClearLogsModal = false"
+            @click.self="showClearLogsModal = false"
+        >
+            <div x-transition class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-800">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Clear Old Logs</h3>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Are you sure you want to delete old logs?</p>
+
+                <div class="mt-6 flex justify-end gap-3">
+                    <button
+                        type="button"
+                        class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                        @click="showClearLogsModal = false"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+                        @click="window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Clearing old logs...', type: 'warning' } })); showClearLogsModal = false; $refs.clearLogsForm.submit();"
+                    >
+                        Yes, clear logs
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>
 @endsection

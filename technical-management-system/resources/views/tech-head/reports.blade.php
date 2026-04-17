@@ -470,7 +470,7 @@
                     <div class="p-6 space-y-4" x-show="selectedReport">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4">
-                                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Work Order Information</h4>
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Job Order Information</h4>
                                 <div class="space-y-2 text-sm">
                                     <div>
                                         <p class="text-gray-500 dark:text-gray-400">WO Number:</p>

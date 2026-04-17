@@ -31,7 +31,7 @@
             }" x-cloak>
         <div class="mb-6">
             <a href="{{ route('tech-head.work-orders') }}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm mb-2 inline-block">
-                ← Back to Work Orders
+                ← Back to Job Orders
             </a>
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $job->job_order_number }}</h2>
             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Job Order Details & Tracking</p>

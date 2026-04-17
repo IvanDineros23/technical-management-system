@@ -1,9 +1,9 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Work Orders')
+@section('title', 'Job Orders')
 
-@section('page-title', 'Work Orders')
-@section('page-subtitle', 'Manage and monitor all work orders')
+@section('page-title', 'Job Orders')
+@section('page-subtitle', 'Manage and monitor all job orders')
 
 @section('sidebar-nav')
     @include('tech-head.partials.sidebar')
@@ -18,6 +18,8 @@
         showDetails: false,
         showApproval: false,
         showTimeline: false,
+        openActionMenuId: null,
+        openActionMenuPlacement: 'down',
         selectedId: null,
         selectedOrder: null,
         signatureData: '',
@@ -29,6 +31,11 @@
             this.$watch('showDetails', value => this.handleModalState(value));
             this.$watch('showApproval', value => this.handleModalState(value));
             this.$watch('showTimeline', value => this.handleModalState(value));
+            window.addEventListener('click', (event) => {
+                if (this.openActionMenuId && !event.target.closest('[data-action-menu]')) {
+                    this.openActionMenuId = null;
+                }
+            });
         },
         handleModalState(isOpen) {
             if (isOpen) {
@@ -82,6 +89,28 @@
         openTimeline(order) {
             this.selectedOrder = order;
             this.showTimeline = true;
+        },
+        toggleActionMenu(id, event) {
+            if (this.openActionMenuId === id) {
+                this.openActionMenuId = null;
+                return;
+            }
+
+            const button = event?.currentTarget;
+            const rect = button ? button.getBoundingClientRect() : null;
+            const estimatedMenuHeight = 280;
+
+            if (rect && rect.bottom + estimatedMenuHeight > window.innerHeight && rect.top > estimatedMenuHeight) {
+                this.openActionMenuPlacement = 'up';
+            } else {
+                this.openActionMenuPlacement = 'down';
+            }
+
+            this.openActionMenuId = id;
+        },
+        closeActionMenu() {
+            this.openActionMenuId = null;
+            this.openActionMenuPlacement = 'down';
         },
         normalizeStatus(status) {
             return status === 'pending_approval' ? 'for_accounting_approval' : status;
@@ -373,7 +402,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                 </svg>
-                <span>Create Work Order</span>
+                <span>Create Job Order</span>
             </button>
         </div>
         
@@ -413,7 +442,7 @@
                    class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'completed' ? 'bg-emerald-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
                     Completed
                 </a>
-                
+
                 <a href="{{ route('tech-head.work-orders', ['status' => 'cancelled'] + request()->except('status')) }}" 
                    class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'cancelled' ? 'bg-rose-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
                     Cancelled
@@ -468,7 +497,7 @@
         
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-base font-bold text-slate-900 dark:text-white">Work Order List</h3>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Job Order List</h3>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full">
@@ -601,62 +630,78 @@
                                     <p class="text-sm text-gray-700 dark:text-gray-300">{{ $order->required_date ? $order->required_date->setTimezone('Asia/Manila')->format('M d, Y') : $order->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                                 </td>
                                 <td class="py-3 text-center" @click.stop>
-                                    <div class="flex gap-2 justify-center flex-wrap">
-                                        @if($order->certificates_count > 0)
-                                            <a href="{{ route('tech-head.certificates', ['status' => 'generated']) }}" class="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800/50 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm" title="Certificate Generated">
-                                                <span class="flex items-center gap-1">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
-                                                    </svg>
-                                                    Certificate
-                                                </span>
-                                            </a>
-                                        @endif
-                                        
-                                        <button @click="openTimeline({{ json_encode($orderPayload) }})" class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm" title="View Timeline">
-                                            <span class="flex items-center gap-1">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                </svg>
-                                                Timeline
-                                            </span>
+                                    <div class="relative inline-block text-left" data-action-menu>
+                                        <button
+                                            type="button"
+                                            @click.stop="toggleActionMenu({{ $order->id }}, $event)"
+                                            class="inline-flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                                            title="Open actions"
+                                        >
+                                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                                            </svg>
                                         </button>
-                                        
-                                        @if($order->status === 'for_accounting_approval' || $order->status === 'completed')
-                                            <button @click="openApproval({{ json_encode($orderPayload) }})" class="px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800/50 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm animate-pulse" title="Approve & Sign">
-                                                <span class="flex items-center gap-1">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+                                        <div
+                                            x-show="openActionMenuId === {{ $order->id }}"
+                                            x-cloak
+                                            x-transition:enter="transition ease-out duration-150"
+                                            x-transition:enter-start="opacity-0 scale-95 translate-y-1"
+                                            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                                            x-transition:leave="transition ease-in duration-100"
+                                            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                                            x-transition:leave-end="opacity-0 scale-95 translate-y-1"
+                                            class="right-0 z-50 w-56 origin-top-right rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-xl overflow-hidden"
+                                            :class="openActionMenuPlacement === 'up' ? 'absolute bottom-full mb-2' : 'absolute top-full mt-2'"
+                                        >
+                                            <div class="p-2 space-y-1">
+                                                @if($order->certificates_count > 0)
+                                                    <a href="{{ route('tech-head.certificates', ['status' => 'generated']) }}" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                                                        </svg>
+                                                        Certificate
+                                                    </a>
+                                                @endif
+
+                                                <button @click="openTimeline({{ json_encode($orderPayload) }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    </svg>
+                                                    Timeline
+                                                </button>
+
+                                                @if($order->status === 'for_accounting_approval' || $order->status === 'completed')
+                                                    <button @click="openApproval({{ json_encode($orderPayload) }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                        </svg>
+                                                        Approve
+                                                    </button>
+                                                @endif
+
+                                                <button @click="openEdit({{ json_encode($editPayload) }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                    </svg>
+                                                    Edit
+                                                </button>
+
+                                                <button @click="openAssign({{ $order->id }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                                    </svg>
+                                                    Assign
+                                                </button>
+
+                                                <button @click="openStatus({{ $order->id }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                                     </svg>
-                                                    Approve
-                                                </span>
-                                            </button>
-                                        @endif
-                                        
-                                        <button @click="openEdit({{ json_encode($editPayload) }})" class="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/50 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm">
-                                            <span class="flex items-center gap-1">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                </svg>
-                                                Edit
-                                            </span>
-                                        </button>
-                                        <button @click="openAssign({{ $order->id }})" class="px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/50 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm">
-                                            <span class="flex items-center gap-1">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                                                </svg>
-                                                Assign
-                                            </span>
-                                        </button>
-                                        <button @click="openStatus({{ $order->id }})" class="px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/50 rounded-md text-xs font-semibold transition-all duration-150 hover:shadow-sm">
-                                            <span class="flex items-center gap-1">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                </svg>
-                                                Status
-                                            </span>
-                                        </button>
+                                                    Status
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -666,7 +711,7 @@
                                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                     </svg>
-                                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No work orders found</p>
+                                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No job orders found</p>
                                 </td>
                             </tr>
                         @endforelse
@@ -679,7 +724,7 @@
             </div>
         </div>
 
-        <!-- Work Order Details Modal -->
+        <!-- Job Order Details Modal -->
         <div 
             x-show="showDetails" 
             x-cloak
@@ -704,7 +749,7 @@
                 >
                     <div class="p-6 space-y-4">
                         <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Work Order Details</h3>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Job Order Details</h3>
                             <button @click="showDetails=false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -714,7 +759,7 @@
                         
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Work Order Number</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Job Order Number</p>
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedOrder?.wo_number"></p>
                             </div>
                             <div>
@@ -829,7 +874,7 @@
             </div>
         </div>
 
-        <!-- Create Work Order Modal -->
+        <!-- Create Job Order Modal -->
         <div 
             x-show="showCreate" 
             x-cloak
@@ -854,7 +899,7 @@
                 >
                     <div class="p-6 space-y-4">
                         <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Create New Work Order</h3>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Create New Job Order</h3>
                             <button @click="showCreate=false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -903,7 +948,7 @@
                             
                             <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                                 <button type="button" @click="showCreate=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
-                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">Create Work Order</button>
+                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">Create Job Order</button>
                             </div>
                         </form>
                     </div>
@@ -911,7 +956,7 @@
             </div>
         </div>
 
-        <!-- Edit Work Order Modal -->
+        <!-- Edit Job Order Modal -->
         <div 
             x-show="showEdit" 
             x-cloak
@@ -936,7 +981,7 @@
                 >
                     <div class="p-6 space-y-4">
                         <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Edit Work Order</h3>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Edit Job Order</h3>
                             <button @click="showEdit=false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -986,7 +1031,7 @@
                             
                             <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                                 <button type="button" @click="showEdit=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
-                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">Update Work Order</button>
+                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">Update Job Order</button>
                             </div>
                         </form>
                     </div>
@@ -994,7 +1039,7 @@
             </div>
         </div>
 
-        <!-- Assign Work Order Modal -->
+        <!-- Assign Job Order Modal -->
         <div 
             x-show="showAssign" 
             x-cloak
@@ -1087,7 +1132,7 @@
                             @csrf
                             
                             <div>
-                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Work Order Status</label>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Job Order Status</label>
                                 <select name="status" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="pending">Waiting for Assignment</option>
                                     <option value="in_progress">In Progress</option>
@@ -1132,7 +1177,7 @@
                     <div class="p-6 space-y-4">
                         <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
                             <div>
-                                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Approve Work Order</h3>
+                                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Approve Job Order</h3>
                                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="'WO: ' + (selectedOrder?.job_order_number || 'N/A')"></p>
                             </div>
                             <button @click="showApproval=false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
@@ -1142,7 +1187,7 @@
                             </button>
                         </div>
 
-                        <!-- Work Order Summary -->
+                        <!-- Job Order Summary -->
                         <div class="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Customer</p>
@@ -1308,13 +1353,13 @@
                                 <div class="flex-1 pb-8 rounded-xl px-3 py-2 transition-colors"
                                      :class="timelineStepState('created', selectedOrder) === 'completed' ? 'bg-emerald-50 dark:bg-emerald-900/10' : ''">
                                     <div class="flex items-center justify-between gap-3">
-                                        <p class="font-semibold text-gray-900 dark:text-white">Work Order Created</p>
+                                        <p class="font-semibold text-gray-900 dark:text-white">Job Order Created</p>
                                         <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
                                               :class="timelineStepState('created', selectedOrder) === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'"
                                               x-text="timelineStepBadge('created', selectedOrder)"></span>
                                     </div>
                                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="selectedOrder?.created_at || 'N/A'"></p>
-                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Initial work order submitted</p>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Initial job order submitted</p>
                                 </div>
                             </div>
 

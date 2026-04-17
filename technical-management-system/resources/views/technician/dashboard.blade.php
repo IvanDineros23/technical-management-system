@@ -3,7 +3,7 @@
 @section('title', 'Technician Dashboard')
 
 @section('page-title', 'Technician Dashboard')
-@section('page-subtitle', 'Manage your assignments and work orders')
+@section('page-subtitle', 'Manage your assignments and job orders')
 
 @section('head')
     <script>
@@ -89,7 +89,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
-        Work Orders
+        Job Orders
     </a>
 
     <a href="{{ route('technician.equipment') }}"
