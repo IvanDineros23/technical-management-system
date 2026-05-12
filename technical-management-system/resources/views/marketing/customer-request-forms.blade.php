@@ -183,7 +183,37 @@
             <div class="mb-3">
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div class="overflow-x-auto">
+                <div class="sm:hidden p-4 space-y-3">
+                    @forelse($generatedRequests as $jobOrder)
+                        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $jobOrder->job_order_number }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $jobOrder->customer->name ?? 'N/A' }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $jobOrder->customer->email ?? 'No email' }}</div>
+                                </div>
+                                <div class="text-right text-xs text-gray-600 dark:text-gray-300">{{ optional($jobOrder->updated_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</div>
+                            </div>
+
+                            <div class="mt-3 flex flex-col gap-2">
+                                <div class="text-sm text-gray-700 dark:text-gray-300">Requested by: {{ $jobOrder->requested_by ?? $jobOrder->creator->name ?? 'N/A' }}</div>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <a href="{{ route('marketing.job-orders.customer-request-form', $jobOrder) }}" target="_blank" class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">View Form</a>
+                                    <a href="{{ route('marketing.job-orders.edit', $jobOrder) }}" class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Edit JO</a>
+                                    <form method="POST" action="{{ route('marketing.job-orders.submit-accounting', $jobOrder) }}" class="inline" onsubmit="return confirm('Convert this generated customer request form to Job Order and submit to accounting?');">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Convert to JO</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">No generated customer request forms yet.</div>
+                    @endforelse
+                </div>
+
+                <div class="hidden sm:block overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                             <tr>
@@ -209,33 +239,19 @@
                                     <td class="px-6 py-4 text-center text-sm text-gray-700 dark:text-gray-300">{{ optional($jobOrder->updated_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</td>
                                     <td class="px-6 py-4 text-center">
                                         <div class="inline-flex items-center justify-center gap-2">
-                                            <a href="{{ route('marketing.job-orders.customer-request-form', $jobOrder) }}" target="_blank"
-                                               class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-                                                View Form
-                                            </a>
-
-                                            <a href="{{ route('marketing.job-orders.edit', $jobOrder) }}"
-                                               class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                                                Edit JO
-                                            </a>
-
-                                            <form method="POST" action="{{ route('marketing.job-orders.submit-accounting', $jobOrder) }}" class="inline"
-                                                  onsubmit="return confirm('Convert this generated customer request form to Job Order and submit to accounting?');">
+                                            <a href="{{ route('marketing.job-orders.customer-request-form', $jobOrder) }}" target="_blank" class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">View Form</a>
+                                            <a href="{{ route('marketing.job-orders.edit', $jobOrder) }}" class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Edit JO</a>
+                                            <form method="POST" action="{{ route('marketing.job-orders.submit-accounting', $jobOrder) }}" class="inline" onsubmit="return confirm('Convert this generated customer request form to Job Order and submit to accounting?');">
                                                 @csrf
                                                 @method('PATCH')
-                                                <button type="submit"
-                                                        class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                                    Convert to JO
-                                                </button>
+                                                <button type="submit" class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Convert to JO</button>
                                             </form>
                                         </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                        No generated customer request forms yet.
-                                    </td>
+                                    <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">No generated customer request forms yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -255,7 +271,33 @@
                 <h3 class="text-base font-bold text-gray-900 dark:text-white">Converted / Processed Customer Requests</h3>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div class="overflow-x-auto">
+                <div class="sm:hidden p-4 space-y-3">
+                    @forelse($processedRequests as $jobOrder)
+                        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $jobOrder->job_order_number }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $jobOrder->customer->name ?? 'N/A' }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $jobOrder->customer->email ?? 'No email' }}</div>
+                                </div>
+                                <div class="text-right text-xs text-gray-600 dark:text-gray-300">{{ optional($jobOrder->updated_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</div>
+                            </div>
+
+                            <div class="mt-3 flex flex-col gap-2">
+                                <div class="text-sm text-gray-700 dark:text-gray-300">Requested by: {{ $jobOrder->requested_by ?? $jobOrder->creator->name ?? 'N/A' }}</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-300">Status: {{ ucfirst(str_replace('_', ' ', $jobOrder->status)) }}</div>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <a href="{{ route('marketing.job-orders.customer-request-form', $jobOrder) }}" target="_blank" class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">View Form</a>
+                                    <a href="{{ route('marketing.job-orders.edit', $jobOrder) }}" class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Edit JO</a>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">No converted or processed customer requests yet.</div>
+                    @endforelse
+                </div>
+
+                <div class="hidden sm:block overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                             <tr>
@@ -283,22 +325,14 @@
                                     <td class="px-6 py-4 text-center text-sm text-gray-700 dark:text-gray-300">{{ optional($jobOrder->updated_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</td>
                                     <td class="px-6 py-4 text-center">
                                         <div class="inline-flex items-center justify-center gap-2">
-                                            <a href="{{ route('marketing.job-orders.customer-request-form', $jobOrder) }}" target="_blank"
-                                               class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-                                                View Form
-                                            </a>
-                                            <a href="{{ route('marketing.job-orders.edit', $jobOrder) }}"
-                                               class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                                                Edit JO
-                                            </a>
+                                            <a href="{{ route('marketing.job-orders.customer-request-form', $jobOrder) }}" target="_blank" class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">View Form</a>
+                                            <a href="{{ route('marketing.job-orders.edit', $jobOrder) }}" class="inline-flex items-center px-3 py-2 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Edit JO</a>
                                         </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                        No converted or processed customer requests yet.
-                                    </td>
+                                    <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">No converted or processed customer requests yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -325,14 +359,14 @@
                      @click="closeManualFormModal()"
                      class="fixed inset-0 bg-gray-900/60"></div>
 
-                <div x-show="showManualFormModal"
+                 <div x-show="showManualFormModal"
                      x-transition:enter="ease-out duration-200"
                      x-transition:enter-start="opacity-0 translate-y-2"
                      x-transition:enter-end="opacity-100 translate-y-0"
                      x-transition:leave="ease-in duration-150"
                      x-transition:leave-start="opacity-100 translate-y-0"
                      x-transition:leave-end="opacity-0 translate-y-2"
-                     class="relative w-full max-w-6xl bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+                     class="relative w-[95vw] max-w-xl sm:max-w-2xl md:max-w-4xl lg:max-w-6xl bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Manual Customer Request Form</h3>
                         <button type="button" @click="closeManualFormModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white">

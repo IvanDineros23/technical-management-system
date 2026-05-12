@@ -342,13 +342,13 @@
 @endsection
 
 @section('content')
-    <div x-data="customersPage()">
-        <div class="mb-6 flex items-center justify-between">
+    <div x-data="customersPage()" class="w-full min-h-screen">
+        <div class="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-0">
             <div>
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Customers</h2>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage your customer database</p>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Customers</h2>
+                <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">Manage your customer database</p>
             </div>
-            <button @click="openModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md shadow-blue-200 dark:shadow-blue-900/50 flex items-center gap-2">
+            <button @click="openModal()" class="w-full sm:w-auto justify-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md shadow-blue-200 dark:shadow-blue-900/50 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -357,23 +357,75 @@
         </div>
 
         <!-- Search and Filter -->
-        <form method="GET" action="{{ route('marketing.customers') }}" class="mb-6 flex gap-3">
+        <form method="GET" action="{{ route('marketing.customers') }}" class="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-3 px-4 sm:px-0">
             <div class="flex-1">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search customers..." class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search customers..." class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             </div>
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 Search
             </button>
             @if(request('search'))
-                <a href="{{ route('marketing.customers') }}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <a href="{{ route('marketing.customers') }}" class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center">
                     Clear
                 </a>
             @endif
         </form>
 
         <!-- Customers List -->
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div class="overflow-x-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden mx-4 sm:mx-0">
+            <!-- Mobile Cards -->
+            <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
+                @forelse($customers as $customer)
+                    <div class="p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                                    <span class="text-sm font-bold text-blue-600 dark:text-blue-400">{{ strtoupper(substr($customer->name, 0, 2)) }}</span>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $customer->name }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $customer->business_name ?: 'No business name' }}</p>
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                {{ $customer->job_orders_count ?? 0 }} total
+                            </span>
+                        </div>
+                        <div class="mt-3 space-y-1 text-xs text-gray-600 dark:text-gray-300">
+                            <p class="break-all"><span class="font-medium">Email:</span> {{ $customer->email ?? 'N/A' }}</p>
+                            <p><span class="font-medium">Phone:</span> {{ $customer->phone ?? 'N/A' }}</p>
+                            <p class="break-words"><span class="font-medium">Address:</span> {{ $customer->address ?? 'N/A' }}</p>
+                            <p><span class="font-medium">City/State:</span> {{ trim(($customer->city ?? '') . ', ' . ($customer->state ?? ''), ', ') ?: 'No city/state' }}</p>
+                        </div>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <button @click='openDetailsModal(@json($customer))' class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                View Details
+                            </button>
+                            <a href="{{ route('marketing.create-job-order', [
+                                'customer_name' => $customer->name,
+                                'email' => $customer->email,
+                                'phone' => $customer->phone,
+                                'service_address' => $customer->address,
+                                'city' => $customer->city,
+                                'province' => $customer->province ?? null
+                            ]) }}" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                Create JO
+                            </a>
+                            <button @click='openEditModal(@json($customer))' class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                Edit
+                            </button>
+                            <button @click='deleteCustomer({{ $customer->id }}, @json($customer->name))' class="px-3 py-1.5 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                @empty
+                    <div class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">No customers found</div>
+                @endforelse
+            </div>
+
+            <!-- Desktop Table -->
+            <div class="hidden sm:block overflow-x-auto">
                 <table class="min-w-full">
                     <thead class="bg-gray-50 dark:bg-gray-900/30 border-b border-gray-200 dark:border-gray-700">
                         <tr>
@@ -426,7 +478,7 @@
                                         ]) }}" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                                             Create JO
                                         </a>
-                                        <div class="relative" data-menu>
+                                            <div class="relative" data-menu>
                                             <button @click="toggleMenu({{ $customer->id }})" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                     <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
@@ -440,13 +492,13 @@
                                                 x-transition:leave-start="opacity-100 scale-100"
                                                 x-transition:leave-end="opacity-0 scale-95"
                                                 class="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-2 z-40">
-                                                <button @click="openEditModal(@json($customer))" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2">
+                                                <button @click='openEditModal(@json($customer))' class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                                     </svg>
                                                     Edit
                                                 </button>
-                                                <button @click="deleteCustomer({{ $customer->id }}, '{{ $customer->name }}')" class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors flex items-center gap-2">
+                                                    <button @click='deleteCustomer({{ $customer->id }}, @json($customer->name))' class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors flex items-center gap-2">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                                     </svg>
@@ -467,7 +519,7 @@
             </div>
 
             @if($customers->hasPages())
-                <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+                <div class="border-t border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4">
                     {{ $customers->links() }}
                 </div>
             @endif
@@ -495,17 +547,17 @@
 
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            <div x-show="showModal"
+              <div x-show="showModal"
                  x-transition:enter="ease-out duration-300"
                  x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                  x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave="ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                 class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all w-full max-w-[95vw] sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
                 
                 <!-- Modal Header -->
-                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-3 sm:py-4">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-semibold text-white flex items-center gap-2">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -522,7 +574,7 @@
                 </div>
 
                 <!-- Modal Body -->
-                <form @submit.prevent="submitForm()" class="p-6">
+                <form @submit.prevent="submitForm()" class="p-4 sm:p-6">
                     <!-- Error Message -->
                     <div x-show="errorMessage" 
                          class="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
@@ -675,16 +727,16 @@
                     </div>
 
                     <!-- Modal Footer -->
-                    <div class="mt-6 flex gap-3 justify-end">
+                    <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
                         <button type="button" 
                                 @click="closeModal()"
                                 :disabled="isSubmitting"
-                                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                             Cancel
                         </button>
                         <button type="submit" 
                                 :disabled="isSubmitting"
-                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             <svg x-show="isSubmitting" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -726,10 +778,10 @@
                  x-transition:leave="ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                 class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all w-full max-w-[95vw] sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
                 
                 <!-- Modal Header -->
-                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-3 sm:py-4">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-semibold text-white flex items-center gap-2">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -746,7 +798,7 @@
                 </div>
 
                 <!-- Modal Body -->
-                <form @submit.prevent="submitForm()" class="p-6">
+                <form @submit.prevent="submitForm()" class="p-4 sm:p-6">
                     <!-- Error Message -->
                     <div x-show="errorMessage" 
                          class="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
@@ -899,16 +951,16 @@
                     </div>
 
                     <!-- Modal Footer -->
-                    <div class="mt-6 flex gap-3 justify-end">
+                    <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
                         <button type="button" 
                                 @click="closeEditModal()"
                                 :disabled="isSubmitting"
-                                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                             Cancel
                         </button>
                         <button type="submit" 
                                 :disabled="isSubmitting"
-                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             <svg x-show="isSubmitting" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -953,7 +1005,7 @@
                  class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
                 
                 <!-- Modal Header -->
-                <div class="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
+                <div class="bg-gradient-to-r from-red-600 to-red-700 px-4 sm:px-6 py-3 sm:py-4">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-semibold text-white flex items-center gap-2">
                             Delete Customer
@@ -967,7 +1019,7 @@
                 </div>
 
                 <!-- Modal Body -->
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     <div class="flex items-center gap-4 mb-4">
                         <div class="flex-shrink-0">
                             <svg class="h-12 w-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -988,17 +1040,17 @@
                 </div>
 
                 <!-- Modal Footer -->
-                <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex gap-3 justify-end">
+                <div class="bg-gray-50 dark:bg-gray-700/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row gap-3 justify-end">
                     <button type="button" 
                             @click="closeDeleteModal()"
                             :disabled="isSubmitting"
-                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium">
+                            class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium">
                         Cancel
                     </button>
                     <button type="button" 
                             @click="confirmDeleteCustomer()"
                             :disabled="isSubmitting"
-                            class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium">
+                            class="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium">
                         <svg x-show="isSubmitting" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -1036,7 +1088,7 @@
                   class="mx-auto w-[96vw] max-w-6xl bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all flex flex-col max-h-[88vh]">
 
                 <!-- Modal Header -->
-                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-3 sm:py-4">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-semibold text-white flex items-center gap-2">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1053,7 +1105,7 @@
                 </div>
 
                 <!-- Modal Body -->
-                <div class="p-6 overflow-y-auto">
+                <div class="p-4 sm:p-6 overflow-y-auto">
                     <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2" x-text="detailsCustomer.name"></h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400" x-show="detailsCustomer.business_name" x-text="detailsCustomer.business_name"></p>
 
@@ -1136,10 +1188,10 @@
                 </div>
 
                 <!-- Modal Footer -->
-                <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex gap-3 justify-end">
-                    <button type="button" @click="closeDetailsModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Close</button>
-                    <button type="button" @click="openEditFromDetails()" class="px-4 py-2 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors">Update Details</button>
-                    <a :href="`{{ route('marketing.create-job-order') }}?customer_name=${encodeURIComponent(detailsCustomer.name||'')}&email=${encodeURIComponent(detailsCustomer.email||'')}&phone=${encodeURIComponent(detailsCustomer.phone||'')}&service_address=${encodeURIComponent(detailsCustomer.address||'')}&city=${encodeURIComponent(detailsCustomer.city||'')}`" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Create JO</a>
+                <div class="bg-gray-50 dark:bg-gray-700/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row gap-3 justify-end">
+                    <button type="button" @click="closeDetailsModal()" class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Close</button>
+                    <button type="button" @click="openEditFromDetails()" class="w-full sm:w-auto px-4 py-2 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors">Update Details</button>
+                    <a :href="`{{ route('marketing.create-job-order') }}?customer_name=${encodeURIComponent(detailsCustomer.name||'')}&email=${encodeURIComponent(detailsCustomer.email||'')}&phone=${encodeURIComponent(detailsCustomer.phone||'')}&service_address=${encodeURIComponent(detailsCustomer.address||'')}&city=${encodeURIComponent(detailsCustomer.city||'')}`" class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center">Create JO</a>
                 </div>
             </div>
         </div>
@@ -1153,14 +1205,14 @@
          x-transition:leave="transition ease-in duration-100"
          x-transition:leave-start="translate-y-0 opacity-100 sm:translate-x-0"
          x-transition:leave-end="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-         class="fixed bottom-4 right-4 z-50"
+         class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-50"
          x-cloak>
         <div :class="{
             'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700': toast.type === 'success',
             'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700': toast.type === 'error',
             'bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700': toast.type === 'warning'
         }"
-             class="rounded-lg p-4 shadow-lg flex items-center gap-3">
+             class="rounded-lg p-4 shadow-lg flex items-center gap-3 text-sm">
             <!-- Success Icon -->
             <svg x-show="toast.type === 'success'" class="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />

@@ -10,56 +10,56 @@
 @endsection
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-4 sm:space-y-6">
     <!-- Current Date & Time Display -->
-    <div class="text-right mb-4">
+    <div class="text-left sm:text-right mb-3 sm:mb-4">
         <p class="text-sm text-gray-600 dark:text-gray-400">
             <span id="current-datetime"></span>
         </p>
     </div>
 
     <!-- Key Metrics -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <!-- Total Users -->
-        <a href="{{ route('admin.users.index') }}" class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all cursor-pointer">
+        <a href="{{ route('admin.users.index') }}" class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6 hover:shadow-lg transition-all cursor-pointer">
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M7 20H2v-2a3 3 0 015.856-1.487M12 14a4 4 0 100-8 4 4 0 000 8z"/>
                     </svg>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['total_users'] ?? 0 }}</p>
+                    <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['total_users'] ?? 0 }}</p>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Total Users</p>
                 </div>
             </div>
         </a>
 
         <!-- Active Users -->
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['active_users'] ?? 0 }}</p>
+                    <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['active_users'] ?? 0 }}</p>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Active Users</p>
                 </div>
             </div>
         </div>
 
         <!-- Inactive Users -->
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                     </svg>
                 </div>
                 <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['inactive_users'] ?? 0 }}</p>
+                    <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['inactive_users'] ?? 0 }}</p>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Inactive Users</p>
                 </div>
             </div>
@@ -67,14 +67,14 @@
     </div>
 
     <!-- System Status -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-        <div class="flex items-center justify-between mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+        <div class="flex items-center justify-between mb-4 sm:mb-6">
             <h3 class="text-base font-bold text-slate-900 dark:text-white">🏥 System Status</h3>
         </div>
 
         <div class="space-y-3">
             @foreach($systemStatus as $service)
-            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                 <div>
                     <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $service['name'] }}</p>
                     <p class="text-xs text-gray-600 dark:text-gray-400">{{ $service['message'] }}</p>
@@ -88,14 +88,35 @@
     </div>
 
     <!-- Recent User Activity -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-        <div class="flex items-center justify-between mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+        <div class="flex items-center justify-between mb-4 sm:mb-6">
             <h3 class="text-base font-bold text-slate-900 dark:text-white">👥 Recent User Activity</h3>
             <a href="{{ route('admin.users.index') }}" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">View all →</a>
         </div>
 
         @if($recentUserActivity->count() > 0)
-            <div class="overflow-x-auto">
+            <div class="space-y-3 md:hidden">
+                @foreach($recentUserActivity as $user)
+                    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 sm:p-4">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $user->name }}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">{{ $user->email }}</p>
+                            </div>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                                {{ $user->role }}
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $user->is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200' }}">
+                                {{ $user->is_active ? 'Active' : 'Inactive' }}
+                            </span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Last login: {{ $user->last_login }}</span>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full text-center">
                     <thead class="border-b border-gray-200 dark:border-gray-700">
                         <tr class="text-center text-xs">
@@ -128,15 +149,15 @@
                 </table>
             </div>
         @else
-            <div class="text-center py-8">
+            <div class="text-center py-6 sm:py-8">
                 <p class="text-sm text-gray-500 dark:text-gray-400">No user activity</p>
             </div>
         @endif
     </div>
 
     <!-- Audit Activity -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-        <div class="flex items-center justify-between mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+        <div class="flex items-center justify-between mb-4 sm:mb-6">
             <h3 class="text-base font-bold text-slate-900 dark:text-white">📋 Audit Logs</h3>
             <a href="{{ route('admin.audit-logs.index') }}" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">View all →</a>
         </div>
@@ -165,7 +186,7 @@
                                 @endphp
                                 {{ $desc }}
                             </p>
-                            <div class="flex items-center justify-between mt-2">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mt-2">
                                 <span class="text-xs text-gray-500 dark:text-gray-500">{{ $audit->created_at?->timezone('Asia/Manila')->format('M d, Y h:i A') ?? 'N/A' }}</span>
                                 <span class="text-xs text-gray-500 dark:text-gray-500">{{ $audit->created_at?->diffForHumans() ?? 'N/A' }}</span>
                             </div>
@@ -175,16 +196,16 @@
                 @endforeach
             </div>
         @else
-            <div class="text-center py-8">
+            <div class="text-center py-6 sm:py-8">
                 <p class="text-sm text-gray-500 dark:text-gray-400">No audit activity</p>
             </div>
         @endif
     </div>
 
     <!-- Quick Admin Actions -->
-    <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/30 rounded-[20px] border border-blue-200 dark:border-blue-800 p-6">
+    <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/30 rounded-[20px] border border-blue-200 dark:border-blue-800 p-4 sm:p-6">
         <h3 class="text-sm font-bold text-blue-900 dark:text-blue-200 mb-3">⚡ Quick Admin Actions</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
             <a href="{{ route('admin.users.index') }}" class="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
                 👥 Manage Users →
             </a>

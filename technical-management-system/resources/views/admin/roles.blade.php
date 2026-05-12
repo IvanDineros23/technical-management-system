@@ -11,7 +11,7 @@
 @endsection
 
 @section('content')
-<div class="space-y-6"
+<div class="space-y-4 sm:space-y-6"
      x-data="{
         showEditRole: false,
         showPermissions: false,
@@ -42,22 +42,59 @@
      }"
      @keydown.escape.window="showEditRole = false; showPermissions = false; showPermissionMatrix = false">
     <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Roles & Permissions</h2>
             <p class="text-gray-600 dark:text-gray-400 mt-1">Configure role-based access control</p>
         </div>
-        <div>
+        <div class="w-full sm:w-auto">
             <button type="button"
                     @click="openPermissionMatrix()"
-                    class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">
+                    class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">
                 View Permission Matrix
             </button>
         </div>
     </div>
 
+    <!-- Roles Mobile Cards -->
+    <div class="space-y-3 md:hidden">
+        @forelse($roles as $role)
+        <div class="bg-white dark:bg-gray-800 rounded-[18px] border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+            <div class="flex items-start justify-between gap-3 mb-3">
+                <div>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $role->name }}</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">{{ $role->description ?? 'N/A' }}</p>
+                </div>
+                <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                    Active
+                </span>
+            </div>
+            <div class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-3">
+                <span>Users</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ $role->users_count }}</span>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <button type="button"
+                        @click="openEdit(@js(['id' => $role->id, 'name' => $role->name, 'description' => $role->description]))"
+                        class="w-full sm:w-auto text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 text-xs font-semibold">
+                    Edit
+                </button>
+                <button type="button"
+                        @click="openPermissions(@js(['id' => $role->id, 'name' => $role->name, 'permissions' => $permissions[$role->name] ?? []]))"
+                        class="w-full sm:w-auto text-indigo-600 hover:text-indigo-900 dark:hover:text-indigo-400 text-xs font-semibold">
+                    Permissions
+                </button>
+            </div>
+        </div>
+        @empty
+        <div class="bg-white dark:bg-gray-800 rounded-[18px] border border-gray-200 dark:border-gray-700 p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+            No roles found.
+        </div>
+        @endforelse
+    </div>
+
     <!-- Roles Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="hidden md:block bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-center">
                 <thead>

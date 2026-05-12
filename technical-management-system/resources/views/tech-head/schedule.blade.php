@@ -47,6 +47,7 @@
         showMoveModal: false,
         selectedJobId: null,
         selectedJob: null,
+        selectedAssignment: {},
         prefilledJobOrderId: null,
         init() {
             this.$watch('showAdd', value => this.handleModalState(value));
@@ -249,7 +250,7 @@
 
         <!-- Filter Bar -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            <form method="GET" action="{{ route('tech-head.schedule') }}" class="flex flex-wrap items-center gap-3">
+            <form method="GET" action="{{ route('tech-head.schedule') }}" class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
                 <div class="flex items-center gap-2">
                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
@@ -257,7 +258,7 @@
                     <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Filters:</span>
                 </div>
 
-                <select name="technician" onchange="this.form.submit()" class="min-w-[200px] px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <select name="technician" onchange="this.form.submit()" class="w-full sm:min-w-[200px] sm:w-auto px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">All Technicians</option>
                     @foreach($technicians as $tech)
                         <option value="{{ $tech->id }}" {{ $filters['technician'] == $tech->id ? 'selected' : '' }}>
@@ -266,7 +267,7 @@
                     @endforeach
                 </select>
 
-                <select name="status" onchange="this.form.submit()" class="min-w-[180px] px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <select name="status" onchange="this.form.submit()" class="w-full sm:min-w-[180px] sm:w-auto px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">All Status</option>
                     <option value="assigned" {{ $filters['status'] == 'assigned' ? 'selected' : '' }}>Assigned</option>
                     <option value="in_progress" {{ $filters['status'] == 'in_progress' ? 'selected' : '' }}>In Progress</option>
@@ -274,7 +275,7 @@
                     <option value="completed" {{ $filters['status'] == 'completed' ? 'selected' : '' }}>Completed</option>
                 </select>
 
-                <select name="priority" onchange="this.form.submit()" class="min-w-[180px] px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <select name="priority" onchange="this.form.submit()" class="w-full sm:min-w-[180px] sm:w-auto px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">All Priorities</option>
                     <option value="urgent" {{ $filters['priority'] == 'urgent' ? 'selected' : '' }}>Urgent</option>
                     <option value="high" {{ $filters['priority'] == 'high' ? 'selected' : '' }}>High</option>
@@ -294,14 +295,14 @@
         </div>
 
         <!-- Header with Add Button -->
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Schedule Calendar</h2>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage and monitor all technician schedules</p>
             </div>
             <button 
                 @click="showAdd=true" 
-                class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 flex items-center gap-2"
+                class="w-full sm:w-auto justify-center px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 flex items-center gap-2"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
@@ -314,24 +315,24 @@
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <!-- Weekly Schedule (Left/Main) -->
             <div class="xl:col-span-2">
-                <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <div class="flex items-center justify-between mb-6">
+                <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
                 <div>
                     <h3 class="text-lg font-bold text-slate-900 dark:text-white">This Week</h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400">{{ $weekStart->setTimezone('Asia/Manila')->format('M d') }} - {{ $weekEnd->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                 </div>
-                <span class="text-sm px-4 py-2 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 font-semibold">Today: {{ $today->setTimezone('Asia/Manila')->format('M d') }}</span>
+                <span class="text-sm px-4 py-2 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 font-semibold w-fit">Today: {{ $today->setTimezone('Asia/Manila')->format('M d') }}</span>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 @forelse($weeklySchedule as $date => $items)
-                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-5 bg-gradient-to-br from-gray-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 hover:shadow-lg transition-shadow">
-                        <div class="flex items-center justify-between mb-4">
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-5 bg-gradient-to-br from-gray-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 hover:shadow-lg transition-shadow">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                             <div>
                                 <p class="text-base font-bold text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($date)->setTimezone('Asia/Manila')->format('l') }}</p>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">{{ \Carbon\Carbon::parse($date)->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                             </div>
-                            <span class="text-xs px-3 py-1.5 rounded-full {{ $items->count() > 0 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }} font-semibold">{{ $items->count() }} {{ $items->count() == 1 ? 'job' : 'jobs' }}</span>
+                            <span class="text-xs px-3 py-1.5 rounded-full {{ $items->count() > 0 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' }} font-semibold w-fit">{{ $items->count() }} {{ $items->count() == 1 ? 'job' : 'jobs' }}</span>
                         </div>
                         <div class="space-y-3">
                             @foreach($items as $assignment)
@@ -351,7 +352,7 @@
                                         'service_type' => $assignment->jobOrder->service_type ?? 'N/A',
                                         'priority' => $assignment->priority ?? 'normal'
                                     ]) }})"
-                                    class="relative rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer group"
+                                    class="relative rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer group"
                                 >
                                     <!-- Conflict/Overload Badges -->
                                     <div class="absolute top-2 right-2 flex gap-1">
@@ -373,12 +374,12 @@
                                         @endif
                                     </div>
 
-                                    <div class="flex items-start justify-between {{ $hasConflict || $isOverloaded ? 'pr-32' : '' }}">
+                                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 {{ $hasConflict || $isOverloaded ? 'sm:pr-32' : '' }}">
                                         <div class="flex-1">
                                             <p class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{{ $assignment->jobOrder->job_order_number ?? 'N/A' }}</p>
                                             <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{{ $assignment->jobOrder->customer->name ?? 'N/A' }}</p>
                                         </div>
-                                        <span class="px-2 py-0.5 text-xs font-medium rounded-full
+                                        <span class="w-fit px-2 py-0.5 text-xs font-medium rounded-full
                                             {{ $assignment->status === 'assigned' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' : '' }}
                                             {{ $assignment->status === 'in_progress' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200' : '' }}
                                             {{ $assignment->status === 'on_hold' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200' : '' }}
@@ -387,8 +388,8 @@
                                         </span>
                                     </div>
                                     
-                                    <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                                        <div class="flex items-center gap-3">
+                                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                                        <div class="flex flex-wrap items-center gap-3">
                                             <div class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -419,7 +420,7 @@
                                                 x-show="showMenu" 
                                                 @click.away="showMenu = false"
                                                 x-cloak
-                                                class="absolute right-0 bottom-full mb-1 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 z-10"
+                                                class="absolute right-0 bottom-full mb-1 w-48 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 z-10"
                                             >
                                                 <button 
                                                     @click.stop="openAssignModal({{ $assignment->id }}, {{ json_encode([
@@ -479,7 +480,7 @@
 
             <!-- Unassigned Jobs Panel (Right) -->
             <div class="xl:col-span-1">
-                <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6 sticky top-6">
+                <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6 xl:sticky xl:top-6">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Unassigned Jobs</h3>
                         <span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 text-xs font-bold">
@@ -490,7 +491,7 @@
                     <div class="space-y-3 max-h-[600px] overflow-y-auto">
                         @forelse($unassignedJobs as $job)
                             <div class="border border-amber-200 dark:border-amber-700/50 rounded-lg p-4 bg-amber-50/50 dark:bg-amber-900/10">
-                                <div class="flex items-start justify-between mb-2">
+                                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
                                     <div class="flex-1">
                                         <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $job->job_order_number ?? 'N/A' }}</p>
                                         <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{{ $job->customer->name ?? 'N/A' }}</p>
@@ -504,7 +505,7 @@
                                     </span>
                                 </div>
                                 
-                                <div class="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                <div class="text-xs text-gray-600 dark:text-gray-400 mb-3 space-y-1">
                                     <p><span class="font-semibold">Service:</span> {{ $job->service_type ?? 'N/A' }}</p>
                                     <p><span class="font-semibold">Created:</span> {{ optional($job->created_at)->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                                 </div>
@@ -540,7 +541,7 @@
                         <div class="space-y-3 max-h-[300px] overflow-y-auto">
                             @forelse($unscheduledAssignments as $assignment)
                                 <div class="border border-rose-200 dark:border-rose-700/50 rounded-lg p-4 bg-rose-50/40 dark:bg-rose-900/10">
-                                    <div class="flex items-start justify-between mb-2">
+                                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
                                         <div class="flex-1">
                                             <p class="text-sm font-bold text-gray-900 dark:text-white">{{ $assignment->jobOrder->job_order_number ?? 'N/A' }}</p>
                                             <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{{ $assignment->jobOrder->customer->name ?? 'N/A' }}</p>
@@ -550,7 +551,7 @@
                                         </span>
                                     </div>
 
-                                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-3 space-y-1">
                                         <p><span class="font-semibold">Technician:</span> {{ $assignment->assignedTo->name ?? 'N/A' }}</p>
                                         <p><span class="font-semibold">Service:</span> {{ $assignment->jobOrder->service_type ?? 'N/A' }}</p>
                                     </div>
@@ -593,7 +594,7 @@
             class="fixed inset-0 z-50 overflow-y-auto"
         >
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showAdd=false"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-start sm:items-center justify-center p-3 sm:p-4">
                 <div 
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 transform scale-95"
@@ -601,10 +602,10 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 transform scale-100"
                     x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-xl bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+                    class="relative w-full max-w-xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                    <div class="p-6 space-y-4">
-                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
+                    <div class="p-4 sm:p-6 space-y-4">
+                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4 gap-3">
                             <h3 class="text-xl font-bold text-gray-900 dark:text-white">Add Schedule Block</h3>
                             <button @click="showAdd=false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -647,7 +648,7 @@
                                 </select>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Scheduled Date</label>
                                     <input 
@@ -691,7 +692,7 @@
             class="fixed inset-0 z-50 overflow-y-auto"
         >
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showDetails=false"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-start sm:items-center justify-center p-3 sm:p-4">
                 <div 
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 transform scale-95"
@@ -699,10 +700,10 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 transform scale-100"
                     x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+                    class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                    <div class="p-6 space-y-4">
-                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
+                    <div class="p-4 sm:p-6 space-y-4">
+                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4 gap-3">
                             <h3 class="text-xl font-bold text-gray-900 dark:text-white">Schedule Details</h3>
                             <button @click="showDetails=false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -711,7 +712,7 @@
                             </button>
                         </div>
                         
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Job Order Number</p>
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedAssignment?.wo_number"></p>
@@ -767,7 +768,7 @@
             class="fixed inset-0 z-50 overflow-y-auto"
         >
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showAssignModal=false"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-start sm:items-center justify-center p-3 sm:p-4">
                 <div 
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 transform scale-95"
@@ -775,10 +776,10 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 transform scale-100"
                     x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+                    class="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                    <div class="p-6 space-y-4">
-                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
+                    <div class="p-4 sm:p-6 space-y-4">
+                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4 gap-3">
                             <div>
                                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">Assign Technician</h3>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="'WO: ' + (selectedJob?.wo_number || 'N/A')"></p>
@@ -827,7 +828,7 @@
             class="fixed inset-0 z-50 overflow-y-auto"
         >
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showStatusModal=false"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-start sm:items-center justify-center p-3 sm:p-4">
                 <div 
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 transform scale-95"
@@ -835,10 +836,10 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 transform scale-100"
                     x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+                    class="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                    <div class="p-6 space-y-4">
-                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
+                    <div class="p-4 sm:p-6 space-y-4">
+                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4 gap-3">
                             <div>
                                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">Change Status</h3>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="'WO: ' + (selectedJob?.wo_number || 'N/A')"></p>
@@ -889,7 +890,7 @@
             class="fixed inset-0 z-50 overflow-y-auto"
         >
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showMoveModal=false"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-start sm:items-center justify-center p-3 sm:p-4">
                 <div 
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 transform scale-95"
@@ -897,9 +898,9 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 transform scale-100"
                     x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+                    class="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                    <div class="p-6 space-y-4">
+                    <div class="p-4 sm:p-6 space-y-4">
                         <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
                             <div>
                                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">Move Schedule</h3>
@@ -915,7 +916,7 @@
                         <form :action="'/tech-head/assignments/' + selectedJobId + '/schedule'" method="POST" class="space-y-4">
                             @csrf
                             
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">New Date</label>
                                     <input 

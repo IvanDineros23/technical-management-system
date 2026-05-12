@@ -101,61 +101,61 @@
     @endif
 
     <div x-data="{ showCreate: false, init() { this.$watch('showCreate', value => { document.body.style.overflow = value ? 'hidden' : 'auto'; }); }, closeOnEsc(event) { if (event.key === 'Escape') { this.showCreate = false; } } }" @keydown.window="closeOnEsc($event)" class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-2xl p-5 border border-blue-200 dark:border-blue-700/50 shadow-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-2xl p-3 sm:p-5 border border-blue-200 dark:border-blue-700/50 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">Total</p>
-                        <p class="text-3xl font-bold text-blue-900 dark:text-blue-100 mt-1">{{ $certificates->count() }}</p>
+                        <p class="text-2xl sm:text-3xl font-bold text-blue-900 dark:text-blue-100 mt-1">{{ $certificates->count() }}</p>
                         <p class="text-xs text-blue-600 dark:text-blue-400 mt-1">Certificates</p>
                     </div>
-                    <div class="w-12 h-12 bg-blue-500 dark:bg-blue-600 rounded-xl flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 dark:bg-blue-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl p-5 border border-green-200 dark:border-green-700/50 shadow-sm">
+            <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl p-3 sm:p-5 border border-green-200 dark:border-green-700/50 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wide">Generated</p>
-                        <p class="text-3xl font-bold text-green-900 dark:text-green-100 mt-1">{{ $certificates->where('status', 'generated')->count() }}</p>
+                        <p class="text-2xl sm:text-3xl font-bold text-green-900 dark:text-green-100 mt-1">{{ $certificates->where('status', 'generated')->count() }}</p>
                         <p class="text-xs text-green-600 dark:text-green-400 mt-1">Ready to Release</p>
                     </div>
-                    <div class="w-12 h-12 bg-green-500 dark:bg-green-600 rounded-xl flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-500 dark:bg-green-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-2xl p-5 border border-purple-200 dark:border-purple-700/50 shadow-sm">
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-2xl p-3 sm:p-5 border border-purple-200 dark:border-purple-700/50 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">Released</p>
-                        <p class="text-3xl font-bold text-purple-900 dark:text-purple-100 mt-1">{{ $certificates->where('status', 'released')->count() }}</p>
+                        <p class="text-2xl sm:text-3xl font-bold text-purple-900 dark:text-purple-100 mt-1">{{ $certificates->where('status', 'released')->count() }}</p>
                         <p class="text-xs text-purple-600 dark:text-purple-400 mt-1">To Customers</p>
                     </div>
-                    <div class="w-12 h-12 bg-purple-500 dark:bg-purple-600 rounded-xl flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-500 dark:bg-purple-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76"/>
                         </svg>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 rounded-2xl p-5 border border-amber-200 dark:border-amber-700/50 shadow-sm">
+            <div class="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 rounded-2xl p-3 sm:p-5 border border-amber-200 dark:border-amber-700/50 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">Pending</p>
-                        <p class="text-3xl font-bold text-amber-900 dark:text-amber-100 mt-1">{{ $certificates->where('status', 'pending')->count() }}</p>
+                        <p class="text-2xl sm:text-3xl font-bold text-amber-900 dark:text-amber-100 mt-1">{{ $certificates->where('status', 'pending')->count() }}</p>
                         <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">Generation</p>
                     </div>
-                    <div class="w-12 h-12 bg-amber-500 dark:bg-amber-600 rounded-xl flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-amber-500 dark:bg-amber-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
@@ -163,35 +163,35 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            <div class="flex flex-wrap gap-2 items-center justify-between">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-2 items-start sm:items-center justify-between">
                 <div class="flex flex-wrap gap-2">
                     <a href="{{ route('technician.certificates') }}"
-                       class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ !request('status') ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                       class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors {{ !request('status') ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
                         All Certificates
                     </a>
 
                     <a href="{{ route('technician.certificates', ['status' => 'generated']) }}"
-                       class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'generated' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                       class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors {{ request('status') === 'generated' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
                         Generated
                     </a>
 
                     <a href="{{ route('technician.certificates', ['status' => 'released']) }}"
-                       class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'released' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                       class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors {{ request('status') === 'released' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
                         Released
                     </a>
 
                     <a href="{{ route('technician.certificates', ['status' => 'pending']) }}"
-                       class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'pending' ? 'bg-amber-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                       class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors {{ request('status') === 'pending' ? 'bg-amber-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
                         Pending
                     </a>
                 </div>
 
                 <button
                     @click="showCreate=true"
-                    class="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 flex items-center gap-2 whitespace-nowrap"
+                    class="w-full sm:w-auto px-4 sm:px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-xs sm:text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 flex items-center justify-center gap-2 whitespace-nowrap"
                 >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                     </svg>
                     Create Certificate
@@ -199,13 +199,54 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">Certificate List</h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400">Total: {{ $certificates->count() }}</p>
             </div>
 
-            <div class="overflow-x-auto">
+            @if($certificates->count() > 0)
+            <!-- Mobile Cards View -->
+            <div class="sm:hidden space-y-3">
+                @foreach($certificates as $cert)
+                <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-800">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Certificate No.</p>
+                            <p class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $cert->certificate_number }}</p>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap
+                            {{ $cert->status === 'generated' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200' : '' }}
+                            {{ $cert->status === 'released' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200' : '' }}
+                            {{ $cert->status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200' : '' }}">
+                            {{ ucfirst($cert->status) }}
+                        </span>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                        <p>Job Order: {{ $cert->jobOrder->job_order_number ?? 'N/A' }}</p>
+                        <p class="mt-1">Customer: {{ $cert->jobOrder->customer->name ?? 'N/A' }}</p>
+                        <p class="mt-1">Generated: @if($cert->generated_at) {{ $cert->generated_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') }} @else Pending @endif</p>
+                    </div>
+                    <div class="mt-3 flex gap-2">
+                        <a href="{{ route('technician.certificates.download', $cert) }}"
+                           class="flex-1 px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/50 rounded-md text-xs font-semibold transition-all duration-150 text-center">
+                            Download
+                        </a>
+                        @if($cert->status === 'pending')
+                            <form action="{{ route('technician.certificates.generate', $cert->id) }}" method="POST" class="flex-1">
+                                @csrf
+                                <button type="submit" class="w-full px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/50 rounded-md text-xs font-semibold transition-all duration-150">
+                                    Generate Now
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+                @endforeach
+            </div>
+
+            <!-- Desktop Table View -->
+            <div class="hidden sm:block overflow-x-auto">
                 <table class="w-full">
                     <thead class="border-b border-gray-200 dark:border-gray-700">
                         <tr>
@@ -284,6 +325,11 @@
                     </tbody>
                 </table>
             </div>
+            @else
+                <div class="text-center py-10 text-xs text-gray-500 dark:text-gray-400">
+                    No certificates found for your assignments.
+                </div>
+            @endif
         </div>
 
         <div
@@ -295,10 +341,10 @@
             x-transition:leave="transition ease-in duration-200"
             x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0"
-            class="fixed inset-0 z-50 overflow-y-auto"
+            class="fixed inset-0 z-50 overflow-y-auto p-4"
         >
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showCreate=false"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-center justify-center p-0 sm:p-4">
                 <div
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 transform scale-95"
@@ -306,16 +352,16 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 transform scale-100"
                     x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+                    class="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-t-[20px] sm:rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                    <div class="p-6 space-y-4">
-                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
+                    <div class="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                        <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-3 sm:pb-4">
                             <div>
-                                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Create New Certificate</h3>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Generate a calibration certificate manually</p>
+                                <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Create New Certificate</h3>
+                                <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Generate a calibration certificate manually</p>
                             </div>
                             <button @click="showCreate=false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                                 </svg>
                             </button>
@@ -324,16 +370,16 @@
                         <form action="{{ route('technician.certificates.store') }}" method="POST" class="space-y-4" x-data="{ hasWorkOrder: false }">
                             @csrf
 
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                 <div class="col-span-2">
-                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                                         Job Order (Optional)
                                         <span class="text-xs font-normal text-gray-500">- Leave blank for standalone certificate</span>
                                     </label>
                                     <select
                                         name="job_order_id"
                                         @change="hasWorkOrder = $event.target.value !== ''"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     >
                                         <option value="">-- Manual Entry (No Job Order) --</option>
                                         @foreach($jobOrders as $order)
@@ -343,33 +389,33 @@
                                 </div>
 
                                 <div class="col-span-2" x-show="!hasWorkOrder">
-                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Customer Name *</label>
+                                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Customer Name *</label>
                                     <input
                                         type="text"
                                         name="customer_name"
                                         :required="!hasWorkOrder"
                                         placeholder="Enter customer name"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
                                 </div>
 
                                 <div class="col-span-2" x-show="!hasWorkOrder">
-                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Equipment/Item Description *</label>
+                                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Equipment/Item Description *</label>
                                     <input
                                         type="text"
                                         name="equipment_description"
                                         :required="!hasWorkOrder"
                                         placeholder="e.g., Digital Multimeter Model XYZ-123"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
                                 </div>
 
                                 <div class="col-span-2" x-show="!hasWorkOrder">
-                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Service/Calibration Type *</label>
+                                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Service/Calibration Type *</label>
                                     <select
                                         name="service_type"
                                         :required="!hasWorkOrder"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     >
                                         <option value="">Select service type</option>
                                         <option value="electrical_calibration">Electrical Calibration</option>
@@ -382,33 +428,33 @@
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Issue Date</label>
+                                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Issue Date</label>
                                     <input
                                         type="date"
                                         name="issue_date"
                                         value="{{ now()->setTimezone('Asia/Manila')->format('Y-m-d') }}"
                                         required
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Valid Until</label>
+                                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Valid Until</label>
                                     <input
                                         type="date"
                                         name="valid_until"
                                         value="{{ now()->setTimezone('Asia/Manila')->addYear()->format('Y-m-d') }}"
                                         required
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Status</label>
                                     <select
                                         name="status"
                                         required
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     >
                                         <option value="pending">Pending</option>
                                         <option value="generated" selected>Generated</option>
@@ -416,10 +462,10 @@
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Template</label>
+                                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Template</label>
                                     <select
                                         name="template_used"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     >
                                         <option value="default">Default Template</option>
                                         <option value="iso17025">ISO 17025 Template</option>
@@ -428,19 +474,19 @@
                                 </div>
 
                                 <div class="col-span-2">
-                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Notes</label>
+                                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Notes</label>
                                     <textarea
                                         name="notes"
                                         rows="3"
                                         placeholder="Add any notes or special remarks..."
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     ></textarea>
                                 </div>
                             </div>
 
-                            <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                <button type="button" @click="showCreate=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">Cancel</button>
-                                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2">
+                            <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <button type="button" @click="showCreate=false" class="px-3 sm:px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-xs sm:text-sm font-medium">Cancel</button>
+                                <button type="submit" class="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                     </svg>

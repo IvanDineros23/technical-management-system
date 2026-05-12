@@ -11,21 +11,21 @@
 @endsection
 
 @section('content')
-<div class="space-y-6" x-data="{ showAdd: false, showView: false, showEdit: false, showDelete: false, showRequests: false, selectedItem: null, formData: { name: '', sku: '', category: '', quantity: 0, unit: 'units', min_level: 0, notes: '' } }">
+<div class="space-y-4 sm:space-y-6" x-data="{ showAdd: false, showView: false, showEdit: false, showDelete: false, showRequests: false, selectedItem: null, formData: { name: '', sku: '', category: '', quantity: 0, unit: 'units', min_level: 0, notes: '' } }">
     <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Inventory</h2>
             <p class="text-gray-600 dark:text-gray-400 mt-1">Monitor stock levels and requests</p>
         </div>
-        <div class="flex gap-3">
-            <button type="button" @click="showRequests = true" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+            <button type="button" @click="showRequests = true" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 View Requests
             </button>
-            <button @click="showAdd=true" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <button @click="showAdd=true" class="w-full sm:w-auto px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -35,24 +35,24 @@
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
+    <div class="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <p class="text-sm text-gray-600 dark:text-gray-400">Total Items</p>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ $stats['totalItems'] ?? 0 }}</p>
+            <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ $stats['totalItems'] ?? 0 }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <p class="text-sm text-gray-600 dark:text-gray-400">Low Stock</p>
-            <p class="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">{{ $stats['lowStock'] ?? 0 }}</p>
+            <p class="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">{{ $stats['lowStock'] ?? 0 }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <p class="text-sm text-gray-600 dark:text-gray-400">Out of Stock</p>
-            <p class="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{{ $stats['outOfStock'] ?? 0 }}</p>
+            <p class="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{{ $stats['outOfStock'] ?? 0 }}</p>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
-        <form method="GET" action="{{ route('admin.inventory.index') }}" class="grid grid-cols-1 gap-4 sm:grid-cols-4">
+    <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+        <form method="GET" action="{{ route('admin.inventory.index') }}" class="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search</label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name or SKU..." class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -81,9 +81,42 @@
         </form>
     </div>
 
-    <!-- Inventory Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div class="overflow-x-auto">
+    <!-- Inventory List -->
+    <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 overflow-hidden p-3 sm:p-4 md:p-0">
+        <div class="space-y-3 md:hidden">
+            @forelse($items as $item)
+                <div class="bg-gray-50 dark:bg-gray-900/40 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $item->name }}</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">SKU: {{ $item->sku }}</p>
+                        </div>
+                        <span class="text-xs font-semibold text-gray-900 dark:text-white">{{ $item->category ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 mb-3">
+                        @if($item->status === 'out')
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">Out</span>
+                        @elseif($item->status === 'low')
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">Low</span>
+                        @else
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Normal</span>
+                        @endif
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Stock: {{ $item->quantity }} {{ $item->unit }}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Min: {{ $item->min_level }} {{ $item->unit }}</span>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <button class="w-full sm:w-auto text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 text-xs font-semibold" @click="selectedItem = @js($item); showView = true">View</button>
+                        <button class="w-full sm:w-auto text-orange-600 hover:text-orange-900 dark:hover:text-orange-400 text-xs font-semibold" @click="selectedItem = @js($item); formData = { name: selectedItem.name ?? '', sku: selectedItem.sku ?? '', category: selectedItem.category ?? '', quantity: selectedItem.quantity ?? 0, unit: selectedItem.unit ?? 'units', min_level: selectedItem.min_level ?? 0, notes: selectedItem.notes ?? '' }; showEdit = true">Edit</button>
+                        <button class="w-full sm:w-auto text-red-600 hover:text-red-900 dark:hover:text-red-400 text-xs font-semibold" @click="selectedItem = @js($item); showDelete = true">Delete</button>
+                    </div>
+                </div>
+            @empty
+                <div class="bg-gray-50 dark:bg-gray-900/40 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                    No inventory items found.
+                </div>
+            @endforelse
+        </div>
+        <div class="hidden md:block overflow-x-auto">
             <table class="w-full">
                 <thead>
                     <tr class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
@@ -127,7 +160,7 @@
                 </tbody>
             </table>
         </div>
-        <div class="px-6 py-4">
+        <div class="px-0 md:px-6 py-3 sm:py-4 text-xs sm:text-sm">
             {{ $items->links() }}
         </div>
     </div>
@@ -436,7 +469,60 @@
                         </button>
                     </div>
 
-                    <div class="overflow-x-auto">
+                    <div class="space-y-3 md:hidden">
+                        @forelse($requests ?? [] as $inventoryRequest)
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 sm:p-4">
+                            <div class="flex items-start justify-between gap-3 mb-3">
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $inventoryRequest->inventoryItem->name ?? 'N/A' }}</p>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">Requested by: {{ $inventoryRequest->user->name ?? 'N/A' }}</p>
+                                </div>
+                                <span class="text-xs font-semibold text-gray-900 dark:text-white">{{ $inventoryRequest->quantity }} {{ $inventoryRequest->inventoryItem->unit ?? 'pcs' }}</span>
+                            </div>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">Purpose: {{ $inventoryRequest->purpose }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">{{ $inventoryRequest->created_at->format('M d, Y') }}</p>
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                @if($inventoryRequest->status === 'pending')
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">Pending</span>
+                                @elseif($inventoryRequest->status === 'approved')
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">Approved</span>
+                                @elseif($inventoryRequest->status === 'rejected')
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">Rejected</span>
+                                @elseif($inventoryRequest->status === 'fulfilled')
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Fulfilled</span>
+                                @endif
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                @if($inventoryRequest->status === 'pending')
+                                <form method="POST" action="{{ route('admin.inventory.requests.update', $inventoryRequest) }}" class="w-full sm:w-auto">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="status" value="approved">
+                                    <button type="submit" class="w-full sm:w-auto px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-semibold transition-colors">Approve</button>
+                                </form>
+                                <form method="POST" action="{{ route('admin.inventory.requests.update', $inventoryRequest) }}" class="w-full sm:w-auto">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="status" value="rejected">
+                                    <button type="submit" class="w-full sm:w-auto px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold transition-colors">Reject</button>
+                                </form>
+                                @elseif($inventoryRequest->status === 'approved')
+                                <form method="POST" action="{{ route('admin.inventory.requests.update', $inventoryRequest) }}" class="w-full sm:w-auto">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="status" value="fulfilled">
+                                    <button type="submit" class="w-full sm:w-auto px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold transition-colors">Mark Fulfilled</button>
+                                </form>
+                                @endif
+                            </div>
+                        </div>
+                        @empty
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                            No inventory requests found.
+                        </div>
+                        @endforelse
+                    </div>
+                    <div class="hidden md:block overflow-x-auto">
                         <table class="w-full">
                             <thead>
                                 <tr class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
@@ -501,7 +587,7 @@
                         </table>
                     </div>
 
-                    <div class="pt-4">
+                    <div class="pt-4 text-xs sm:text-sm">
                         {{ ($requests ?? null)?->links() }}
                     </div>
                 </div>

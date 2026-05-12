@@ -284,32 +284,109 @@
         
         <!-- All Reports Table -->
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <div class="flex items-center justify-between mb-6">
+            <div class="mb-6">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">All Reports</h3>
-                
-                <!-- Filter Buttons -->
-                <div class="flex gap-2">
-                    <a href="{{ route('tech-head.reports', ['filter' => 'all']) }}" 
-                       class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors {{ $filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                        All ({{ $stats['total'] }})
-                    </a>
-                    <a href="{{ route('tech-head.reports', ['filter' => 'pending']) }}" 
-                       class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors {{ $filter === 'pending' ? 'bg-amber-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                        Pending ({{ $stats['pending'] }})
-                    </a>
-                    <a href="{{ route('tech-head.reports', ['filter' => 'approved']) }}" 
-                       class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors {{ $filter === 'approved' ? 'bg-emerald-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                        Approved ({{ $stats['approved'] }})
-                    </a>
-                    <a href="{{ route('tech-head.reports', ['filter' => 'rejected']) }}" 
-                       class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors {{ $filter === 'rejected' ? 'bg-rose-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                        Rejected ({{ $stats['rejected'] }})
-                    </a>
+
+                <!-- Filter Buttons: horizontal row under title, scrollable on small screens -->
+                <div class="mt-3">
+                    <div class="-mx-2 overflow-x-auto">
+                        <div class="px-2 flex gap-2 whitespace-nowrap">
+                            <a href="{{ route('tech-head.reports', ['filter' => 'all']) }}" 
+                               class="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium transition-colors {{ $filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                                All ({{ $stats['total'] }})
+                            </a>
+                            <a href="{{ route('tech-head.reports', ['filter' => 'pending']) }}" 
+                               class="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium transition-colors {{ $filter === 'pending' ? 'bg-amber-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                                Pending ({{ $stats['pending'] }})
+                            </a>
+                            <a href="{{ route('tech-head.reports', ['filter' => 'approved']) }}" 
+                               class="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium transition-colors {{ $filter === 'approved' ? 'bg-emerald-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                                Approved ({{ $stats['approved'] }})
+                            </a>
+                            <a href="{{ route('tech-head.reports', ['filter' => 'rejected']) }}" 
+                               class="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium transition-colors {{ $filter === 'rejected' ? 'bg-rose-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                                Rejected ({{ $stats['rejected'] }})
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
             
             @if($reports->count() > 0)
-            <div class="overflow-x-auto">
+            <!-- Mobile list (small screens) -->
+            <div class="space-y-3 md:hidden">
+                @foreach($reports as $report)
+                    @php
+                        $startedAt = $report->assignment?->started_at
+                            ? $report->assignment->started_at->copy()->setTimezone('Asia/Manila')
+                            : null;
+                        $completedAt = $report->assignment?->completed_at
+                            ? $report->assignment->completed_at->copy()->setTimezone('Asia/Manila')
+                            : null;
+                        $durationText = 'N/A';
+                        if ($startedAt && $completedAt && $completedAt->greaterThanOrEqualTo($startedAt)) {
+                            $minutes = $startedAt->diffInMinutes($completedAt);
+                            $hours = intdiv($minutes, 60);
+                            $remainingMinutes = $minutes % 60;
+                            $durationText = $hours > 0 ? "{$hours}h {$remainingMinutes}m" : "{$remainingMinutes}m";
+                        }
+
+                        $reportPayload = [
+                            'id' => $report->id,
+                            'status' => $report->status,
+                            'work_summary' => $report->work_summary,
+                            'parts_used' => $report->parts_used,
+                            'remarks' => $report->remarks,
+                            'review_notes' => $report->review_notes,
+                            'submitted_at' => $report->created_at
+                                ? $report->created_at->copy()->setTimezone('Asia/Manila')->format('M d, Y h:i A')
+                                : null,
+                            'submitted_by' => optional($report->submittedBy)->name,
+                            'reviewed_by' => optional($report->reviewedBy)->name,
+                            'reviewed_at' => $report->reviewed_at
+                                ? $report->reviewed_at->copy()->setTimezone('Asia/Manila')->format('M d, Y h:i A')
+                                : null,
+                            'job_order' => [
+                                'number' => optional($report->assignment?->jobOrder)->job_order_number,
+                                'customer' => optional($report->assignment?->jobOrder?->customer)->name,
+                                'service_type' => optional($report->assignment?->jobOrder)->service_type,
+                                'service_description' => optional($report->assignment?->jobOrder)->service_description,
+                            ],
+                            'work_tracker' => [
+                                'started_at' => $startedAt?->format('M d, Y h:i A'),
+                                'completed_at' => $completedAt?->format('M d, Y h:i A'),
+                                'duration' => $durationText,
+                            ],
+                            'attachments' => $report->assignment?->jobOrder?->attachments
+                                ? $report->assignment->jobOrder->attachments->map(function ($attachment) {
+                                    return [
+                                        'id' => $attachment->id,
+                                        'file_name' => $attachment->file_name,
+                                        'file_path' => $attachment->file_path,
+                                        'created_at' => optional($attachment->created_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
+                                    ];
+                                })->values()->all()
+                                : [],
+                        ];
+                    @endphp
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-2xl p-4 bg-gray-50/80 dark:bg-gray-700/20">
+                        <div class="flex items-start justify-between">
+                            <div class="min-w-0">
+                                <p class="text-xs text-gray-500">{{ optional($report->assignment?->jobOrder)->job_order_number ?? 'N/A' }}</p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white break-words">{{ optional($report->assignment?->jobOrder?->customer)->name ?? 'N/A' }}</p>
+                                <p class="text-xs text-gray-500 mt-1">By {{ optional($report->submittedBy)->name ?? 'N/A' }} • {{ optional($report->created_at)->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="px-2 py-1 text-[11px] font-medium rounded-full {{ $report->status === 'pending' ? 'bg-amber-100 text-amber-800' : ($report->status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800') }}">{{ ucfirst($report->status) }}</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex gap-2">
+                            <button @click="openReportDetails(@js($reportPayload))" class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs">View Details</button>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            <div class="overflow-x-auto md:block hidden">
                 <table class="w-full">
                     <thead class="border-b border-gray-200 dark:border-gray-700">
                         <tr class="text-left">
@@ -554,7 +631,7 @@
                         <div x-show="selectedReport?.attachments?.length">
                             <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Attachments</h4>
                             <div class="space-y-2">
-                                <template x-for="attachment in selectedReport.attachments" :key="attachment.id">
+                                <template x-for="attachment in (selectedReport && selectedReport.attachments) ? selectedReport.attachments : []" :key="attachment.id">
                                     <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
                                         <div>
                                             <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="attachment.file_name"></p>

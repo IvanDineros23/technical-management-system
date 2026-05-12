@@ -143,38 +143,40 @@
 
         <!-- Filter Bar -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            <div class="flex flex-wrap gap-2 items-center justify-between">
-                <div class="flex flex-wrap gap-2">
-                <a href="{{ route('tech-head.certificates') }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ !request('status') ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    All Certificates
-                </a>
-                
-                <a href="{{ route('tech-head.certificates', ['status' => 'generated']) }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'generated' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    Generated
-                </a>
-                
-                <a href="{{ route('tech-head.certificates', ['status' => 'released']) }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'released' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    Released
-                </a>
-                
-                <a href="{{ route('tech-head.certificates', ['status' => 'pending']) }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'pending' ? 'bg-amber-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    Pending
-                </a>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <!-- horizontally scrollable chips -->
+                <div class="-mx-2 overflow-x-auto">
+                    <div class="px-2 flex gap-2 whitespace-nowrap">
+                        <a href="{{ route('tech-head.certificates') }}" 
+                           class="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors {{ !request('status') ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                            All Certificates
+                        </a>
+                        <a href="{{ route('tech-head.certificates', ['status' => 'generated']) }}" 
+                           class="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors {{ request('status') === 'generated' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                            Generated
+                        </a>
+                        <a href="{{ route('tech-head.certificates', ['status' => 'released']) }}" 
+                           class="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors {{ request('status') === 'released' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                            Released
+                        </a>
+                        <a href="{{ route('tech-head.certificates', ['status' => 'pending']) }}" 
+                           class="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors {{ request('status') === 'pending' ? 'bg-amber-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+                            Pending
+                        </a>
+                    </div>
                 </div>
-                
-                <button 
-                    @click="showCreate=true" 
-                    class="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 flex items-center gap-2 whitespace-nowrap"
-                >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    Create Certificate
-                </button>
+
+                <div class="flex-shrink-0">
+                    <button 
+                        @click="showCreate=true" 
+                        class="w-full sm:w-auto px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Create Certificate
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -185,7 +187,29 @@
                 <p class="text-xs text-gray-500 dark:text-gray-400">Total: {{ $certificates->count() }}</p>
             </div>
             
-            <div class="overflow-x-auto">
+            @if($certificates->count() > 0)
+            <div class="space-y-3 md:hidden">
+                @foreach($certificates as $cert)
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-2xl p-4 bg-gray-50/80 dark:bg-gray-700/20">
+                        <div class="flex items-start justify-between">
+                            <div class="min-w-0">
+                                <p class="text-xs text-gray-500">{{ $cert->certificate_number }}</p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $cert->jobOrder->customer->name ?? 'N/A' }}</p>
+                                <p class="text-xs text-gray-500 mt-1">{{ $cert->jobOrder->job_order_number ?? 'Manual' }} • {{ $cert->generated_at ? $cert->generated_at->setTimezone('Asia/Manila')->format('M d, Y') : 'Pending' }}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="px-2 py-1 text-[11px] font-medium rounded-full {{ $cert->status === 'generated' ? 'bg-green-100 text-green-800' : ($cert->status === 'released' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800') }}">{{ ucfirst($cert->status) }}</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex gap-2">
+                            <button @click="openDetails({{ json_encode($cert) }})" class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs">View</button>
+                            <a href="{{ route('tech-head.certificates.download', $cert->id) }}" class="px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-xs">Download</a>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full">
                     <thead class="border-b border-gray-200 dark:border-gray-700">
                         <tr>
@@ -301,6 +325,14 @@
                     </tbody>
                 </table>
             </div>
+            @else
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No certificates found</p>
+                </div>
+            @endif
         </div>
 
         <!-- Certificate Details Modal -->
@@ -533,7 +565,8 @@
             class="fixed inset-0 z-50 overflow-y-auto"
         >
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showCreate=false"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-start sm:items-center justify-center p-4">
+                <div class="w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
                 <div 
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 transform scale-95"
@@ -541,9 +574,9 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 transform scale-100"
                     x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+                    class="relative w-full bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                    <div class="p-6 space-y-4">
+                    <div class="p-4 sm:p-6 space-y-4">
                         <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4">
                             <div>
                                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">Create New Certificate</h3>
@@ -559,8 +592,8 @@
                         <form action="{{ route('tech-head.certificates.store') }}" method="POST" class="space-y-4" x-data="{ hasWorkOrder: false }" @submit="console.log('Form submitting...')">
                             @csrf
                             
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="col-span-2">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="col-span-1 sm:col-span-2">
                                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                         Job Order (Optional)
                                         <span class="text-xs font-normal text-gray-500">- Leave blank for standalone certificate</span>
@@ -577,7 +610,7 @@
                                     </select>
                                 </div>
                                 
-                                <div class="col-span-2" x-show="!hasWorkOrder">
+                                <div class="col-span-1 sm:col-span-2" x-show="!hasWorkOrder">
                                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Customer Name *</label>
                                     <input 
                                         type="text" 
@@ -588,7 +621,7 @@
                                     />
                                 </div>
                                 
-                                <div class="col-span-2" x-show="!hasWorkOrder">
+                                <div class="col-span-1 sm:col-span-2" x-show="!hasWorkOrder">
                                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Equipment/Item Description *</label>
                                     <input 
                                         type="text" 
@@ -599,7 +632,7 @@
                                     />
                                 </div>
                                 
-                                <div class="col-span-2" x-show="!hasWorkOrder">
+                                <div class="col-span-1 sm:col-span-2" x-show="!hasWorkOrder">
                                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Service/Calibration Type *</label>
                                     <select 
                                         name="service_type" 
@@ -662,7 +695,7 @@
                                     </select>
                                 </div>
                                 
-                                <div class="col-span-2">
+                                <div class="col-span-1 sm:col-span-2">
                                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Notes</label>
                                     <textarea 
                                         name="notes" 
@@ -673,9 +706,9 @@
                                 </div>
                             </div>
 
-                            <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                <button type="button" @click="showCreate=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">Cancel</button>
-                                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2">
+                            <div class="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <button type="button" @click="showCreate=false" class="w-full sm:w-auto px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">Cancel</button>
+                                <button type="submit" class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 justify-center">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                     </svg>
@@ -702,7 +735,8 @@
             @keydown.escape.window="showDeleteConfirm=false"
         >
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showDeleteConfirm=false"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-start sm:items-center justify-center p-4">
+                <div class="w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto">
                 <div 
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 transform scale-95"
@@ -710,7 +744,7 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 transform scale-100"
                     x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700 p-6"
+                    class="relative w-full bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700 p-6"
                 >
                     <div class="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full bg-rose-100 dark:bg-rose-900/30">
                         <svg class="w-6 h-6 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

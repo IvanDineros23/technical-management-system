@@ -8,10 +8,10 @@
 @endsection
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-4 sm:space-y-6">
     <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+        <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <div>
                 <label for="job_order" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Job Order</label>
                 <input type="text" name="job_order" id="job_order" value="{{ request('job_order') }}"
@@ -37,7 +37,7 @@
                        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
             </div>
 
-            <div class="flex items-end">
+            <div class="flex items-end sm:col-span-2 xl:col-span-1">
                 <button type="submit"
                         class="w-full px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
                     Apply Filters
@@ -48,13 +48,13 @@
 
     <!-- Reports Table -->
     <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Reports</h2>
             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ $reports->total() }} reports found</p>
         </div>
 
         @if($reports->isEmpty())
-            <div class="p-12 text-center">
+            <div class="p-8 sm:p-12 text-center">
                 <svg class="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
@@ -62,8 +62,55 @@
                 <p class="text-gray-500 dark:text-gray-500 text-sm mt-2">Reports will appear here when technicians submit them</p>
             </div>
         @else
-            <div class="overflow-x-auto">
-                <table class="w-full">
+            <div class="space-y-3 md:hidden p-4 sm:p-6">
+                @foreach($reports as $report)
+                    @php
+                        $statusColors = [
+                            'pending' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200',
+                            'approved' => 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200',
+                            'rejected' => 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200',
+                        ];
+                        $statusColor = $statusColors[$report->status] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-200';
+                    @endphp
+                    <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 p-4">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words">{{ $report->assignment?->jobOrder?->job_order_number ?? 'N/A' }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 break-words">{{ $report->assignment?->jobOrder?->service_type ?? '' }}</p>
+                            </div>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $statusColor }} whitespace-nowrap">
+                                {{ ucfirst(str_replace('_', ' ', $report->status)) }}
+                            </span>
+                        </div>
+
+                        <div class="space-y-2 text-sm">
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Technician</p>
+                                <p class="text-gray-900 dark:text-gray-100 break-words">{{ $report->assignment?->assignedTo?->name ?? 'N/A' }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Submitted by: {{ $report->submittedBy?->name ?? 'N/A' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Submitted</p>
+                                <p class="text-gray-900 dark:text-gray-100">{{ $report->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $report->created_at->diffForHumans() }}</p>
+                            </div>
+                            <div>
+                                <a href="{{ route('signatory.report.view', $report) }}"
+                                   class="inline-flex items-center gap-2 px-3 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-lg transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                    View
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="hidden md:block overflow-x-auto">
+                <table class="w-full min-w-[820px]">
                     <thead class="bg-gray-50 dark:bg-gray-900/50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Job Order</th>
@@ -119,7 +166,7 @@
 
             <!-- Pagination -->
             @if($reports->hasPages())
-                <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-gray-700 overflow-x-auto">
                     {{ $reports->links() }}
                 </div>
             @endif

@@ -133,14 +133,14 @@
 @endsection
 
 @section('content')
-    <div x-data="jobOrdersPage()">
-        <div class="mb-6 flex items-center justify-between gap-3">
+    <div x-data="jobOrdersPage()" class="w-full min-h-screen">
+        <div class="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-0">
             <div>
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Job Orders</h2>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">View and manage all job orders</p>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Job Orders</h2>
+                <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">View and manage all job orders</p>
             </div>
             <a href="{{ route('marketing.create-job-order') }}"
-               class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+               class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -149,7 +149,7 @@
         </div>
 
         <!-- Filters -->
-        <div class="mb-6 flex flex-wrap gap-3">
+        <div class="mb-4 sm:mb-6 flex flex-wrap gap-2 sm:gap-3 px-4 sm:px-0">
             <button @click="filterByStatus('all')" :class="filterStatus === 'all' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 All Orders
             </button>
@@ -174,8 +174,8 @@
         </div>
 
         <!-- Search Bar -->
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <form method="GET" action="{{ route('marketing.job-orders') }}" class="w-full sm:w-96">
+                <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-0">
+                    <form method="GET" action="{{ route('marketing.job-orders') }}" class="w-full sm:w-96">
               {{-- keep current status when searching --}}
               @if(request('status'))
                   <input type="hidden" name="status" value="{{ request('status') }}">
@@ -207,8 +207,131 @@
         </div>
 
     <!-- Job Orders Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div class="overflow-x-auto max-w-full">
+    <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden mx-4 sm:mx-0">
+        <!-- Mobile Cards -->
+        <div class="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
+            @forelse($jobOrders as $jobOrder)
+                @php
+                    $isCustomerRequest = $jobOrder->creator && $jobOrder->creator->role && $jobOrder->creator->role->slug === 'customer';
+                @endphp
+                <div class="p-4 space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ $jobOrder->job_order_number }}</div>
+                            @if($isCustomerRequest)
+                                <span class="mt-1 inline-flex items-center px-2 py-0.5 text-[11px] font-semibold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+                                    Customer Request
+                                </span>
+                            @endif
+                        </div>
+                        <div>
+                            @if($jobOrder->status === 'pending')
+                                <span class="px-2.5 py-1 text-xs font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full">Pending</span>
+                            @elseif($jobOrder->status === 'for_accounting_approval')
+                                <span class="px-2.5 py-1 text-xs font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full">For Accounting</span>
+                            @elseif($jobOrder->status === 'approved')
+                                <span class="px-2.5 py-1 text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full">Approved</span>
+                            @elseif($jobOrder->status === 'in_progress')
+                                <span class="px-2.5 py-1 text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">In Progress</span>
+                            @elseif($jobOrder->status === 'completed')
+                                <span class="px-2.5 py-1 text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full">Completed</span>
+                            @elseif($jobOrder->status === 'rejected')
+                                <span class="px-2.5 py-1 text-xs font-semibold bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 rounded-full">Rejected</span>
+                            @else
+                                <span class="px-2.5 py-1 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">{{ ucfirst($jobOrder->status) }}</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $jobOrder->customer->name ?? 'N/A' }}</p>
+                        <p class="break-all">{{ $jobOrder->customer->email ?? '' }}</p>
+                        <p><span class="font-medium">Service:</span> {{ $jobOrder->service_type ?? 'N/A' }}</p>
+                        <p><span class="font-medium">Created:</span> {{ $jobOrder->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button @click='openJODetails(@json($jobOrder))' class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                            View
+                        </button>
+                        <details class="row-actions relative text-left" @toggle="if ($el.open) closeOtherActionMenus($el)" @click.outside="$el.open = false">
+                            <summary class="list-none cursor-pointer inline-flex items-center gap-1 text-slate-600 hover:text-slate-800 dark:text-gray-300 dark:hover:text-white text-sm font-medium">
+                                Actions
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </summary>
+                            @if($jobOrder->status === 'pending')
+                                @if($isCustomerRequest)
+                                    <div class="absolute right-0 top-full mt-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-2 space-y-1 min-w-[170px] shadow-lg z-30">
+                                        <form method="POST" action="{{ route('marketing.job-orders.approve', $jobOrder) }}" class="m-0">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="w-full text-left text-emerald-600 hover:text-emerald-700 font-semibold">
+                                                Accept
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ route('marketing.job-orders.reject', $jobOrder) }}" class="m-0" onsubmit="return confirm('Decline this customer request?');">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="w-full text-left text-rose-600 hover:text-rose-700 font-semibold">
+                                                Decline
+                                            </button>
+                                        </form>
+                                    </div>
+                                @else
+                                    <div class="absolute right-0 top-full mt-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-2 space-y-1 min-w-[190px] shadow-lg z-30">
+                                        <a href="{{ route('marketing.job-orders.edit', $jobOrder) }}" class="block text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-medium">
+                                            Edit
+                                        </a>
+                                        <form method="POST" action="{{ route('marketing.job-orders.submit-accounting', $jobOrder) }}" class="m-0" onsubmit="return confirm('Submit this pending JO to accounting?');">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="w-full text-left text-emerald-600 hover:text-emerald-700 font-semibold">
+                                                Submit to Accounting
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endif
+                            @else
+                                <div class="absolute right-0 top-full mt-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-2 space-y-1 min-w-[190px] shadow-lg z-30">
+                                    <a href="{{ route('marketing.job-orders.edit', $jobOrder) }}" class="block text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-medium">
+                                        Edit
+                                    </a>
+                                    @if($jobOrder->pdf_filename)
+                                        <a href="{{ route('marketing.job-orders.download', $jobOrder) }}" class="block text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium">
+                                            Download PDF
+                                        </a>
+                                    @else
+                                        <span class="block text-indigo-300 dark:text-indigo-500 font-medium cursor-not-allowed" title="No PDF available yet">
+                                            Download PDF
+                                        </span>
+                                    @endif
+                                    <form method="POST" action="{{ route('marketing.job-orders.destroy', $jobOrder) }}" class="m-0" onsubmit="return confirm('Delete this job order?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="w-full text-left text-rose-600 hover:text-rose-700 font-semibold">
+                                            Delete
+                                        </button>
+                                    </form>
+                                    @if(in_array($jobOrder->status, ['rejected', 'cancelled'], true))
+                                        <form method="POST" action="{{ route('marketing.job-orders.submit-accounting', $jobOrder) }}" class="m-0" onsubmit="return confirm('Resubmit this job order to accounting?');">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="w-full text-left text-emerald-600 hover:text-emerald-700 font-semibold">
+                                                Submit to Accounting
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+                            @endif
+                        </details>
+                    </div>
+                </div>
+            @empty
+                <div class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">No job orders found</div>
+            @endforelse
+        </div>
+
+        <div class="hidden sm:block overflow-x-auto max-w-full">
             <table class="w-full">
                 <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 sticky top-0 z-10">
                     <tr>
@@ -371,8 +494,8 @@
         </div>
 
         <!-- Pagination -->
-        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <div class="text-sm text-gray-600 dark:text-gray-400">
+        <div class="px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 Showing {{ $jobOrders->firstItem() ?? 0 }} to {{ $jobOrders->lastItem() ?? 0 }} of {{ $jobOrders->total() }} results
             </div>
             <div class="flex gap-2">
@@ -403,9 +526,9 @@
                  x-transition:leave="ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                  class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-[95vw] max-w-7xl max-h-[92vh] overflow-y-auto">
+                                    class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all w-[95vw] max-w-7xl max-h-[92vh] overflow-y-auto">
 
-                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-3 sm:py-4">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-semibold text-white" x-text="selectedJO?.job_order_number || 'Job Order Details'"></h3>
                         <button @click="closeJODetails()" class="text-white hover:text-gray-200 transition-colors">
@@ -414,7 +537,7 @@
                     </div>
                 </div>
 
-                <div class="p-6 space-y-4">
+                <div class="p-4 sm:p-6 space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <p class="text-sm text-gray-500 dark:text-gray-400">Customer</p>
@@ -547,8 +670,8 @@
                     </div>
                 </div>
 
-                <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex justify-end gap-3">
-                    <button @click="closeJODetails()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Close</button>
+                <div class="bg-gray-50 dark:bg-gray-700/50 px-4 sm:px-6 py-4 flex justify-end gap-3">
+                    <button @click="closeJODetails()" class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Close</button>
                 </div>
             </div>
         </div>

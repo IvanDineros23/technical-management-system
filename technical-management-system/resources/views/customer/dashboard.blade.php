@@ -45,7 +45,7 @@
 
 @section('content')
     @if(!auth()->user()->hasVerifiedEmail())
-        <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-500/40 dark:bg-amber-900/20 dark:text-amber-100">
+        <div class="mb-4 sm:mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-500/40 dark:bg-amber-900/20 dark:text-amber-100">
             <p class="text-sm font-semibold">Verify your email to unlock full customer access.</p>
             <p class="text-xs mt-1 text-amber-800 dark:text-amber-200/90">Requests and certificates remain locked until your email is verified.</p>
 
@@ -66,32 +66,32 @@
     @endif
 
     @if(!$customer)
-        <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+        <div class="mb-4 sm:mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
             <p class="text-sm font-semibold">No customer profile linked to this account yet.</p>
             <p class="text-xs mt-1">Please contact the administrator to link your customer record.</p>
         </div>
     @endif
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
             <p class="text-xs font-semibold text-slate-500 uppercase">Total Requests</p>
-            <p class="text-3xl font-bold text-slate-900 dark:text-white mt-2">{{ $stats['total_requests'] }}</p>
+            <p class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-2">{{ $stats['total_requests'] }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
             <p class="text-xs font-semibold text-amber-500 uppercase">Pending Requests</p>
-            <p class="text-3xl font-bold text-amber-600 mt-2">{{ $stats['pending_requests'] }}</p>
+            <p class="text-2xl sm:text-3xl font-bold text-amber-600 mt-2">{{ $stats['pending_requests'] }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
             <p class="text-xs font-semibold text-blue-500 uppercase">Pending Certificates</p>
-            <p class="text-3xl font-bold text-blue-600 mt-2">{{ $stats['pending_certificates'] }}</p>
+            <p class="text-2xl sm:text-3xl font-bold text-blue-600 mt-2">{{ $stats['pending_certificates'] }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
             <p class="text-xs font-semibold text-emerald-500 uppercase">Released Certificates</p>
-            <p class="text-3xl font-bold text-emerald-600 mt-2">{{ $stats['released_certificates'] }}</p>
+            <p class="text-2xl sm:text-3xl font-bold text-emerald-600 mt-2">{{ $stats['released_certificates'] }}</p>
         </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
         <h3 class="text-base font-bold text-slate-900 dark:text-white">Quick Certificate Verification</h3>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter a certificate number to validate.</p>
         <form method="GET" action="{{ route('certificate-verification.verify') }}" class="mt-4 flex flex-col sm:flex-row gap-3">
@@ -103,20 +103,33 @@
             >
             <button
                 type="submit"
-                class="px-6 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+                class="w-full sm:w-auto px-6 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
             >
                 Validate
             </button>
         </form>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">Pending Requests</h3>
                 <a href="{{ route('customer.requests', ['status' => 'pending']) }}" class="text-xs font-semibold text-blue-600">View all</a>
             </div>
-            <div class="overflow-x-auto">
+            <div class="space-y-3 md:hidden">
+                @forelse($pendingRequests as $order)
+                    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 sm:p-4">
+                        <div class="flex items-start justify-between gap-3 mb-2">
+                            <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $order->job_order_number }}</p>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700">{{ ucfirst($order->status) }}</span>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-300">Requested: {{ optional($order->request_date)->format('M d, Y') ?? 'N/A' }}</p>
+                    </div>
+                @empty
+                    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4 text-center text-sm text-gray-500">No pending requests.</div>
+                @endforelse
+            </div>
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full">
                     <thead class="border-b border-gray-200 dark:border-gray-700">
                         <tr>
@@ -146,12 +159,27 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">Pending Certificates</h3>
                 <a href="{{ route('customer.certificates', ['status' => 'pending']) }}" class="text-xs font-semibold text-blue-600">View all</a>
             </div>
-            <div class="overflow-x-auto">
+            <div class="space-y-3 md:hidden">
+                @forelse($pendingCertificates as $cert)
+                    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 sm:p-4">
+                        <div class="flex items-start justify-between gap-3 mb-2">
+                            <p class="text-sm font-semibold text-blue-600">{{ $cert->certificate_number }}</p>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+                                {{ $cert->status ? ucfirst($cert->status) : 'Pending' }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-300">Job Order: {{ $cert->jobOrder?->job_order_number ?? 'N/A' }}</p>
+                    </div>
+                @empty
+                    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4 text-center text-sm text-gray-500">No pending certificates.</div>
+                @endforelse
+            </div>
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full">
                     <thead class="border-b border-gray-200 dark:border-gray-700">
                         <tr>

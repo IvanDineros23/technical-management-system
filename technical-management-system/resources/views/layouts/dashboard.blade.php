@@ -40,6 +40,7 @@
     @yield('head')
 </head>
 <body class="h-full bg-gray-100 dark:bg-gray-900 overflow-hidden transition-colors" x-data="{ 
+    sidebarOpen: false,
     toasts: [],
     addToast(message, type = 'success') {
         const id = Date.now();
@@ -107,8 +108,11 @@
     </div>
     
     <div class="flex h-full">
+        <!-- Mobile Sidebar Overlay -->
+        <div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-40 lg:hidden" style="display: none;" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
+
         <!-- Sidebar -->
-        <aside class="w-64 flex-shrink-0 bg-gradient-to-b from-blue-100 to-blue-50 dark:from-gray-800 dark:to-gray-900 rounded-r-3xl shadow-lg flex flex-col overflow-hidden border-r border-blue-200 dark:border-gray-700">
+        <aside class="w-64 flex-shrink-0 bg-gradient-to-b from-blue-100 to-blue-50 dark:from-gray-800 dark:to-gray-900 rounded-r-3xl shadow-lg flex-col overflow-hidden border-r border-blue-200 dark:border-gray-700 fixed lg:relative h-full left-0 top-0 z-50 lg:z-auto" :class="{ 'hidden': !sidebarOpen && window.innerWidth < 1024, 'flex': true }" x-transition:enter="transition ease-out duration-300 lg:transition-none" x-transition:enter-start="-translate-x-full lg:translate-x-0" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-200 lg:transition-none" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full lg:translate-x-0">
             <!-- Logo -->
             <div class="p-5 flex-shrink-0">
                 <div class="flex flex-col items-center gap-3">
@@ -164,8 +168,22 @@
         </aside>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col min-h-0 overflow-hidden bg-gray-50 dark:bg-gray-800">            <!-- Scrollable Content -->
-            <main class="flex-1 overflow-y-auto px-8 py-6 min-h-0">
+        <div class="flex-1 flex flex-col min-h-0 overflow-hidden bg-gray-50 dark:bg-gray-800">
+            <!-- Mobile Header with Hamburger -->
+            <div class="lg:hidden h-16 bg-white dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex items-center px-4 gap-3 shadow-sm">
+                <button @click="sidebarOpen = !sidebarOpen" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                    <svg class="w-6 h-6 text-gray-700 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <div class="flex-1 flex items-center gap-2">
+                    <img src="{{ asset('assets/0fae4580-eff0-4ee7-98e2-8ab80dd542cf-removebg-preview.png') }}" alt="Gemarc Logo" class="w-8 h-8 object-contain">
+                    <span class="text-sm font-semibold text-gray-800 dark:text-white">Gemarc - TMS</span>
+                </div>
+            </div>
+
+            <!-- Scrollable Content -->
+            <main class="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 min-h-0">
                 @yield('content')
             </main>
         </div>

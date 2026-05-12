@@ -11,14 +11,14 @@
 @endsection
 
 @section('content')
-<div class="space-y-6" x-data="{ showRegister: false, showView: false, showCalibrate: false, showDelete: false, selectedEquipment: null }">
+<div class="space-y-4 sm:space-y-6" x-data="{ showRegister: false, showView: false, showCalibrate: false, showDelete: false, selectedEquipment: null }">
     <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Equipment</h2>
             <p class="text-gray-600 dark:text-gray-400 mt-1">Equipment registry and calibration tracking</p>
         </div>
-        <button @click="showRegister=true" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+        <button @click="showRegister=true" class="w-full sm:w-auto px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
@@ -27,20 +27,20 @@
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
+    <div class="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <p class="text-sm text-gray-600 dark:text-gray-400">Total Equipment</p>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ $totalEquipment }}</p>
+            <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ $totalEquipment }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <p class="text-sm text-gray-600 dark:text-gray-400">In Maintenance</p>
-            <p class="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">{{ $maintenanceCount }}</p>
+            <p class="text-2xl sm:text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">{{ $maintenanceCount }}</p>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
-        <form method="GET" action="{{ route('admin.equipment.index') }}" class="grid grid-cols-1 gap-4 sm:grid-cols-4">
+    <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+        <form method="GET" action="{{ route('admin.equipment.index') }}" class="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search</label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name or serial..." class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -73,8 +73,53 @@
         </form>
     </div>
 
+    <!-- Equipment Mobile Cards -->
+    <div class="space-y-3 md:hidden">
+        @forelse($equipment as $item)
+            <div class="bg-white dark:bg-gray-800 rounded-[18px] border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                <div class="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $item->name }}</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Serial: {{ $item->serial_number }}</p>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-900 dark:text-white">{{ $item->category }}</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 mb-3">
+                    @if($item->status === 'available')
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Available</span>
+                    @elseif($item->status === 'in_use')
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">In Use</span>
+                    @elseif($item->status === 'maintenance')
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">Maintenance</span>
+                    @else
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">Retired</span>
+                    @endif
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Last calibrated: {{ $item->last_maintenance ? $item->last_maintenance->format('M d, Y') : 'N/A' }}</span>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <button
+                        class="w-full sm:w-auto text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 text-xs font-semibold"
+                        @click="selectedEquipment = @js($item); showView = true"
+                    >View</button>
+                    <button
+                        class="w-full sm:w-auto text-orange-600 hover:text-orange-900 dark:hover:text-orange-400 text-xs font-semibold"
+                        @click="selectedEquipment = @js($item); showCalibrate = true"
+                    >Calibrate</button>
+                    <button
+                        class="w-full sm:w-auto text-rose-600 hover:text-rose-900 dark:hover:text-rose-400 text-xs font-semibold"
+                        @click="selectedEquipment = @js($item); showDelete = true"
+                    >Delete</button>
+                </div>
+            </div>
+        @empty
+            <div class="bg-white dark:bg-gray-800 rounded-[18px] border border-gray-200 dark:border-gray-700 p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                No equipment found.
+            </div>
+        @endforelse
+    </div>
+
     <!-- Equipment Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="hidden md:block bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>

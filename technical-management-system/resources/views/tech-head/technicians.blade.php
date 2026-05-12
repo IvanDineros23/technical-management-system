@@ -77,9 +77,9 @@
         </div>
 
         <!-- Search Bar and Add Button -->
-        <div class="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+        <div class="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center">
             <!-- Search Bar -->
-            <form method="GET" action="{{ route('tech-head.technicians') }}" class="flex-1 max-w-2xl">
+            <form method="GET" action="{{ route('tech-head.technicians') }}" class="w-full md:flex-1 md:max-w-2xl">
                 <div class="relative">
                     <input 
                         type="text" 
@@ -97,7 +97,7 @@
             <!-- Add Button -->
             <button 
                 @click="showAdd=true" 
-                class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 flex items-center gap-2 whitespace-nowrap"
+                class="w-full md:w-auto justify-center px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 flex items-center gap-2 whitespace-nowrap"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
@@ -119,7 +119,80 @@
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">Team Members</h3>
             </div>
 
-            <div class="overflow-x-auto">
+            <div class="space-y-3 md:hidden">
+                @foreach($technicians as $tech)
+                    @php
+                        $stats = $technicianStats[$tech->id] ?? null;
+                        $active = $stats->active ?? 0;
+                        $scheduled = $stats->scheduled ?? 0;
+                        $completed = $stats->completed ?? 0;
+                        $total = $stats->total_assignments ?? ($active + $completed);
+
+                        $availabilityLabel = 'Available';
+                        $availabilityClass = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
+
+                        if (!($tech->is_active ?? true) || in_array($tech->availability, ['on_leave', 'unavailable'], true)) {
+                            $availabilityLabel = 'Not Available';
+                            $availabilityClass = 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200';
+                        } elseif ($active > 0) {
+                            $availabilityLabel = 'Assigned';
+                            $availabilityClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
+                        } elseif ($scheduled > 0) {
+                            $availabilityLabel = 'With Schedule';
+                            $availabilityClass = 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
+                        }
+                    @endphp
+                    <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-700/30 p-4 shadow-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Technician</p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $tech->name }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 break-all">{{ $tech->email }}</p>
+                            </div>
+                            <span class="px-2 py-1 text-[11px] font-medium rounded-full {{ $availabilityClass }}">{{ $availabilityLabel }}</span>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Active</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ $active }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Completed</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ $completed }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Total</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ $total }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Schedule</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ $scheduled > 0 ? $scheduled . ' scheduled' : 'None' }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex flex-wrap gap-2" @click.stop>
+                            <button @click="selectedId={{ $tech->id }}; showSkills=true;" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Skills</button>
+                            <button @click="selectedId={{ $tech->id }}; showAvailability=true;" class="px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold">Availability</button>
+                            <button @click="selectedId={{ $tech->id }}; selectedName='{{ $tech->name }}'; showDisable=true;" class="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold">Disable</button>
+                            <button @click="openDetails({{ json_encode([
+                                'id' => $tech->id,
+                                'name' => $tech->name,
+                                'email' => $tech->email,
+                                'role' => $tech->role->name ?? 'Technician',
+                                'availability' => $tech->availability,
+                                'active' => $active,
+                                'scheduled' => $scheduled,
+                                'completed' => $completed,
+                                'total' => $total,
+                                'created_at' => $tech->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')
+                            ]) }})" class="px-3 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold dark:bg-gray-100 dark:text-gray-900">View</button>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full">
                     <thead class="border-b border-gray-200 dark:border-gray-700">
                         <tr>
@@ -243,7 +316,7 @@
                         <form method="POST" action="{{ route('tech-head.technicians.store') }}" class="space-y-4">
                             @csrf
                             
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Full Name</label>
                                     <input 
@@ -544,7 +617,7 @@
                             </button>
                         </div>
                         
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Name</p>
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedTechnician?.name"></p>

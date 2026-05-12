@@ -154,40 +154,43 @@
 @section('content')
     <div x-data="calendarPage()" x-init="console.log('Calendar initialized')">
         <!-- Calendar -->
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white" x-text="getMonthName() + ' ' + currentYear"></h3>
-                <div class="flex gap-2">
-                    <button @click="previousMonth()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Previous</button>
-                    <button @click="goToToday()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Today</button>
-                    <button @click="nextMonth()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Next</button>
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <h3 class="text-base sm:text-xl font-bold text-gray-900 dark:text-white" x-text="getMonthName() + ' ' + currentYear"></h3>
+                <div class="grid grid-cols-3 gap-2 sm:flex sm:gap-2">
+                    <button @click="previousMonth()" class="px-2 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-xs sm:text-sm">Previous</button>
+                    <button @click="goToToday()" class="px-2 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm">Today</button>
+                    <button @click="nextMonth()" class="px-2 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-xs sm:text-sm">Next</button>
                 </div>
             </div>
 
             <!-- Calendar Grid -->
-            <div class="grid grid-cols-7 gap-2 mb-2">
+            <div class="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
                 <!-- Day Headers -->
-                <div class="text-center py-3 font-bold text-gray-700 dark:text-gray-300 text-sm border-b-2 border-gray-300 dark:border-gray-600">SUN</div>
-                <div class="text-center py-3 font-bold text-gray-700 dark:text-gray-300 text-sm border-b-2 border-gray-300 dark:border-gray-600">MON</div>
-                <div class="text-center py-3 font-bold text-gray-700 dark:text-gray-300 text-sm border-b-2 border-gray-300 dark:border-gray-600">TUE</div>
-                <div class="text-center py-3 font-bold text-gray-700 dark:text-gray-300 text-sm border-b-2 border-gray-300 dark:border-gray-600">WED</div>
-                <div class="text-center py-3 font-bold text-gray-700 dark:text-gray-300 text-sm border-b-2 border-gray-300 dark:border-gray-600">THU</div>
-                <div class="text-center py-3 font-bold text-gray-700 dark:text-gray-300 text-sm border-b-2 border-gray-300 dark:border-gray-600">FRI</div>
-                <div class="text-center py-3 font-bold text-gray-700 dark:text-gray-300 text-sm border-b-2 border-gray-300 dark:border-gray-600">SAT</div>
+                <div class="text-center py-2 sm:py-3 font-bold text-gray-700 dark:text-gray-300 text-[10px] sm:text-sm border-b-2 border-gray-300 dark:border-gray-600">SUN</div>
+                <div class="text-center py-2 sm:py-3 font-bold text-gray-700 dark:text-gray-300 text-[10px] sm:text-sm border-b-2 border-gray-300 dark:border-gray-600">MON</div>
+                <div class="text-center py-2 sm:py-3 font-bold text-gray-700 dark:text-gray-300 text-[10px] sm:text-sm border-b-2 border-gray-300 dark:border-gray-600">TUE</div>
+                <div class="text-center py-2 sm:py-3 font-bold text-gray-700 dark:text-gray-300 text-[10px] sm:text-sm border-b-2 border-gray-300 dark:border-gray-600">WED</div>
+                <div class="text-center py-2 sm:py-3 font-bold text-gray-700 dark:text-gray-300 text-[10px] sm:text-sm border-b-2 border-gray-300 dark:border-gray-600">THU</div>
+                <div class="text-center py-2 sm:py-3 font-bold text-gray-700 dark:text-gray-300 text-[10px] sm:text-sm border-b-2 border-gray-300 dark:border-gray-600">FRI</div>
+                <div class="text-center py-2 sm:py-3 font-bold text-gray-700 dark:text-gray-300 text-[10px] sm:text-sm border-b-2 border-gray-300 dark:border-gray-600">SAT</div>
             </div>
 
             <!-- Calendar Days Grid -->
-            <div class="grid grid-cols-7 gap-2">
+            <div class="grid grid-cols-7 gap-1 sm:gap-2">
                 <template x-for="(dayData, index) in getCalendarDays()" :key="index">
-                    <div :class="dayData.day ? (isToday(dayData.date) ? 'min-h-[80px] md:min-h-[100px] p-3 border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400 rounded-lg shadow-lg hover:shadow-xl cursor-pointer transition-all' : 'min-h-[80px] md:min-h-[100px] p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-400 cursor-pointer transition-all') : 'min-h-[80px] md:min-h-[100px] bg-gray-50 dark:bg-gray-900/20 rounded-lg'">
+                    <div :class="dayData.day ? (isToday(dayData.date) ? 'min-h-[56px] sm:min-h-[80px] md:min-h-[100px] p-2 sm:p-3 border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400 rounded-lg shadow-lg hover:shadow-xl cursor-pointer transition-all' : 'min-h-[56px] sm:min-h-[80px] md:min-h-[100px] p-2 sm:p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-400 cursor-pointer transition-all') : 'min-h-[56px] sm:min-h-[80px] md:min-h-[100px] bg-gray-50 dark:bg-gray-900/20 rounded-lg'">
                         <div x-show="dayData.day">
-                            <div :class="isToday(dayData.date) ? 'text-base font-bold text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-2' : 'text-base font-bold text-gray-900 dark:text-white mb-2'">
+                            <div :class="isToday(dayData.date) ? 'text-xs sm:text-base font-bold text-blue-600 dark:text-blue-400 mb-1 sm:mb-2 flex items-center gap-2' : 'text-xs sm:text-base font-bold text-gray-900 dark:text-white mb-1 sm:mb-2'">
                                 <span x-text="dayData.day"></span>
-                                <span x-show="isToday(dayData.date)" class="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Today</span>
+                                <span x-show="isToday(dayData.date)" class="inline-flex items-center">
+                                    <span class="sm:hidden w-2 h-2 rounded-full bg-blue-600"></span>
+                                    <span class="hidden sm:inline text-[10px] sm:text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Today</span>
+                                </span>
                             </div>
                             <div x-show="getJobsForDate(dayData.date).length > 0" class="flex items-center gap-1">
                                 <div class="w-2 h-2 bg-blue-600 rounded-full"></div>
-                                <span class="text-xs text-blue-600 dark:text-blue-400 font-semibold" x-text="getJobsForDate(dayData.date).length + ' job' + (getJobsForDate(dayData.date).length > 1 ? 's' : '')"></span>
+                                <span class="text-[10px] sm:text-xs text-blue-600 dark:text-blue-400 font-semibold" x-text="getJobsForDate(dayData.date).length + ' job' + (getJobsForDate(dayData.date).length > 1 ? 's' : '')"></span>
                             </div>
                         </div>
                     </div>
@@ -195,8 +198,8 @@
             </div>
 
             <!-- Upcoming Jobs -->
-            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <h4 class="font-semibold text-gray-900 dark:text-white mb-4">Upcoming Jobs</h4>
+            <div class="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4 text-sm sm:text-base">Upcoming Jobs</h4>
                 <div class="space-y-3">
                     <template x-if="jobs.length > 0">
                         <div class="space-y-3">
@@ -204,22 +207,22 @@
                                 <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                                     <div class="flex items-center justify-between">
                                         <div>
-                                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="job.title"></p>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="job.date + ' at ' + job.time"></p>
+                                            <p class="text-xs sm:text-sm font-medium text-gray-900 dark:text-white" x-text="job.title"></p>
+                                            <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="job.date + ' at ' + job.time"></p>
                                         </div>
-                                        <button class="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline">View</button>
+                                        <button class="text-blue-600 dark:text-blue-400 text-xs sm:text-sm font-medium hover:underline">View</button>
                                     </div>
                                 </div>
                             </template>
                         </div>
                     </template>
                     <template x-if="jobs.length === 0">
-                        <div class="text-center py-12">
-                            <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="text-center py-10">
+                            <svg class="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 dark:text-gray-600 mx-auto mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
-                            <p class="text-gray-500 dark:text-gray-400 text-sm">No scheduled jobs</p>
-                            <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">Check back soon for new assignments</p>
+                            <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">No scheduled jobs</p>
+                            <p class="text-gray-400 dark:text-gray-500 text-[10px] sm:text-xs mt-1">Check back soon for new assignments</p>
                         </div>
                     </template>
                 </div>

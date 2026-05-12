@@ -102,23 +102,23 @@
         }"
         class="space-y-3"
     >
-        <div class="flex items-center justify-between px-1">
-            <p class="text-xs text-gray-500 dark:text-gray-400">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-1">
+            <p class="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
                 {{ $grouped->count() }} {{ Str::plural('job group', $grouped->count()) }}
                 | {{ $totalActivities }} {{ Str::plural('activity', $totalActivities) }}
             </p>
-            <div class="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden w-full sm:w-auto">
                 <button
                     type="button"
                     @click="expandAll"
-                    class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    class="flex-1 sm:flex-none px-2 sm:px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                     Expand all
                 </button>
                 <button
                     type="button"
                     @click="collapseAll"
-                    class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    class="flex-1 sm:flex-none px-2 sm:px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                     Collapse all
                 </button>
@@ -141,24 +141,24 @@
                 <button
                     type="button"
                     @click="toggleGroup('{{ $group['key'] }}')"
-                    class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    class="w-full flex items-center justify-between px-2 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
-                    <div class="flex items-center gap-3 min-w-0">
-                        <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                         </svg>
                         <div class="text-left min-w-0">
-                            <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                            <p class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white truncate">
                                 {{ $group['title'] }}
                             </p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                            <p class="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
                                 {{ $group['entries']->count() }} {{ Str::plural('activity', $group['entries']->count()) }}
                             </p>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full {{ $statusClass }}">
+                        <span class="px-2 py-1 text-[11px] sm:text-xs font-medium rounded-full {{ $statusClass }}">
                             {{ ucfirst(str_replace('_', ' ', $groupStatus)) }}
                         </span>
                         <svg class="w-4 h-4 text-gray-500 dark:text-gray-400 transform transition-transform"
@@ -207,22 +207,22 @@
                                 }
                             @endphp
 
-                            <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
-                                <div class="flex items-start justify-between gap-2">
+                            <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2 sm:p-3">
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                                     <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                                        <p class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
                                             {{ data_get($entry, 'title', 'Activity') }}
                                         </p>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
                                             {{ data_get($entry, 'description', '') }}
                                         </p>
                                     </div>
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap {{ $entryStatusClass }}">
+                                    <span class="mt-2 sm:mt-0 px-2 py-1 text-[11px] sm:text-xs font-medium rounded-full whitespace-nowrap {{ $entryStatusClass }}">
                                         {{ ucfirst(str_replace('_', ' ', $entryStatus)) }}
                                     </span>
                                 </div>
 
-                                <div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                <div class="mt-2 flex flex-wrap items-center gap-2 text-xs sm:text-xs text-gray-500 dark:text-gray-400">
                                     @if($metaName)
                                         <span class="inline-flex items-center gap-1">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -240,7 +240,7 @@
                                         </span>
                                     @endif
                                     @if($metaAction)
-                                        <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                                        <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200 text-[10px]">
                                             {{ strtoupper($metaAction) }}
                                         </span>
                                     @endif

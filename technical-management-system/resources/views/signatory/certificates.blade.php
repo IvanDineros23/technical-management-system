@@ -9,11 +9,11 @@
 @endsection
 
 @section('content')
-    <div class="space-y-6">
+    <div class="space-y-4 sm:space-y-6">
         <!-- Filters -->
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">🔍 Filters</h3>
-            <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Date From</label>
                     <input type="date" name="date_from" value="{{ request('date_from') }}"
@@ -24,7 +24,7 @@
                     <input type="date" name="date_to" value="{{ request('date_to') }}"
                         class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
                 </div>
-                <div class="flex items-end">
+                <div class="flex items-end sm:col-span-2 xl:col-span-1">
                     <button type="submit" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
                         Filter
                     </button>
@@ -33,8 +33,8 @@
         </div>
 
         <!-- Certificates Table -->
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <div class="flex items-center justify-between mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 sm:mb-6">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">
                     Certificates for Approval
                     <span class="text-xs font-normal text-gray-500 dark:text-gray-400">({{ $certificates->total() }} total)</span>
@@ -42,8 +42,69 @@
             </div>
 
             @if($certificates->count() > 0)
-                <div class="overflow-x-auto">
-                    <table class="w-full">
+                <div class="space-y-3 md:hidden">
+                    @foreach($certificates as $certificate)
+                        <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 p-4">
+                            <div class="flex items-start justify-between gap-3 mb-3">
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white break-words">{{ $certificate->certificate_number }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Certificate #</p>
+                                </div>
+                                @if($certificate->signed_by)
+                                    <span class="inline-flex items-center justify-center px-2 py-1 text-[11px] font-medium rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200 whitespace-nowrap">
+                                        ✓ Approved
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center justify-center px-2 py-1 text-[11px] font-medium rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 whitespace-nowrap">
+                                        ⏳ Pending Approval
+                                    </span>
+                                @endif
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-3 text-sm">
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">WO Number</p>
+                                    <p class="text-gray-900 dark:text-white break-words">{{ $certificate->jobOrder?->job_order_number ?? $certificate->calibration?->assignment?->jobOrder?->job_order_number ?? 'N/A' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Customer</p>
+                                    <p class="text-gray-900 dark:text-white break-words">{{ $certificate->jobOrder?->customer?->name ?? $certificate->calibration?->assignment?->jobOrder?->customer?->name ?? 'N/A' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Signed By</p>
+                                    <p class="text-gray-900 dark:text-white break-words">{{ $certificate->signedBy?->name ?? 'N/A' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Signed Date</p>
+                                    <p class="text-gray-900 dark:text-white break-words">{{ $certificate->signed_at ? $certificate->signed_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') : 'Not Signed' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Action</p>
+                                    @if($certificate->signed_by)
+                                        <a href="{{ route('signatory.certificate.preview', $certificate) }}" class="inline-flex items-center text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
+                                            Preview →
+                                        </a>
+                                    @else
+                                        <div class="flex flex-wrap gap-3">
+                                            <a href="{{ route('signatory.certificate.preview', $certificate) }}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
+                                                Review
+                                            </a>
+                                            <button onclick="approveConfirm('{{ $certificate->id }}', '{{ $certificate->certificate_number }}')" class="text-emerald-600 dark:text-emerald-400 hover:underline text-sm font-medium">
+                                                ✓ Approve
+                                            </button>
+                                            <button onclick="rejectConfirm('{{ $certificate->id }}', '{{ $certificate->certificate_number }}')" class="text-rose-600 dark:text-rose-400 hover:underline text-sm font-medium">
+                                                ✗ Reject
+                                            </button>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="hidden md:block overflow-x-auto">
+                    <table class="w-full min-w-[900px]">
                         <thead class="border-b border-gray-200 dark:border-gray-700">
                             <tr class="text-center text-xs">
                                 <th class="pb-3 font-semibold text-gray-600 dark:text-gray-400 text-center">Certificate #</th>
@@ -109,11 +170,11 @@
                     </table>
                 </div>
 
-                <div class="mt-6">
+                <div class="mt-6 flex justify-center sm:justify-end overflow-x-auto">
                     {{ $certificates->links() }}
                 </div>
             @else
-                <div class="text-center py-12">
+                <div class="text-center py-10 sm:py-12 px-4">
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>

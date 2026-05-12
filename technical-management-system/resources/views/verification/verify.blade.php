@@ -10,7 +10,7 @@
 <body class="bg-gray-50 text-gray-800">
 
     <!-- VERIFICATION SECTION -->
-    <section class="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 overflow-hidden">
+    <section class="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 overflow-x-hidden py-6 sm:py-0">
         <!-- Decorative Background Elements -->
         <div class="absolute inset-0 opacity-10">
             <div class="absolute top-20 left-10 w-72 h-72 bg-white rounded-full blur-3xl"></div>
@@ -18,39 +18,39 @@
             <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white rounded-full blur-3xl"></div>
         </div>
 
-        <div class="relative z-10 w-full max-w-2xl px-6 py-12">
+        <div class="relative z-10 w-full max-w-2xl px-4 sm:px-6 py-6 sm:py-12">
             <!-- Logo & Company Name -->
-            <div class="flex items-center justify-center gap-4 mb-8 animate-fade-in">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6 sm:mb-8 animate-fade-in text-center sm:text-left">
                 <img src="{{ asset('assets/0fae4580-eff0-4ee7-98e2-8ab80dd542cf-removebg-preview.png') }}" 
                      alt="Gemarc Logo" 
-                     class="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-lg">
-                <div class="text-left text-white">
-                    <h2 class="text-xl md:text-2xl font-bold tracking-tight">Gemarc Enterprises Inc</h2>
+                     class="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 object-contain drop-shadow-lg shrink-0">
+                <div class="text-white">
+                    <h2 class="text-lg sm:text-xl md:text-2xl font-bold tracking-tight leading-tight">Gemarc Enterprises Inc</h2>
                     <p class="text-sm md:text-base text-blue-100 font-light">Technical Management System</p>
                 </div>
             </div>
 
             <!-- Main Card -->
-            <div class="bg-white rounded-2xl shadow-2xl p-8 md:p-10">
-                <div class="text-center mb-8">
-                    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Certificate Verification</h1>
-                    <p class="text-gray-600">Enter the certificate number to verify authenticity</p>
+            <div class="bg-white rounded-2xl shadow-2xl p-5 sm:p-7 md:p-10">
+                <div class="text-center mb-6 sm:mb-8">
+                    <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 leading-tight">Certificate Verification</h1>
+                    <p class="text-sm sm:text-base text-gray-600">Enter the certificate number to verify authenticity</p>
                 </div>
 
                 <!-- Search Form -->
                 <form method="GET" action="{{ route('certificate-verification.verify') }}" class="space-y-4">
                     <div>
                         <label for="certificate_number" class="block text-sm font-semibold text-gray-700 mb-2">Certificate Number</label>
-                        <div class="flex gap-3">
+                        <div class="flex flex-col sm:flex-row gap-3">
                             <input 
                                 type="text" 
                                 name="certificate_number" 
                                 id="certificate_number"
-                                class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
+                                class="w-full sm:flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
                                 placeholder="e.g., CERT-2026-00001" 
                                 value="{{ request('certificate_number') }}"
                             />
-                            <button type="submit" class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl hover:scale-105">
+                            <button type="submit" class="w-full sm:w-auto px-6 sm:px-8 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl sm:hover:scale-105">
                                 Verify
                             </button>
                         </div>

@@ -7,22 +7,23 @@
     <link rel="icon" type="image/png" href="{{ asset('assets/0fae4580-eff0-4ee7-98e2-8ab80dd542cf-removebg-preview.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-[#f5f9ff] flex items-center justify-center">
-    <div class="w-full max-w-7xl mx-auto flex bg-white rounded-[32px] shadow-2xl overflow-hidden">
+<body class="m-0 min-h-[100dvh] bg-[#f5f9ff] p-3 sm:p-4">
+    <div class="mx-auto flex min-h-[calc(100dvh-1.5rem)] w-full items-center justify-center sm:min-h-[calc(100dvh-2rem)]">
+    <div class="w-full max-w-md md:max-w-7xl mx-auto md:flex md:bg-white rounded-[28px] md:rounded-[32px] md:shadow-2xl md:overflow-hidden md:max-h-[90vh]">
         <!-- Left panel -->
         <div class="hidden md:flex w-1/2 bg-[#f5f9ff] overflow-hidden">
             <img src="{{ asset('assets/technicalbg.png') }}" alt="Technical background" class="w-full h-full object-cover">
         </div>
 
         <!-- Right panel -->
-        <div class="w-full md:w-1/2 px-10 py-12 md:px-16 md:py-20 flex flex-col justify-center">
-            <div class="mb-8">
-                <div class="flex items-center gap-4 mb-6">
-                    <img src="{{ asset('assets/0fae4580-eff0-4ee7-98e2-8ab80dd542cf-removebg-preview.png') }}" alt="Gemarc Enterprises Inc" class="w-14 h-14 rounded-2xl object-cover">
-                    <span class="text-xl font-semibold text-slate-900">Gemarc Enterprises Inc</span>
+        <div class="w-full md:w-1/2 px-6 py-8 sm:px-8 sm:py-10 md:px-16 md:py-20 flex flex-col justify-center bg-white rounded-[28px] md:rounded-none shadow-xl md:shadow-none">
+            <div class="mb-6 sm:mb-8">
+                <div class="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                    <img src="{{ asset('assets/0fae4580-eff0-4ee7-98e2-8ab80dd542cf-removebg-preview.png') }}" alt="Gemarc Enterprises Inc" class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover">
+                    <span class="text-base sm:text-xl font-semibold text-slate-900">Gemarc Enterprises Inc</span>
                 </div>
 
-                <h1 class="text-2xl md:text-3xl font-semibold text-slate-900">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-semibold text-slate-900">
                     Welcome
                 </h1>
                 <p class="mt-1 text-sm text-slate-500">Please login here</p>
@@ -112,6 +113,7 @@
                 </button>
             </form>
         </div>
+    </div>
     </div>
 
     <script>

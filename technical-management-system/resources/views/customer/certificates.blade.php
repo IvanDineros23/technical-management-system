@@ -45,14 +45,14 @@
 
 @section('content')
     @if(!$customer)
-        <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+        <div class="mb-4 sm:mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
             <p class="text-sm font-semibold">No customer profile linked to this account yet.</p>
             <p class="text-xs mt-1">Please contact the administrator to link your customer record.</p>
         </div>
     @endif
 
-    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
-        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <h3 class="text-base font-bold text-slate-900 dark:text-white">Certificates</h3>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('customer.certificates') }}"
@@ -70,7 +70,31 @@
             </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="space-y-3 md:hidden">
+            @forelse($certificates as $cert)
+                <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-3 sm:p-4">
+                    <div class="flex items-start justify-between gap-3 mb-2">
+                        <p class="text-sm font-semibold text-blue-600">{{ $cert->certificate_number }}</p>
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700">
+                            {{ $cert->released_at ? 'Released' : 'Pending' }}
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-600 dark:text-gray-300">Job Order: {{ $cert->jobOrder?->job_order_number ?? 'N/A' }}</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-300">Generated: {{ $cert->generated_at ? $cert->generated_at->setTimezone('Asia/Manila')->format('M d, Y') : 'Pending' }}</p>
+                    <div class="mt-3">
+                        <a
+                            href="{{ route('certificate-verification.show', $cert->certificate_number) }}"
+                            class="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                        >
+                            Validate
+                        </a>
+                    </div>
+                </div>
+            @empty
+                <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4 text-center text-sm text-gray-500">No certificates found.</div>
+            @endforelse
+        </div>
+        <div class="hidden md:block overflow-x-auto">
             <table class="w-full">
                 <thead class="border-b border-gray-200 dark:border-gray-700">
                     <tr>
@@ -113,7 +137,7 @@
         </div>
 
         @if(method_exists($certificates, 'links'))
-            <div class="mt-4">{{ $certificates->links() }}</div>
+            <div class="mt-4 text-xs sm:text-sm">{{ $certificates->links() }}</div>
         @endif
     </div>
 @endsection

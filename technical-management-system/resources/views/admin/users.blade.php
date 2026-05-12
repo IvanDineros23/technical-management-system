@@ -11,7 +11,7 @@
 @endsection
 
 @section('content')
-<div class="space-y-6"
+<div class="space-y-4 sm:space-y-6"
      x-data="{
         showCreateUser: false,
         showEditUser: false,
@@ -44,12 +44,12 @@
      }"
      @keydown.escape.window="showCreateUser = false; showEditUser = false; showConfirmDeactivate = false; showConfirmDelete = false;">
     <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Users</h2>
             <p class="text-gray-600 dark:text-gray-400 mt-1">Manage user accounts and access</p>
         </div>
-        <button type="button" @click="showCreateUser = true" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+        <button type="button" @click="showCreateUser = true" class="w-full sm:w-auto px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
@@ -58,24 +58,24 @@
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
+    <div class="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <p class="text-sm text-gray-600 dark:text-gray-400">Total Users</p>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ $stats['total'] }}</p>
+            <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ $stats['total'] }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <p class="text-sm text-gray-600 dark:text-gray-400">Active</p>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ $stats['active'] }}</p>
+            <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ $stats['active'] }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <p class="text-sm text-gray-600 dark:text-gray-400">Inactive</p>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ $stats['inactive'] }}</p>
+            <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ $stats['inactive'] }}</p>
         </div>
     </div>
 
     <!-- Filters -->
-    <form class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6" method="GET" action="{{ route('admin.users.index') }}">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
+    <form class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-4 sm:p-6" method="GET" action="{{ route('admin.users.index') }}">
+        <div class="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search</label>
                 <input type="text" name="search" value="{{ $search }}" placeholder="Search by name or email..." class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -103,8 +103,63 @@
         </div>
     </form>
 
+    <!-- Users Mobile Cards -->
+    <div class="space-y-3 md:hidden">
+        @forelse($users as $user)
+            <div class="bg-white dark:bg-gray-800 rounded-[18px] border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+                <div class="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $user->name }}</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ $user->email }}</p>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                        {{ $user->role?->name ?? 'N/A' }}
+                    </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 mb-3">
+                    @if($user->is_active)
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Active</span>
+                    @else
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">Inactive</span>
+                    @endif
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                        Last login: {{ $user->last_login_at ? \Carbon\Carbon::parse($user->last_login_at)->timezone('Asia/Manila')->format('M d, Y h:i A') : 'N/A' }}
+                    </span>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <button type="button"
+                            class="w-full sm:w-auto text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 text-xs font-semibold"
+                            @click="openEdit(@js([
+                                'id' => $user->id,
+                                'name' => $user->name,
+                                'email' => $user->email,
+                                'role_id' => $user->role_id,
+                                'status' => $user->is_active ? 'active' : 'inactive',
+                                'last_login' => $user->last_login_at,
+                            ]))">
+                        Edit
+                    </button>
+                    <button type="button"
+                            class="w-full sm:w-auto text-orange-600 hover:text-orange-900 dark:hover:text-orange-400 text-xs font-semibold"
+                            @click="openConfirmDeactivate(@js(['id' => $user->id, 'name' => $user->name, 'email' => $user->email]))">
+                        Deactivate
+                    </button>
+                    <button type="button"
+                            class="w-full sm:w-auto text-red-600 hover:text-red-900 dark:hover:text-red-400 text-xs font-semibold"
+                            @click="openConfirmDelete(@js(['id' => $user->id, 'name' => $user->name, 'email' => $user->email]))">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        @empty
+            <div class="bg-white dark:bg-gray-800 rounded-[18px] border border-gray-200 dark:border-gray-700 p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                No users found.
+            </div>
+        @endforelse
+    </div>
+
     <!-- Users Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="hidden md:block bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-center">
                 <thead>
@@ -179,7 +234,7 @@
         </div>
     </div>
 
-    <div>
+    <div class="text-xs sm:text-sm">
         {{ $users->links() }}
     </div>
 

@@ -21,7 +21,28 @@
         openActionMenuId: null,
         openActionMenuPlacement: 'down',
         selectedId: null,
-        selectedOrder: null,
+        selectedOrder: {
+            id: null,
+            job_order_number: '',
+            wo_number: '',
+            customer: '',
+            service_type: '',
+            service_description: '',
+            priority: 'normal',
+            status: 'pending',
+            required_date_display: '',
+            required_date_input: '',
+            required_date: '',
+            service_address: '',
+            city: '',
+            notes: '',
+            created_at: '',
+            certificates_count: 0,
+            has_pending_tech_head_review: false,
+            attachments: [],
+            checklist: [],
+            assignments: [],
+        },
         signatureData: '',
         init() {
             this.$watch('showCreate', value => this.handleModalState(value));
@@ -64,12 +85,46 @@
             this.showTimeline = false;
             this.signatureData = '';
         },
+        normalizeEditOrder(order) {
+            const requiredDate = order?.required_date_input || order?.required_date || '';
+
+            return {
+                ...order,
+                required_date_input: requiredDate,
+            };
+        },
+        openCreate() {
+            this.selectedId = null;
+            this.selectedOrder = {
+                id: null,
+                job_order_number: '',
+                wo_number: '',
+                customer: '',
+                service_type: '',
+                service_description: '',
+                priority: 'normal',
+                status: 'pending',
+                required_date_display: '',
+                required_date_input: '',
+                required_date: '',
+                service_address: '',
+                city: '',
+                notes: '',
+                created_at: '',
+                certificates_count: 0,
+                has_pending_tech_head_review: false,
+                attachments: [],
+                checklist: [],
+                assignments: [],
+            };
+            this.showCreate = true;
+        },
         openDetails(order) {
-            this.selectedOrder = order;
+            this.selectedOrder = { ...this.selectedOrder, ...order };
             this.showDetails = true;
         },
         openEdit(order) {
-            this.selectedOrder = { ...order };
+            this.selectedOrder = { ...this.selectedOrder, ...this.normalizeEditOrder(order) };
             this.selectedId = order.id;
             this.showEdit = true;
         },
@@ -82,12 +137,12 @@
             this.showStatus = true;
         },
         openApproval(order) {
-            this.selectedOrder = order;
+            this.selectedOrder = { ...this.selectedOrder, ...order };
             this.selectedId = order.id;
             this.showApproval = true;
         },
         openTimeline(order) {
-            this.selectedOrder = order;
+            this.selectedOrder = { ...this.selectedOrder, ...order };
             this.showTimeline = true;
         },
         toggleActionMenu(id, event) {
@@ -378,9 +433,9 @@
             }
         }
     }" class="space-y-6">
-        <div class="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+        <div class="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center">
             <!-- Search Bar -->
-            <form method="GET" action="{{ route('tech-head.work-orders') }}" class="flex-1 max-w-2xl">
+            <form method="GET" action="{{ route('tech-head.work-orders') }}" class="w-full md:flex-1 md:max-w-2xl">
                 <div class="relative">
                     <input 
                         type="text" 
@@ -396,8 +451,8 @@
             </form>
             
             <button 
-                @click="showCreate=true" 
-                class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 flex items-center gap-2 whitespace-nowrap"
+                @click="openCreate()" 
+                class="w-full md:w-auto justify-center px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 flex items-center gap-2 whitespace-nowrap"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
@@ -499,7 +554,131 @@
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">Job Order List</h3>
             </div>
-            <div class="overflow-x-auto">
+            <div class="space-y-3 md:hidden">
+                @forelse($workOrders as $order)
+                    @php
+                        $hasPendingTechHeadReview = $order->assignments->contains(function ($assignment) {
+                            return optional($assignment->report)->status === 'pending';
+                        });
+
+                        $orderPayload = [
+                            'id' => $order->id,
+                            'job_order_number' => $order->job_order_number,
+                            'wo_number' => $order->job_order_number,
+                            'customer' => $order->customer->name ?? 'N/A',
+                            'service_type' => $order->service_type ?? 'N/A',
+                            'service_description' => $order->service_description ?? '',
+                            'priority' => $order->priority ?? 'normal',
+                            'status' => $order->status,
+                            'required_date' => $order->required_date ? $order->required_date->setTimezone('Asia/Manila')->format('M d, Y') : null,
+                            'required_date_input' => $order->required_date ? $order->required_date->setTimezone('Asia/Manila')->format('Y-m-d') : null,
+                            'service_address' => $order->service_address ?? '',
+                            'city' => $order->city ?? '',
+                            'notes' => $order->notes ?? '',
+                            'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
+                            'certificates_count' => (int) $order->certificates_count,
+                            'has_pending_tech_head_review' => $hasPendingTechHeadReview,
+                            'attachments' => $order->attachments->map(function ($attachment) {
+                                return [
+                                    'id' => $attachment->id,
+                                    'file_name' => $attachment->file_name,
+                                    'file_path' => $attachment->file_path,
+                                    'created_at' => optional($attachment->created_at)->toDateTimeString(),
+                                ];
+                            })->values(),
+                            'checklist' => $order->checklistItems->map(function ($item) {
+                                return [
+                                    'id' => $item->id,
+                                    'description' => $item->description,
+                                    'is_completed' => (bool) $item->is_completed,
+                                    'completed_at' => optional($item->completed_at)->toDateTimeString(),
+                                    'created_by' => optional($item->creator)->name,
+                                    'completed_by' => optional($item->completer)->name,
+                                ];
+                            })->values(),
+                            'assignments' => $order->assignments->map(function ($assignment) {
+                                return [
+                                    'id' => $assignment->id,
+                                    'technician' => optional($assignment->assignedTo)->name ?? 'N/A',
+                                    'status' => $assignment->status,
+                                    'report_status' => optional($assignment->report)->status,
+                                    'started_at' => $assignment->started_at ? $assignment->started_at->setTimezone('Asia/Manila')->toDateTimeString() : null,
+                                    'completed_at' => $assignment->completed_at ? $assignment->completed_at->setTimezone('Asia/Manila')->toDateTimeString() : null,
+                                ];
+                            })->values(),
+                        ];
+
+                        $editPayload = [
+                            'id' => $order->id,
+                            'wo_number' => $order->job_order_number,
+                            'customer' => $order->customer->name ?? 'N/A',
+                            'service_type' => $order->service_type ?? 'N/A',
+                            'service_description' => $order->service_description ?? '',
+                            'priority' => $order->priority ?? 'normal',
+                            'status' => $order->status,
+                            'required_date_display' => $order->required_date ? $order->required_date->setTimezone('Asia/Manila')->format('M d, Y') : null,
+                            'required_date_input' => $order->required_date ? $order->required_date->setTimezone('Asia/Manila')->format('Y-m-d') : null,
+                            'service_address' => $order->service_address ?? '',
+                            'city' => $order->city ?? '',
+                            'notes' => $order->notes ?? '',
+                            'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
+                        ];
+                    @endphp
+                    <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-700/30 p-4 shadow-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">WO Number</p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $order->job_order_number }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">{{ $order->customer->name ?? 'N/A' }}</p>
+                            </div>
+                            <span class="px-2 py-1 text-[11px] font-medium rounded-full
+                                {{ $order->status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200' : '' }}
+                                {{ $order->status === 'assigned' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' : '' }}
+                                {{ $order->status === 'for_accounting_approval' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200' : '' }}
+                                {{ $order->status === 'approved' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' : '' }}
+                                {{ $order->status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' : '' }}
+                                {{ $order->status === 'completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' : '' }}
+                                {{ $order->status === 'cancelled' ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200' : '' }}">
+                                {{ $order->status === 'pending' ? ($hasPendingTechHeadReview ? 'Pending Tech Head Review' : 'Waiting for Assignment') : ($order->status === 'approved' ? 'Ready for Assignment' : ($order->status === 'for_accounting_approval' ? 'For Accounting Approval' : ucfirst(str_replace('_', ' ', $order->status)))) }}
+                            </span>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Assigned To</p>
+                                <p class="font-medium text-gray-900 dark:text-white">
+                                    @if($order->assignments && $order->assignments->count() > 0)
+                                        {{ $order->assignments->pluck('assignedTo.name')->filter()->unique()->take(2)->join(', ') ?: 'Unassigned' }}
+                                    @else
+                                        Unassigned
+                                    @endif
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Service Type</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ $order->service_type ?? 'N/A' }}</p>
+                            </div>
+                            <div class="col-span-2">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Date</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ $order->required_date ? $order->required_date->setTimezone('Asia/Manila')->format('M d, Y') : $order->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex flex-wrap gap-2" @click.stop>
+                            <button @click="openDetails({{ json_encode($orderPayload) }})" class="px-3 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold dark:bg-gray-100 dark:text-gray-900">View</button>
+                            <button @click="openEdit({{ json_encode($editPayload) }})" class="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold">Edit</button>
+                            <button @click="openAssign({{ $order->id }})" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Assign</button>
+                            <button @click="openStatus({{ $order->id }})" class="px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold">Status</button>
+                        </div>
+                    </div>
+                @empty
+                    <div class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                        No job orders found
+                    </div>
+                @endforelse
+            </div>
+
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full">
                     <thead class="border-b border-gray-200 dark:border-gray-700">
                         <tr>
@@ -864,7 +1043,7 @@
                                 Full Details
                             </a>
                             <div class="flex gap-3">
-                                <button @click="showDetails=false; selectedId=selectedOrder.id; showEdit=true;" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Edit</button>
+                                <button @click="showDetails=false; openEdit(selectedOrder);" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Edit</button>
                                 <button @click="showDetails=false; selectedId=selectedOrder.id; showAssign=true;" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Assign</button>
                                 <button @click="showDetails=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">Close</button>
                             </div>
@@ -1013,7 +1192,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Required Date</label>
-                                    <input type="date" name="required_date" x-model="selectedOrder.required_date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <input type="date" name="required_date" x-model="selectedOrder.required_date_input" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 </div>
                                 <div class="col-span-2">
                                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Service Description</label>

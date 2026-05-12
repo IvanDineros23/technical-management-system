@@ -32,9 +32,9 @@
             </div>
         </div>
 
-        <div class="flex justify-end gap-3">
+        <div class="flex flex-col sm:flex-row sm:justify-end gap-3">
             @php $pendingCount = isset($equipmentRequests) ? $equipmentRequests->where('status','pending')->count() : 0; @endphp
-            <button @click="showRequests=true" class="relative flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">
+            <button @click="showRequests=true" class="relative w-full sm:w-auto justify-center flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                 </svg>
@@ -43,21 +43,21 @@
                 <span class="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-red-500 text-white rounded-full">{{ $pendingCount }}</span>
                 @endif
             </button>
-            <button @click="showAdd=true" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Add Equipment</button>
+            <button @click="showAdd=true" class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Add Equipment</button>
         </div>
 
         <!-- Table -->
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <div class="flex items-center justify-between gap-4 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div>
                     <h3 class="text-base font-bold text-slate-900 dark:text-white">Equipment Inventory</h3>
                 </div>
-                <form method="GET" action="{{ route('tech-head.equipment') }}" class="flex items-center gap-2">
+                <form method="GET" action="{{ route('tech-head.equipment') }}" class="w-full sm:w-auto flex flex-col sm:flex-row sm:items-center gap-2">
                     <div class="relative">
                         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
-                        <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search equipment..." class="pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 w-56">
+                        <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search equipment..." class="w-full sm:w-56 pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                     </div>
                     @if(!empty($search))
                     <a href="{{ route('tech-head.equipment') }}" class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Clear</a>
@@ -66,7 +66,53 @@
             </div>
             
             @if($equipment->count() > 0)
-            <div class="overflow-x-auto">
+            <div class="space-y-3 md:hidden">
+                @foreach($equipment as $item)
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-2xl p-4 bg-gray-50/80 dark:bg-gray-700/30 shadow-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Equipment</p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white break-words">{{ $item->name ?? 'N/A' }}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ $item->equipment_code ?? 'N/A' }}</p>
+                            </div>
+                            <span class="px-2 py-1 text-[11px] font-medium rounded-full
+                                {{ ($item->status ?? '') === 'available' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200' : '' }}
+                                {{ ($item->status ?? '') === 'in_use' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200' : '' }}
+                                {{ ($item->status ?? '') === 'maintenance' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200' : '' }}
+                                {{ ($item->status ?? '') === 'retired' ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-200' : '' }}">
+                                {{ ucfirst($item->status ?? 'unknown') }}
+                            </span>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Category</p>
+                                <p class="font-medium text-gray-900 dark:text-white break-words">{{ $item->category ?? 'N/A' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Location</p>
+                                <p class="font-medium text-gray-900 dark:text-white break-words">{{ $item->location ?? '-' }}</p>
+                            </div>
+                            <div class="col-span-2">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Updated</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ optional($item->updated_at)->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex flex-wrap gap-2" @click.stop>
+                            <button @click="selectedId={{ $item->id }}; showEdit=true;" class="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold">Edit</button>
+                            <button @click="selectedId={{ $item->id }}; showStatus=true;" class="px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold">Status</button>
+                            <form method="POST" action="{{ route('tech-head.equipment.destroy', $item->id) }}" onsubmit="return confirm('Delete equipment?')" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full">
                     <thead class="border-b border-gray-200 dark:border-gray-700">
                         <tr class="text-left">
@@ -144,7 +190,7 @@
             class="fixed inset-0 z-50 overflow-y-auto"
         >
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showAdd=false"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-start sm:items-center justify-center p-3 sm:p-4">
                 <div 
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 transform scale-95"
@@ -152,13 +198,13 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 transform scale-100"
                     x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700 max-h-[85vh] overflow-y-auto"
+                    class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                <form method="POST" action="{{ route('tech-head.equipment.store') }}" class="p-6 space-y-4">
+                <form method="POST" action="{{ route('tech-head.equipment.store') }}" class="p-4 sm:p-6 space-y-4">
                     @csrf
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Add New Equipment</h3>
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Equipment Code *</label>
                             <input name="equipment_code" placeholder="EQ-001" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
@@ -169,7 +215,7 @@
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
                             <input name="category" placeholder="e.g., Calibration, Testing" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
@@ -185,7 +231,7 @@
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Manufacturer</label>
                             <input name="manufacturer" placeholder="Manufacturer name" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
@@ -206,7 +252,7 @@
                         <label for="calibration_required" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Requires Regular Calibration</label>
                     </div>
                     
-                    <div class="flex justify-end gap-3 pt-4">
+                    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
                         <button type="button" @click="showAdd=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
                         <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">Create Equipment</button>
                     </div>
@@ -229,7 +275,7 @@
             class="fixed inset-0 z-50 overflow-y-auto"
         >
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showEdit=false"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-start sm:items-center justify-center p-3 sm:p-4">
                 <div 
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 transform scale-95"
@@ -237,9 +283,9 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 transform scale-100"
                     x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-xl bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+                    class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                <form method="POST" :action="selectedId ? '{{ url('/tech-head/equipment') }}/' + selectedId : '#'" class="p-6 space-y-4">
+                <form method="POST" :action="selectedId ? '{{ url('/tech-head/equipment') }}/' + selectedId : '#'" class="p-4 sm:p-6 space-y-4">
                     @csrf
                     @method('PUT')
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Edit Equipment</h3>
@@ -251,7 +297,7 @@
                         <option value="retired">Retired</option>
                     </select>
                     <input name="location" placeholder="Location" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
-                    <div class="flex justify-end gap-3">
+                    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                         <button type="button" @click="showEdit=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">Close</button>
                         <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">Update</button>
                     </div>
@@ -274,7 +320,7 @@
             class="fixed inset-0 z-50 overflow-y-auto"
         >
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showStatus=false"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-start sm:items-center justify-center p-3 sm:p-4">
                 <div 
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 transform scale-95"
@@ -282,9 +328,9 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 transform scale-100"
                     x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+                    class="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                <form method="POST" :action="selectedId ? '{{ url('/tech-head/equipment') }}/' + selectedId + '/status' : '#'" class="p-6 space-y-4">
+                <form method="POST" :action="selectedId ? '{{ url('/tech-head/equipment') }}/' + selectedId + '/status' : '#'" class="p-4 sm:p-6 space-y-4">
                     @csrf
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Update Status</h3>
                     <select name="status" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
@@ -293,7 +339,7 @@
                         <option value="maintenance">Maintenance</option>
                         <option value="retired">Retired</option>
                     </select>
-                    <div class="flex justify-end gap-3">
+                    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                         <button type="button" @click="showStatus=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">Close</button>
                         <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium">Update</button>
                     </div>
@@ -316,7 +362,7 @@
             class="fixed inset-0 z-50 overflow-y-auto"
         >
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showLocation=false"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-start sm:items-center justify-center p-3 sm:p-4">
                 <div 
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 transform scale-95"
@@ -324,13 +370,13 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 transform scale-100"
                     x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+                    class="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                <form method="POST" :action="selectedId ? '{{ url('/tech-head/equipment') }}/' + selectedId + '/location' : '#'" class="p-6 space-y-4">
+                <form method="POST" :action="selectedId ? '{{ url('/tech-head/equipment') }}/' + selectedId + '/location' : '#'" class="p-4 sm:p-6 space-y-4">
                     @csrf
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Update Location</h3>
                     <input name="location" placeholder="Location" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
-                    <div class="flex justify-end gap-3">
+                    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                         <button type="button" @click="showLocation=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">Close</button>
                         <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">Save</button>
                     </div>
@@ -352,7 +398,7 @@
             class="fixed inset-0 z-50 overflow-y-auto"
         >
             <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showRequests=false"></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-start sm:items-center justify-center p-3 sm:p-4">
                 <div
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 transform scale-95"
@@ -360,10 +406,10 @@
                     x-transition:leave="transition ease-in duration-200"
                     x-transition:leave-start="opacity-100 transform scale-100"
                     x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-4xl bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700 max-h-[85vh] overflow-y-auto"
+                    class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                    <div class="p-6">
-                        <div class="flex items-center justify-between mb-6">
+                    <div class="p-4 sm:p-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
                             <div>
                                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">Equipment Requests</h3>
                                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Review and action equipment requests from technicians</p>
@@ -380,8 +426,8 @@
                             @foreach($equipmentRequests as $req)
                             <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4" x-data="{ showReject: false }">
                                 {{-- Top row: name, date, status --}}
-                                <div class="flex items-center justify-between gap-3 mb-2">
-                                    <div class="flex items-center gap-2 min-w-0">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+                                    <div class="flex items-center gap-2 min-w-0 flex-wrap">
                                         <span class="font-semibold text-sm text-gray-900 dark:text-white truncate">{{ $req->requestedBy->name ?? 'Unknown' }}</span>
                                         <span class="text-gray-400 text-xs flex-shrink-0">•</span>
                                         <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">{{ $req->created_at->format('M d, Y') }}</span>                                            @if($req->jobOrder)
@@ -408,7 +454,7 @@
                                 {{-- Action buttons (pending only) --}}
                                 @if($req->status === 'pending')
                                 <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
                                         <form method="POST" action="{{ route('tech-head.equipment.requests.update', $req->id) }}">
                                             @csrf
                                             @method('PATCH')
@@ -427,7 +473,7 @@
                                             @method('PATCH')
                                             <input type="hidden" name="status" value="rejected">
                                             <textarea name="admin_notes" rows="2" placeholder="Reason for rejection (optional)" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"></textarea>
-                                            <div class="flex justify-end gap-2">
+                                            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                                                 <button type="button" @click="showReject=false" class="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
                                                 <button type="submit" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors">Confirm Reject</button>
                                             </div>

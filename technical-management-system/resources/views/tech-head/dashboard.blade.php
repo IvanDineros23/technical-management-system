@@ -173,37 +173,37 @@
     <div class="mb-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Active Job Orders -->
-            <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20 rounded-[20px] shadow-md p-5 border border-blue-200 dark:border-blue-800">
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20 rounded-[20px] shadow-md p-4 sm:p-5 border border-blue-200 dark:border-blue-800">
                 <div class="flex flex-col h-full">
                     <p class="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-2">Active Job Orders</p>
-                    <h3 class="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">{{ $summary['activeWorkOrders'] }}</h3>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">{{ $summary['activeWorkOrders'] }}</h3>
                     <p class="text-xs text-blue-600 dark:text-blue-400 mt-auto">Approved + Pending + In Progress</p>
                 </div>
             </div>
 
             <!-- Pending Approvals -->
-            <div class="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-900/20 rounded-[20px] shadow-md p-5 border border-amber-200 dark:border-amber-800">
+            <div class="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-900/20 rounded-[20px] shadow-md p-4 sm:p-5 border border-amber-200 dark:border-amber-800">
                 <div class="flex flex-col h-full">
                     <p class="text-xs text-amber-600 dark:text-amber-400 font-semibold mb-2">Pending Approvals</p>
-                    <h3 class="text-3xl font-bold text-amber-900 dark:text-amber-100 mb-2">{{ $summary['pendingApprovals'] }}</h3>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-amber-900 dark:text-amber-100 mb-2">{{ $summary['pendingApprovals'] }}</h3>
                     <p class="text-xs text-amber-600 dark:text-amber-400 mt-auto">Awaiting review</p>
                 </div>
             </div>
 
             <!-- Overdue Jobs -->
-            <div class="bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-900/30 dark:to-rose-900/20 rounded-[20px] shadow-md p-5 border border-rose-200 dark:border-rose-800">
+            <div class="bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-900/30 dark:to-rose-900/20 rounded-[20px] shadow-md p-4 sm:p-5 border border-rose-200 dark:border-rose-800">
                 <div class="flex flex-col h-full">
                     <p class="text-xs text-rose-600 dark:text-rose-400 font-semibold mb-2">Overdue Jobs</p>
-                    <h3 class="text-3xl font-bold text-rose-900 dark:text-rose-100 mb-2">{{ $summary['overdueJobs'] }}</h3>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-rose-900 dark:text-rose-100 mb-2">{{ $summary['overdueJobs'] }}</h3>
                     <p class="text-xs text-rose-600 dark:text-rose-400 mt-auto">Past deadline</p>
                 </div>
             </div>
 
             <!-- Completed Today -->
-            <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-900/20 rounded-[20px] shadow-md p-5 border border-emerald-200 dark:border-emerald-800">
+            <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-900/20 rounded-[20px] shadow-md p-4 sm:p-5 border border-emerald-200 dark:border-emerald-800">
                 <div class="flex flex-col h-full">
                     <p class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-2">Completed Today</p>
-                    <h3 class="text-3xl font-bold text-emerald-900 dark:text-emerald-100 mb-2">{{ $summary['completedToday'] }}</h3>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-emerald-900 dark:text-emerald-100 mb-2">{{ $summary['completedToday'] }}</h3>
                     <p class="text-xs text-emerald-600 dark:text-emerald-200 mt-auto">{{ $summary['completedThisWeek'] }} this week</p>
                 </div>
             </div>
@@ -220,7 +220,7 @@
                 </svg>
                 Alerts & Critical Issues
             </h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 <!-- Overdue Job Orders -->
                 <div class="rounded-lg bg-rose-50 dark:bg-rose-900/20 border-l-4 border-rose-500 p-4">
                     <div class="flex items-center justify-between mb-3">
@@ -323,9 +323,9 @@
         <!-- Job Orders Overview -->
         <div class="xl:col-span-2">
             <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6 h-full">
-                <div class="flex items-center justify-between mb-4">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <h3 class="text-base font-bold text-slate-900 dark:text-white">Job Orders Overview</h3>
-                    <div class="flex gap-2">
+                    <div class="flex flex-wrap gap-2">
                         <a href="{{ route('tech-head.dashboard', ['status' => '']) }}" class="px-3 py-1 text-xs font-medium rounded-full {{ empty($statusFilter) ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">All</a>
                         <a href="{{ route('tech-head.dashboard', ['status' => 'pending']) }}" class="px-3 py-1 text-xs font-medium rounded-full {{ $statusFilter === 'pending' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">Pending</a>
                         <a href="{{ route('tech-head.dashboard', ['status' => 'overdue']) }}" class="px-3 py-1 text-xs font-medium rounded-full {{ $statusFilter === 'overdue' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">Overdue</a>
@@ -333,7 +333,57 @@
                     </div>
                 </div>
                 @if($workOrders->count() > 0)
-                    <div class="overflow-x-auto">
+                    <div class="space-y-3 md:hidden">
+                        @foreach($workOrders->take(6) as $job)
+                        @php
+                            $assignment = $assignmentsByJob[$job->id] ?? null;
+                            $statusColors = [
+                                'pending' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+                                'in_progress' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+                                'completed' => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+                                'on_hold' => 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+                            ];
+                            $priorityColors = [
+                                'urgent' => 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200',
+                                'high' => 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200',
+                                'normal' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200',
+                                'low' => 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+                            ];
+                        @endphp
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30 p-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $job->job_order_number }}</p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ $job->customer->name ?? 'N/A' }}</p>
+                                    </div>
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full {{ $statusColors[$job->status] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200' }}">
+                                        {{ ucfirst(str_replace('_', ' ', $job->status)) }}
+                                    </span>
+                                </div>
+                                <div class="mt-3 grid grid-cols-2 gap-3 text-xs text-gray-700 dark:text-gray-300">
+                                    <div>
+                                        <p class="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Type</p>
+                                        <p class="font-medium">{{ Str::limit($job->service_type ?? '—', 18) }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Technician</p>
+                                        <p class="font-medium">{{ $assignment?->assignedTo?->name ?? 'Unassigned' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Priority</p>
+                                        <span class="inline-flex px-2 py-0.5 text-[11px] font-medium rounded-full {{ $priorityColors[$job->priority ?? 'normal'] ?? $priorityColors['normal'] }}">
+                                            {{ ucfirst($job->priority ?? 'Normal') }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <p class="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Due</p>
+                                        <p class="font-medium">{{ (($job->required_date ?? $job->expected_completion_date)?->setTimezone('Asia/Manila')->format('M d')) ?? '—' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="hidden md:block overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead class="border-b border-gray-200 dark:border-gray-700">
                                 <tr class="text-left text-xs text-gray-600 dark:text-gray-400">
@@ -405,7 +455,7 @@
                 window.location.href = urlObj.toString();
             }
         }" class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6" id="activity-timeline">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">Unified Activity Timeline</h3>
                 <a href="{{ route('tech-head.timeline') }}" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">View All</a>
             </div>
@@ -416,7 +466,7 @@
                             <span class="text-xs font-bold">{{ Str::upper(substr($event['type'], 0, 2)) }}</span>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center justify-between">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                                 <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $event['title'] }}</p>
                                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ optional($event['timestamp'])->diffForHumans() }}</span>
                             </div>
@@ -429,11 +479,11 @@
             </div>
             
             @if($activityTimeline->hasPages())
-                <div class="mt-4 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-4">
+                <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
                     <div class="text-xs text-gray-600 dark:text-gray-400">
                         Showing {{ $activityTimeline->firstItem() ?? 0 }} to {{ $activityTimeline->lastItem() ?? 0 }} of {{ $activityTimeline->total() }} activities
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex flex-wrap gap-2">
                         @if($activityTimeline->onFirstPage())
                             <span class="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed">Previous</span>
                         @else
@@ -489,7 +539,7 @@
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">Equipment Status</h3>
                 <a href="{{ route('tech-head.equipment') }}" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">Manage</a>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="rounded-lg bg-white dark:bg-gray-700/40 p-4 text-center border-2 border-gray-200 dark:border-gray-600">
                     <p class="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Total</p>
                     <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ $equipmentSummary['total'] ?? 0 }}</p>
@@ -509,7 +559,7 @@
     <!-- ===================== QUICK ACTIONS ===================== -->
     <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <a href="{{ route('tech-head.work-orders') }}" class="flex flex-col items-center p-4 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-xl transition-colors border-2 border-blue-200 dark:border-blue-700">
                 <svg class="w-8 h-8 text-blue-600 dark:text-blue-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>

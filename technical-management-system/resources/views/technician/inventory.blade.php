@@ -88,31 +88,31 @@
 @section('content')
 <div class="space-y-6" x-data="{ showView: false, showRequest: false, selectedItem: null, requestData: { item_id: '', quantity: 1, purpose: '' } }">
     <!-- Stats -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
-            <p class="text-sm text-gray-600 dark:text-gray-400">Total Items</p>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ $stats['totalItems'] ?? 0 }}</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-3 sm:p-6">
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Items</p>
+            <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1 sm:mt-2">{{ $stats['totalItems'] ?? 0 }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
-            <p class="text-sm text-gray-600 dark:text-gray-400">Low Stock</p>
-            <p class="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">{{ $stats['lowStock'] ?? 0 }}</p>
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-3 sm:p-6">
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Low Stock</p>
+            <p class="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1 sm:mt-2">{{ $stats['lowStock'] ?? 0 }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
-            <p class="text-sm text-gray-600 dark:text-gray-400">Out of Stock</p>
-            <p class="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{{ $stats['outOfStock'] ?? 0 }}</p>
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-3 sm:p-6">
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Out of Stock</p>
+            <p class="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400 mt-1 sm:mt-2">{{ $stats['outOfStock'] ?? 0 }}</p>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-6">
-        <form method="GET" action="{{ route('technician.inventory') }}" class="grid grid-cols-1 gap-4 sm:grid-cols-4">
+    <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+        <form method="GET" action="{{ route('technician.inventory') }}" class="grid grid-cols-1 gap-2 sm:gap-3 md:gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search</label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name or SKU..." class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Search</label>
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search..." class="w-full px-3 sm:px-4 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
-                <select name="category" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="this.form.submit()">
+                <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Category</label>
+                <select name="category" class="w-full px-3 sm:px-4 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="this.form.submit()">
                     <option value="">All Categories</option>
                     @foreach($categories as $category)
                         <option value="{{ $category }}" {{ request('category') === $category ? 'selected' : '' }}>{{ $category }}</option>
@@ -120,8 +120,8 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-                <select name="status" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="this.form.submit()">
+                <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Status</label>
+                <select name="status" class="w-full px-3 sm:px-4 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="this.form.submit()">
                     <option value="">All Status</option>
                     <option value="normal" {{ request('status') === 'normal' ? 'selected' : '' }}>Normal</option>
                     <option value="low" {{ request('status') === 'low' ? 'selected' : '' }}>Low</option>
@@ -129,64 +129,107 @@
                 </select>
             </div>
             <div class="flex items-end">
-                <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Filter</button>
+                <button type="submit" class="w-full px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm font-medium">Filter</button>
             </div>
         </form>
     </div>
 
     <!-- Inventory Table -->
     <div class="bg-white dark:bg-gray-800 rounded-[20px] border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div class="overflow-x-auto">
+        <!-- Mobile Cards View -->
+        <div class="sm:hidden p-4 space-y-3">
+            @forelse($items as $item)
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 p-3 hover:border-blue-300 dark:hover:border-blue-500 transition-colors">
+                <div class="flex items-start justify-between mb-2">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $item->name }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $item->sku }}</p>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 whitespace-nowrap ml-2
+                        {{ $item->status === 'out' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : '' }}
+                        {{ $item->status === 'low' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : '' }}
+                        {{ $item->status === 'normal' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : '' }}">
+                        {{ ucfirst($item->status) }}
+                    </span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400 mb-3">
+                    <div>
+                        <p class="text-gray-500 dark:text-gray-500 font-semibold">Stock Level</p>
+                        <p>{{ $item->quantity }} {{ $item->unit }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 dark:text-gray-500 font-semibold">Min Level</p>
+                        <p>{{ $item->min_level }} {{ $item->unit }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 dark:text-gray-500 font-semibold">Category</p>
+                        <p>{{ $item->category ?? 'N/A' }}</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button class="flex-1 text-xs py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" @click="selectedItem = @js($item); showView = true">View</button>
+                    <button class="flex-1 text-xs py-1.5 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors" @click="selectedItem = @js($item); requestData.item_id = selectedItem.id; showRequest = true">Request</button>
+                </div>
+            </div>
+            @empty
+            <div class="text-center py-8 text-xs text-gray-500 dark:text-gray-400">
+                No inventory items found.
+            </div>
+            @endforelse
+        </div>
+
+        <!-- Desktop Table View -->
+        <div class="hidden sm:block overflow-x-auto">
             <table class="w-full">
                 <thead>
                     <tr class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Item Name</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">SKU</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Category</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Stock Level</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Min Level</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Actions</th>
+                        <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">Item Name</th>
+                        <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">SKU</th>
+                        <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">Category</th>
+                        <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">Stock Level</th>
+                        <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">Min Level</th>
+                        <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">Status</th>
+                        <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($items as $item)
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ $item->name }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $item->sku }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $item->category ?? 'N/A' }}</td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ $item->quantity }} {{ $item->unit }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $item->min_level }} {{ $item->unit }}</td>
-                        <td class="px-6 py-4">
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{{ $item->name }}</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{{ $item->sku }}</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{{ $item->category ?? 'N/A' }}</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{{ $item->quantity }} {{ $item->unit }}</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{{ $item->min_level }} {{ $item->unit }}</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4">
                             @if($item->status === 'out')
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">Out</span>
+                                <span class="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">Out</span>
                             @elseif($item->status === 'low')
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">Low</span>
+                                <span class="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">Low</span>
                             @else
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Normal</span>
+                                <span class="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Normal</span>
                             @endif
                         </td>
-                        <td class="px-6 py-4 text-sm">
-                            <button class="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 mr-3" @click="selectedItem = @js($item); showView = true">View</button>
-                            <button class="text-green-600 hover:text-green-900 dark:hover:text-green-400" @click="selectedItem = @js($item); requestData.item_id = selectedItem.id; showRequest = true">Request</button>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">
+                            <button class="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 mr-2 sm:mr-3 whitespace-nowrap" @click="selectedItem = @js($item); showView = true">View</button>
+                            <button class="text-green-600 hover:text-green-900 dark:hover:text-green-400 whitespace-nowrap" @click="selectedItem = @js($item); requestData.item_id = selectedItem.id; showRequest = true">Request</button>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">No inventory items found.</td>
+                        <td colspan="7" class="px-3 sm:px-6 py-8 sm:py-10 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">No inventory items found.</td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        <div class="px-6 py-4">
+        <div class="px-4 sm:px-6 py-3 sm:py-4">
             {{ $items->links() }}
         </div>
     </div>
 
     <!-- View Item Modal -->
-    <div x-show="showView" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" @keydown.escape.window="showView=false">
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+    <div x-show="showView" x-cloak class="fixed inset-0 z-50 overflow-y-auto p-4" role="dialog" aria-modal="true" @keydown.escape.window="showView=false">
+        <div class="flex items-center justify-center min-h-full p-0 sm:p-0 sm:pt-4 sm:pb-20">
             <div x-show="showView"
                  x-transition:enter="ease-out duration-300"
                  x-transition:enter-start="opacity-0"
@@ -206,41 +249,41 @@
                  x-transition:leave="ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:align-middle sm:max-w-xl sm:w-full border border-gray-200 dark:border-gray-700">
-                <div class="p-6 space-y-4">
+                 class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-t-[20px] sm:rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:align-middle sm:max-w-xl sm:w-full border border-gray-200 dark:border-gray-700">
+                <div class="p-4 sm:p-6 space-y-3 sm:space-y-4">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Item Details</h3>
-                        <button type="button" @click="showView=false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">✕</button>
+                        <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Item Details</h3>
+                        <button type="button" @click="showView=false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0">✕</button>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                            <p class="text-xs text-gray-500">Name</p>
-                            <p class="text-sm text-gray-900 dark:text-white" x-text="selectedItem?.name ?? '-' "></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Name</p>
+                            <p class="text-xs sm:text-sm text-gray-900 dark:text-white" x-text="selectedItem?.name ?? '-' "></p>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-500">SKU</p>
-                            <p class="text-sm text-gray-900 dark:text-white" x-text="selectedItem?.sku ?? '-' "></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">SKU</p>
+                            <p class="text-xs sm:text-sm text-gray-900 dark:text-white" x-text="selectedItem?.sku ?? '-' "></p>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-500">Category</p>
-                            <p class="text-sm text-gray-900 dark:text-white" x-text="selectedItem?.category ?? '-' "></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Category</p>
+                            <p class="text-xs sm:text-sm text-gray-900 dark:text-white" x-text="selectedItem?.category ?? '-' "></p>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-500">Quantity</p>
-                            <p class="text-sm text-gray-900 dark:text-white" x-text="(selectedItem?.quantity ?? 0) + ' ' + (selectedItem?.unit ?? 'units')"></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Quantity</p>
+                            <p class="text-xs sm:text-sm text-gray-900 dark:text-white" x-text="(selectedItem?.quantity ?? 0) + ' ' + (selectedItem?.unit ?? 'units')"></p>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-500">Min Level</p>
-                            <p class="text-sm text-gray-900 dark:text-white" x-text="(selectedItem?.min_level ?? 0) + ' ' + (selectedItem?.unit ?? 'units')"></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Min Level</p>
+                            <p class="text-xs sm:text-sm text-gray-900 dark:text-white" x-text="(selectedItem?.min_level ?? 0) + ' ' + (selectedItem?.unit ?? 'units')"></p>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-500">Status</p>
-                            <p class="text-sm text-gray-900 dark:text-white" x-text="selectedItem?.status ?? '-' "></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Status</p>
+                            <p class="text-xs sm:text-sm text-gray-900 dark:text-white" x-text="selectedItem?.status ?? '-' "></p>
                         </div>
                     </div>
                     <div>
-                        <p class="text-xs text-gray-500">Notes</p>
-                        <p class="text-sm text-gray-900 dark:text-white" x-text="selectedItem?.notes ?? '-' "></p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Notes</p>
+                        <p class="text-xs sm:text-sm text-gray-900 dark:text-white" x-text="selectedItem?.notes ?? '-' "></p>
                     </div>
                 </div>
             </div>
@@ -248,41 +291,41 @@
     </div>
 
     <!-- Request Item Modal -->
-    <div x-show="showRequest" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" @keydown.escape.window="showRequest=false">
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+    <div x-show="showRequest" x-cloak class="fixed inset-0 z-50 overflow-y-auto p-4" role="dialog" aria-modal="true" @keydown.escape.window="showRequest=false">
+        <div class="flex items-center justify-center min-h-full p-0 sm:p-0 sm:pt-4 sm:pb-20">
             <div x-show="showRequest" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click="showRequest=false" class="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 transition-opacity" aria-hidden="true"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div x-show="showRequest" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:align-middle sm:max-w-md sm:w-full border border-gray-200 dark:border-gray-700">
-                <form method="POST" action="{{ route('technician.inventory.request') }}" class="p-6 space-y-4">
+            <div x-show="showRequest" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-t-[20px] sm:rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:align-middle sm:max-w-md sm:w-full border border-gray-200 dark:border-gray-700">
+                <form method="POST" action="{{ route('technician.inventory.request') }}" class="p-4 sm:p-6 space-y-3 sm:space-y-4">
                     @csrf
                     <input type="hidden" name="inventory_item_id" x-model="requestData.item_id">
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                        <div class="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                             </svg>
                         </div>
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Request Item</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Submit a request for this item</p>
+                            <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Request Item</h3>
+                            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5">Submit a request for this item</p>
                         </div>
                     </div>
-                    <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 mb-4">
-                        <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="selectedItem?.name"></p>
+                    <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+                        <p class="text-xs sm:text-sm font-medium text-gray-900 dark:text-white" x-text="selectedItem?.name"></p>
                         <p class="text-xs text-gray-500 dark:text-gray-400" x-text="'Available: ' + (selectedItem?.quantity ?? 0) + ' ' + (selectedItem?.unit ?? 'units')"></p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity *</label>
-                        <input type="number" name="quantity" min="1" x-model="requestData.quantity" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+                        <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity *</label>
+                        <input type="number" name="quantity" min="1" x-model="requestData.quantity" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs sm:text-sm text-gray-900 dark:text-white">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purpose/Reason *</label>
-                        <textarea name="purpose" rows="3" x-model="requestData.purpose" required placeholder="Explain why you need this item..." class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"></textarea>
+                        <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purpose/Reason *</label>
+                        <textarea name="purpose" rows="3" x-model="requestData.purpose" required placeholder="Explain why you need this item..." class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs sm:text-sm text-gray-900 dark:text-white"></textarea>
                     </div>
                     @if(isset($myActiveJobOrders) && $myActiveJobOrders->count() > 0)
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Link to Job Order <span class="text-gray-400 font-normal">(optional)</span></label>
-                        <select name="job_order_id" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+                        <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Link to Job Order <span class="text-gray-400 font-normal">(optional)</span></label>
+                        <select name="job_order_id" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs sm:text-sm text-gray-900 dark:text-white">
                             <option value="">-- None --</option>
                             @foreach($myActiveJobOrders as $asgn)
                             <option value="{{ $asgn->jobOrder->id }}">{{ $asgn->jobOrder->job_order_number }} — {{ $asgn->jobOrder->service_description ?? $asgn->jobOrder->service_type }}</option>
@@ -291,9 +334,9 @@
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Track which items were used for this job order.</p>
                     </div>
                     @endif
-                    <div class="flex justify-end gap-3 pt-2">
-                        <button type="button" @click="showRequest=false" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">Cancel</button>
-                        <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Submit Request</button>
+                    <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-2">
+                        <button type="button" @click="showRequest=false" class="px-3 sm:px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">Cancel</button>
+                        <button type="submit" class="px-3 sm:px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-xs sm:text-sm font-medium transition-colors">Submit Request</button>
                     </div>
                 </form>
             </div>

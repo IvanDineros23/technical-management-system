@@ -132,12 +132,14 @@
         </div>
 
         <!-- Filter Options -->
-        <form method="GET" action="{{ route('technician.work-orders') }}" class="mb-12 flex flex-wrap gap-4 items-center">
-            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search job orders..." 
-                   class="flex-1 min-w-[260px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm placeholder-gray-500 dark:placeholder-gray-400">
+        <form method="GET" action="{{ route('technician.work-orders') }}" class="mb-6 sm:mb-12 flex flex-col gap-3 sm:flex-row sm:gap-4 sm:items-end">
+            <div class="flex-1 relative">
+                <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search job orders..." 
+                       class="w-full px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs sm:text-sm placeholder-gray-500 dark:placeholder-gray-400">
+            </div>
             
             <select name="status"
-                    class="px-4 py-2 pr-12 min-w-[170px] border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
+                    class="px-3 sm:px-4 py-2 pr-8 sm:pr-12 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs sm:text-sm">
                 <option value="">All Status</option>
                 <option value="pending" {{ ($status ?? '') === 'pending' ? 'selected' : '' }}>Waiting for Assignment</option>
                 <option value="for_accounting_approval" {{ ($status ?? '') === 'for_accounting_approval' ? 'selected' : '' }}>For Accounting Approval</option>
@@ -150,7 +152,7 @@
                 <option value="rejected" {{ ($status ?? '') === 'rejected' ? 'selected' : '' }}>Rejected</option>
             </select>
             <select name="priority"
-                    class="px-4 py-2 pr-12 min-w-[150px] border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
+                    class="px-3 sm:px-4 py-2 pr-8 sm:pr-12 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs sm:text-sm">
                 <option value="">All Priority</option>
                 <option value="urgent" {{ ($priority ?? '') === 'urgent' ? 'selected' : '' }}>Urgent</option>
                 <option value="high" {{ ($priority ?? '') === 'high' ? 'selected' : '' }}>High</option>
@@ -158,14 +160,84 @@
                 <option value="low" {{ ($priority ?? '') === 'low' ? 'selected' : '' }}>Low</option>
             </select>
 
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">Filter</button>
-            <a href="{{ route('technician.work-orders') }}" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Clear</a>
+            <div class="flex gap-2 sm:gap-3">
+                <button type="submit" class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-colors whitespace-nowrap">Filter</button>
+                <a href="{{ route('technician.work-orders') }}" class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center whitespace-nowrap">Clear</a>
+            </div>
         </form>
 
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             @if($workOrders->count() > 0)
-                <div class="overflow-x-auto">
-                    <table class="w-full">
+                <!-- Mobile Cards View -->
+                <div class="sm:hidden space-y-3 flex-1">
+                    @foreach($workOrders as $order)
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 p-3 hover:border-blue-300 dark:hover:border-blue-500 transition-colors">
+                            <div class="flex items-start justify-between mb-2">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $order->job_order_number }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $order->customer->name ?? 'N/A' }}</p>
+                                </div>
+                                @php
+                                    $statusValue = $order->technician_status ?? $order->status;
+                                    $statusLabel = $order->technician_status_label
+                                        ?? (in_array($order->status, ['pending', 'approved'], true) ? 'Waiting for Assignment' : ucfirst(str_replace('_', ' ', $order->status)));
+                                @endphp
+                                <span class="px-2 py-1 text-xs font-medium rounded-full
+                                    {{ in_array($statusValue, ['pending', 'approved'], true) ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300' : '' }}
+                                    {{ $statusValue === 'assigned' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : '' }}
+                                    {{ $statusValue === 'in_progress' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' : '' }}
+                                    {{ $statusValue === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : '' }}
+                                    {{ $statusValue === 'pending_review' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : '' }}
+                                    {{ $statusValue === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : '' }}">
+                                    {{ $statusLabel }}
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">{{ Str::limit($order->service_description ?? $order->description ?? 'N/A', 50) }}</p>
+                            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
+                                <span>{{ ucfirst($order->priority ?? 'normal') }}</span>
+                                <span>{{ $order->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</span>
+                            </div>
+                            @if(!$order->is_assigned_to_me && in_array($order->status, ['pending', 'approved'], true))
+                                <button
+                                    type="button"
+                                    data-id="{{ $order->id }}"
+                                    data-job-order-number="{{ $order->job_order_number }}"
+                                    data-customer-name="{{ $order->customer->name ?? 'N/A' }}"
+                                    data-service-type="{{ $order->service_type ?? 'N/A' }}"
+                                    data-service-description="{{ $order->service_description ?? 'N/A' }}"
+                                    data-status-label="{{ $statusLabel }}"
+                                    data-priority="{{ ucfirst($order->priority ?? 'normal') }}"
+                                    data-created-at="{{ $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}"
+                                    data-assign-url="{{ route('technician.work-orders.assign-to-me', $order) }}"
+                                    @click="openPreview({
+                                        id: Number($el.dataset.id),
+                                        job_order_number: $el.dataset.jobOrderNumber,
+                                        customer_name: $el.dataset.customerName,
+                                        service_type: $el.dataset.serviceType,
+                                        service_description: $el.dataset.serviceDescription,
+                                        status_label: $el.dataset.statusLabel,
+                                        priority: $el.dataset.priority,
+                                        created_at: $el.dataset.createdAt,
+                                        assign_url: $el.dataset.assignUrl,
+                                    })"
+                                    class="w-full text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-xs sm:text-sm font-medium hover:underline">
+                                    Preview & Assign
+                                </button>
+                            @elseif(($order->is_assigned_to_me ?? false) || ($order->assignment_for_me_count ?? 0) > 0)
+                                <a href="{{ route('technician.job-details', $order->id) }}" 
+                                   class="w-full inline-block text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-xs sm:text-sm font-medium hover:underline text-center">
+                                    View Details
+                                </a>
+                            @else
+                                <span class="text-xs font-medium text-gray-400 dark:text-gray-500">Not Assigned</span>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+
+                <!-- Desktop Table View -->
+                <div class="hidden sm:block overflow-x-auto">
+                <table class="w-full">
                         <thead class="border-b border-gray-200 dark:border-gray-700">
                             <tr class="text-left">
                                 <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">WO Number</th>
@@ -267,18 +339,18 @@
             @endif
         </div>
 
-        <div
+            <div
             x-show="showPreviewModal"
             x-cloak
             x-transition.opacity.duration.200ms
-            class="fixed inset-0 z-50 overflow-y-auto"
+            class="fixed inset-0 z-50 overflow-y-auto p-4"
         >
             <div
                 class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm"
                 x-transition.opacity.duration.200ms
                 @click="closePreview()"
             ></div>
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-center justify-center p-0 sm:p-4">
                 <div
                     x-show="showPreviewModal"
                     x-transition:enter="transform transition ease-out duration-250"
@@ -288,57 +360,57 @@
                     x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                     x-transition:leave-end="opacity-0 scale-95 translate-y-2"
                     @click.stop
-                    class="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700 p-6"
+                    class="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-t-[20px] sm:rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6"
                 >
-                    <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-4 mb-5">
+                    <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-3 sm:pb-4 mb-3 sm:mb-5">
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Job Order Preview</h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="previewOrder ? previewOrder.job_order_number : ''"></p>
+                            <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Job Order Preview</h3>
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="previewOrder ? previewOrder.job_order_number : ''"></p>
                         </div>
-                        <button type="button" @click="closePreview()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button type="button" @click="closePreview()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
                         <div>
                             <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Customer</p>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.customer_name : 'N/A'"></p>
+                            <p class="text-sm sm:text-base font-medium text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.customer_name : 'N/A'"></p>
                         </div>
                         <div>
                             <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Status</p>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.status_label : 'N/A'"></p>
+                            <p class="text-sm sm:text-base font-medium text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.status_label : 'N/A'"></p>
                         </div>
                         <div>
                             <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Priority</p>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.priority : 'N/A'"></p>
+                            <p class="text-sm sm:text-base font-medium text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.priority : 'N/A'"></p>
                         </div>
                         <div>
                             <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Date Created</p>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.created_at : 'N/A'"></p>
+                            <p class="text-sm sm:text-base font-medium text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.created_at : 'N/A'"></p>
                         </div>
                     </div>
 
-                    <div class="mt-4">
+                    <div class="mb-3 sm:mb-4">
                         <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Service Type</p>
-                        <p class="text-sm text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.service_type : 'N/A'"></p>
+                        <p class="text-sm sm:text-base text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.service_type : 'N/A'"></p>
                     </div>
 
-                    <div class="mt-4">
+                    <div class="mb-4 sm:mb-6">
                         <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Service Description</p>
-                        <p class="text-sm text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.service_description : 'N/A'"></p>
+                        <p class="text-sm sm:text-base text-gray-900 dark:text-white" x-text="previewOrder ? previewOrder.service_description : 'N/A'"></p>
                     </div>
 
-                    <div class="mt-6 flex items-center justify-end gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
-                        <button type="button" @click="closePreview()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 sm:gap-3 border-t border-gray-200 dark:border-gray-700 pt-3 sm:pt-4">
+                        <button type="button" @click="closePreview()" class="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                             Close
                         </button>
 
-                        <form method="POST" :action="previewOrder ? previewOrder.assign_url : '#'" class="m-0">
+                        <form method="POST" :action="previewOrder ? previewOrder.assign_url : '#'" class="m-0 w-full sm:w-auto">
                             @csrf
-                            <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 transition-colors">
+                            <button type="submit" class="w-full sm:w-auto px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-emerald-700 transition-colors">
                                 Assign to Me
                             </button>
                         </form>

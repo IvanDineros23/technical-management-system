@@ -201,37 +201,37 @@
 @endsection
 
 @section('content')
-<div x-data="jobOrderForm()">
+<div x-data="jobOrderForm()" class="w-full min-h-screen">
 
-    <div class="mb-6">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Create Job Order</h2>
+    <div class="mb-4 sm:mb-6 px-4 sm:px-0">
+        <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Create Job Order</h2>
     </div>
 
-    <form @submit.prevent="submitForm($event)" class="space-y-6">
+    <form @submit.prevent="submitForm($event)" class="space-y-4 sm:space-y-6 px-4 sm:px-0">
 
         {{-- HEADER FIELDS: Date + JO No --}}
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date *</label>
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date *</label>
                     <input name="date" type="date" required
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                           class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">J.O. No. *</label>
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">J.O. No. *</label>
                     <input name="jo_no" type="text" required placeholder="e.g., JO-2026-0001"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                           class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 </div>
             </div>
         </div>
 
         {{-- CUSTOMER SELECTION (kept, but aligned to template fields) --}}
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Company / Customer</h3>
+        <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
+                <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Company / Customer</h3>
                 <a href="{{ route('marketing.customers') }}"
-                   class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1">
+                   class="text-xs sm:text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
@@ -239,11 +239,11 @@
                 </a>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Customer *</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div class="sm:col-span-2">
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Customer *</label>
                     <select name="customer_id" required @change="selectCustomer()"
-                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <option value="">Choose a customer...</option>
                         @foreach($customers as $customer)
                             <option value="{{ $customer->id }}">{{ $customer->name }}</option>
@@ -252,51 +252,51 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Company Name *</label>
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Company Name *</label>
                     <input name="company_name" required type="text" placeholder="Auto-fill or manual"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                           class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Company TIN</label>
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Company TIN</label>
                     <input name="company_tin" type="text" placeholder="TIN"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                           class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 </div>
 
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address *</label>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address *</label>
                     <input name="address" required type="text" placeholder="Company address"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                           class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact No.</label>
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact No.</label>
                     <input name="contact_no" type="text" placeholder="09xx..."
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                           class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact Person</label>
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contact Person</label>
                     <input name="contact_person" type="text" placeholder="Person in charge"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                           class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 </div>
 
                 {{-- Customer Details Preview --}}
                 <div x-show="selectedCustomer" x-transition
-                     class="md:col-span-2 mt-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Customer Details (Preview)</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                     class="sm:col-span-2 mt-2 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <h4 class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white mb-2">Customer Details (Preview)</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                         <div>
                             <span class="text-gray-600 dark:text-gray-400">Email:</span>
-                            <span class="ml-2 text-gray-900 dark:text-white" x-text="selectedCustomer?.email || 'N/A'"></span>
+                            <span class="ml-2 text-gray-900 dark:text-white break-all" x-text="selectedCustomer?.email || 'N/A'"></span>
                         </div>
                         <div>
                             <span class="text-gray-600 dark:text-gray-400">Phone:</span>
                             <span class="ml-2 text-gray-900 dark:text-white" x-text="selectedCustomer?.phone || 'N/A'"></span>
                         </div>
-                        <div class="md:col-span-2">
+                        <div class="sm:col-span-2">
                             <span class="text-gray-600 dark:text-gray-400">Address:</span>
-                            <span class="ml-2 text-gray-900 dark:text-white" x-text="selectedCustomer?.address || 'N/A'"></span>
+                            <span class="ml-2 text-gray-900 dark:text-white break-words" x-text="selectedCustomer?.address || 'N/A'"></span>
                         </div>
                     </div>
                 </div>
@@ -305,38 +305,38 @@
         </div>
 
         {{-- CALIBRATION SITE ADDRESS + SERVICE TYPES (checkboxes like PDF) --}}
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Service Details (Template)</h3>
+        <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Service Details (Template)</h3>
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Calibration Site Address *</label>
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Calibration Site Address *</label>
                     <input name="calibration_site_address" required type="text" placeholder="Where the service will be performed"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                           class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Service Type *</label>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                        <label class="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Service Type *</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+                        <label class="flex items-center gap-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">
                             <input type="checkbox" x-model="services.inspection" class="rounded border-gray-300 dark:border-gray-600">
-                            Inspection
+                            <span>Inspection</span>
                         </label>
-                        <label class="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                        <label class="flex items-center gap-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">
                             <input type="checkbox" x-model="services.repair" class="rounded border-gray-300 dark:border-gray-600">
-                            Repair
+                            <span>Repair</span>
                         </label>
-                        <label class="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                        <label class="flex items-center gap-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">
                             <input type="checkbox" x-model="services.installation" class="rounded border-gray-300 dark:border-gray-600">
-                            Installation
+                            <span>Installation</span>
                         </label>
-                        <label class="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                        <label class="flex items-center gap-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">
                             <input type="checkbox" x-model="services.demonstration" class="rounded border-gray-300 dark:border-gray-600">
-                            Demonstration
+                            <span>Demo</span>
                         </label>
-                        <label class="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                        <label class="flex items-center gap-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">
                             <input type="checkbox" x-model="services.calibration" class="rounded border-gray-300 dark:border-gray-600">
-                            Calibration
+                            <span>Calibration</span>
                         </label>
                     </div>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -344,87 +344,133 @@
                     </p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Client P.O. Ctrl No.</label>
+                        <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Client P.O. Ctrl No.</label>
                         <input name="client_po_ctrl_no" type="text" placeholder="Optional"
-                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Service Invoice Number</label>
+                        <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Service Invoice Number</label>
                         <input name="service_invoice_number" type="text" placeholder="Optional"
-                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Others</label>
+                        <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Others</label>
                         <input name="others" type="text" placeholder="Optional"
-                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Remarks</label>
+                    <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Remarks</label>
                     <textarea name="remarks" rows="3" placeholder="REMARKS..."
-                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                              class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
                 </div>
             </div>
         </div>
 
         {{-- ITEMS TABLE (matches PDF columns) --}}
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Items / Equipment</h3>
+        <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
+                <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Items / Equipment</h3>
                 <button type="button" @click="addItem()"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                        class="w-full sm:w-auto px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700 transition-colors">
                     + Add Item
                 </button>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm">
-                    <thead class="text-gray-700 dark:text-gray-300">
+            <!-- Mobile Card View -->
+            <div class="block sm:hidden space-y-3">
+                <template x-for="(item, index) in items" :key="index">
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
+                        <div class="flex justify-between items-start gap-2">
+                            <div class="flex-1">
+                                <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Item #</label>
+                                <input type="number" min="1" x-model="item.item_no"
+                                       class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            </div>
+                            <div class="flex-1">
+                                <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Qty</label>
+                                <input type="number" min="1" x-model="item.qty"
+                                       class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            </div>
+                            <button type="button" @click="removeItem(index)"
+                                    class="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-700 mt-5"
+                                    :disabled="items.length === 1">
+                                Remove
+                            </button>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Equipment Name</label>
+                            <input type="text" x-model="item.equipment_name" placeholder="Equipment Name"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Model</label>
+                            <input type="text" x-model="item.model" placeholder="Model"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Capacity</label>
+                            <input type="text" x-model="item.capacity" placeholder="Capacity"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Serial No</label>
+                            <input type="text" x-model="item.serial_no" placeholder="Serial No"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Desktop Table View -->
+            <div class="hidden sm:block overflow-x-auto">
+                <table class="min-w-full text-xs sm:text-sm">
+                    <thead class="text-gray-700 dark:text-gray-300 text-left">
                         <tr class="border-b border-gray-200 dark:border-gray-700">
-                            <th class="text-left py-2 pr-2">Item No</th>
-                            <th class="text-left py-2 pr-2">Qty</th>
-                            <th class="text-left py-2 pr-2">Equipment Name</th>
-                            <th class="text-left py-2 pr-2">Model</th>
-                            <th class="text-left py-2 pr-2">Capacity</th>
-                            <th class="text-left py-2 pr-2">Serial No</th>
-                            <th class="text-left py-2 pr-2"></th>
+                            <th class="py-2 px-2">Item No</th>
+                            <th class="py-2 px-2">Qty</th>
+                            <th class="py-2 px-2">Equipment Name</th>
+                            <th class="py-2 px-2">Model</th>
+                            <th class="py-2 px-2">Capacity</th>
+                            <th class="py-2 px-2">Serial No</th>
+                            <th class="py-2 px-2"></th>
                         </tr>
                     </thead>
                     <tbody>
                         <template x-for="(item, index) in items" :key="index">
                             <tr class="border-b border-gray-100 dark:border-gray-700/60">
-                                <td class="py-2 pr-2 w-20">
+                                <td class="py-2 px-2 w-20">
                                     <input type="number" min="1" x-model="item.item_no"
-                                           class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                           class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                 </td>
-                                <td class="py-2 pr-2 w-24">
+                                <td class="py-2 px-2 w-20">
                                     <input type="number" min="1" x-model="item.qty"
-                                           class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                           class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                 </td>
-                                <td class="py-2 pr-2 min-w-[220px]">
+                                <td class="py-2 px-2 min-w-[200px]">
                                     <input type="text" x-model="item.equipment_name" placeholder="Equipment Name"
-                                           class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                           class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                 </td>
-                                <td class="py-2 pr-2 min-w-[160px]">
+                                <td class="py-2 px-2 min-w-[140px]">
                                     <input type="text" x-model="item.model" placeholder="Model"
-                                           class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                           class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                 </td>
-                                <td class="py-2 pr-2 min-w-[160px]">
+                                <td class="py-2 px-2 min-w-[140px]">
                                     <input type="text" x-model="item.capacity" placeholder="Capacity"
-                                           class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                           class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                 </td>
-                                <td class="py-2 pr-2 min-w-[160px]">
+                                <td class="py-2 px-2 min-w-[140px]">
                                     <input type="text" x-model="item.serial_no" placeholder="Serial No"
-                                           class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                           class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                 </td>
-                                <td class="py-2 pr-2 w-16">
+                                <td class="py-2 px-2 w-20">
                                     <button type="button" @click="removeItem(index)"
-                                            class="px-3 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-700"
+                                            class="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-700 whitespace-nowrap"
                                             :disabled="items.length === 1">
                                         Remove
                                     </button>
@@ -436,14 +482,13 @@
             </div>
         </div>
 
-        {{-- TERMS + RECEIVED BY + PREPARED/APPROVED BY (template signatures block) --}}
         {{-- TERMS (no signatories inputs) --}}
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Terms</h3>
+        <div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
+                <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Terms</h3>
 
                 {{-- display only, not editable --}}
-                <div class="text-sm text-gray-600 dark:text-gray-300">
+                <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                     Created by:
                     <span class="font-semibold text-gray-900 dark:text-white">
                         {{ auth()->user()->name }}
@@ -451,20 +496,20 @@
                 </div>
             </div>
 
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Terms</label>
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Terms</label>
             <textarea name="terms" rows="4"
-                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Terms..."></textarea>
         </div>
 
         {{-- ACTIONS --}}
-        <div class="flex gap-3 justify-end">
+        <div class="flex flex-col sm:flex-row gap-3 justify-end">
             <a href="{{ route('marketing.dashboard') }}"
-               class="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+               class="w-full sm:w-auto px-4 sm:px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center">
                 Cancel
             </a>
             <button type="submit"
-                    class="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md shadow-blue-200 dark:shadow-blue-900/50"
+                    class="w-full sm:w-auto px-4 sm:px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-md shadow-blue-200 dark:shadow-blue-900/50"
                     :disabled="isSubmitting">
                 <span x-show="!isSubmitting">Create Job Order</span>
                 <span x-show="isSubmitting">Creating...</span>
@@ -481,20 +526,20 @@
          x-transition:leave="transition ease-in duration-200"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="fixed bottom-4 right-4 z-50 max-w-sm"
+         class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-50 max-w-sm"
          style="display: none;">
         <div :class="{
             'bg-green-500': toast.type === 'success',
             'bg-red-500': toast.type === 'error'
         }"
-        class="text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-3">
-            <svg x-show="toast.type === 'success'" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        class="text-white px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-lg flex items-center gap-2 sm:gap-3 text-sm sm:text-base">
+            <svg x-show="toast.type === 'success'" class="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
             </svg>
-            <svg x-show="toast.type === 'error'" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg x-show="toast.type === 'error'" class="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
-            <span x-text="toast.message"></span>
+            <span x-text="toast.message" class="break-words"></span>
         </div>
     </div>
 

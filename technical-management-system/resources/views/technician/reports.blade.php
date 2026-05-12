@@ -241,43 +241,43 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 md:p-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-3 sm:p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs md:text-sm text-gray-600 dark:text-gray-400">Pending Reports</p>
-                    <h3 class="text-2xl md:text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">{{ $pendingCount }}</h3>
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Pending Reports</p>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1 sm:mt-2">{{ $pendingCount }}</h3>
                 </div>
-                <div class="w-10 h-10 md:w-12 md:h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 md:w-6 md:h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 md:p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-3 sm:p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs md:text-sm text-gray-600 dark:text-gray-400">Submitted Today</p>
-                    <h3 class="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{{ $todayCount }}</h3>
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Submitted Today</p>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1 sm:mt-2">{{ $todayCount }}</h3>
                 </div>
-                <div class="w-10 h-10 md:w-12 md:h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 md:w-6 md:h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 md:p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-3 sm:p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs md:text-sm text-gray-600 dark:text-gray-400">Total Reports</p>
-                    <h3 class="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{{ $totalCount }}</h3>
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Reports</p>
+                    <h3 class="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400 mt-1 sm:mt-2">{{ $totalCount }}</h3>
                 </div>
-                <div class="w-10 h-10 md:w-12 md:h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 md:w-6 md:h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
@@ -286,33 +286,33 @@
     </div>
 
     <!-- Pending Reports -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 md:p-6">
-        <h3 class="text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6">Pending Job Completion Reports</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+        <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">Pending Job Completion Reports</h3>
         @if($pendingReports->isEmpty())
-            <div class="text-center py-12">
-                <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="text-center py-10">
+                <svg class="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 dark:text-gray-600 mx-auto mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <p class="text-gray-500 dark:text-gray-400 text-sm md:text-base">No pending reports</p>
+                <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">No pending reports</p>
             </div>
         @else
-            <div class="space-y-4">
+            <div class="space-y-3 sm:space-y-4">
                 @foreach($pendingReports as $assignment)
-                    <div class="border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl p-4 md:p-6">
-                        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div class="border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl p-3 sm:p-6">
+                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                             <div class="flex-1">
-                                <div class="flex flex-wrap items-center gap-3 mb-2">
-                                    <h4 class="text-base md:text-lg font-bold text-gray-900 dark:text-white">{{ $assignment->jobOrder->job_order_number ?? 'N/A' }}</h4>
+                                <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                                    <h4 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white">{{ $assignment->jobOrder->job_order_number ?? 'N/A' }}</h4>
                                     <span class="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 text-xs font-semibold rounded-full">Report Pending</span>
                                 </div>
-                                <p class="text-sm md:text-base text-gray-600 dark:text-gray-400 mb-2">{{ $assignment->jobOrder->service_type }} - {{ $assignment->location }}</p>
-                                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                                <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2">{{ $assignment->jobOrder->service_type }} - {{ $assignment->location }}</p>
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                                     <span>Completed: {{ \Carbon\Carbon::parse($assignment->completed_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</span>
                                     <span>Customer: {{ $assignment->jobOrder->customer->name ?? 'N/A' }}</span>
                                 </div>
                             </div>
                             <button @click="openSubmitModal({{ $assignment->id }})" 
-                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors text-sm md:text-base whitespace-nowrap">
+                                    class="px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors text-xs sm:text-sm whitespace-nowrap">
                                 Submit Report
                             </button>
                         </div>
@@ -323,17 +323,59 @@
     </div>
 
     <!-- Submitted Reports -->
-    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 md:p-6">
-        <h3 class="text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6">Recent Submitted Reports</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+        <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">Recent Submitted Reports</h3>
         @if($submittedReports->isEmpty())
-            <div class="text-center py-12">
-                <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="text-center py-10">
+                <svg class="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 dark:text-gray-600 mx-auto mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <p class="text-gray-500 dark:text-gray-400 text-sm md:text-base">No submitted reports yet</p>
+                <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">No submitted reports yet</p>
             </div>
         @else
-            <div class="overflow-x-auto -mx-4 md:mx-0">
+            <!-- Mobile Cards View -->
+            <div class="sm:hidden space-y-3">
+                @foreach($submittedReports as $assignment)
+                    @php
+                        $reportStatus = $assignment->report->status ?? 'pending';
+                        $statusClasses = match ($reportStatus) {
+                            'approved' => 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+                            'rejected' => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+                            default => 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
+                        };
+                        $statusLabel = match ($reportStatus) {
+                            'approved' => 'Approved',
+                            'rejected' => 'Rejected',
+                            default => 'Pending Review',
+                        };
+                    @endphp
+                    <div class="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl p-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">JO Number</p>
+                                <p class="font-mono text-sm font-semibold text-gray-900 dark:text-white">{{ $assignment->jobOrder->job_order_number ?? 'N/A' }}</p>
+                            </div>
+                            <span class="px-2 py-1 {{ $statusClasses }} text-xs font-semibold rounded-full whitespace-nowrap">
+                                {{ $statusLabel }}
+                            </span>
+                        </div>
+                        <div class="mt-2">
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $assignment->jobOrder->service_type }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $assignment->location }}</p>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            <p>Submitted: {{ \Carbon\Carbon::parse($assignment->report->created_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') }}</p>
+                            <p class="mt-1">Customer: {{ $assignment->jobOrder->customer->name ?? 'N/A' }}</p>
+                        </div>
+                        <button @click="openViewModal({{ $assignment->id }})" class="mt-3 w-full px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors">
+                            View Report
+                        </button>
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- Desktop Table View -->
+            <div class="hidden sm:block overflow-x-auto -mx-4 sm:mx-0">
                 <div class="inline-block min-w-full align-middle">
                     <div class="overflow-hidden">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -411,68 +453,68 @@
                x-transition:leave-start="opacity-100 scale-100"
                x-transition:leave-end="opacity-0 scale-90"
                @click.self="closeSubmitModal()"
-               class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[90vh] overflow-y-auto">
+               class="bg-white dark:bg-gray-800 rounded-t-[20px] sm:rounded-2xl shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[90vh] overflow-y-auto">
             
             <!-- Modal Header -->
-            <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between rounded-t-2xl sticky top-0 z-10">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Submit Completion Report</h3>
+            <div class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between rounded-t-[20px] sm:rounded-t-2xl sticky top-0 z-10">
+                <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Submit Completion Report</h3>
                 <button @click="closeSubmitModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
 
             <!-- Modal Content -->
-            <form @submit="submitReport" class="p-6 space-y-4">
+            <form @submit="submitReport" class="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <!-- Work Summary -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Work Summary</label>
+                          <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Work Summary</label>
                     <textarea name="work_summary" rows="4" required
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                              class="w-full px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-xs sm:text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                            placeholder="Describe the work completed..."></textarea>
                 </div>
 
                 <!-- Parts Used -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Parts Used (Optional)</label>
+                          <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Parts Used (Optional)</label>
                     <textarea name="parts_used" rows="3"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                              class="w-full px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-xs sm:text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                            placeholder="List parts used..."></textarea>
                 </div>
 
                 <!-- Remarks -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Additional Remarks</label>
+                          <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Additional Remarks</label>
                     <textarea name="remarks" rows="3"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                              class="w-full px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-xs sm:text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                            placeholder="Any additional notes..."></textarea>
                 </div>
 
                 <!-- Photo Upload -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Photos (Optional)</label>
+                          <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Photos (Optional)</label>
                     <input type="file" name="photos[]" multiple accept="image/*"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                              class="w-full px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-xs sm:text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
                 </div>
 
                 <!-- Signature -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Digital Signature</label>
+                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Digital Signature</label>
                     <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Signature pad would go here</p>
+                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Signature pad would go here</p>
                     </div>
                 </div>
 
                 <!-- Modal Footer -->
-                <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <button type="button" @click="closeSubmitModal()"
-                            class="px-4 py-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-900 dark:text-white font-medium rounded-lg transition-colors">
+                            class="px-3 sm:px-4 py-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-900 dark:text-white text-xs sm:text-sm font-medium rounded-lg transition-colors">
                         Cancel
                     </button>
                     <button type="submit"
                             :disabled="isSubmitting"
-                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                            class="px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                         <span x-show="!isSubmitting">Submit Report</span>
                         <span x-show="isSubmitting">Submitting...</span>
                     </button>
@@ -501,73 +543,73 @@
                x-transition:leave-start="opacity-100 scale-100"
                x-transition:leave-end="opacity-0 scale-90"
                @click.self="closeViewModal()"
-               class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-2xl shadow-2xl max-w-5xl w-full border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[95vh] overflow-y-auto">
+               class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-t-[20px] sm:rounded-2xl shadow-2xl max-w-5xl w-full border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[95vh] overflow-y-auto">
             
             <!-- Modal Header -->
-            <div class="bg-gray-50 dark:bg-gray-950 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between rounded-t-2xl sticky top-0 z-10">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Report Details</h3>
+            <div class="bg-gray-50 dark:bg-gray-950 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between rounded-t-[20px] sm:rounded-t-2xl sticky top-0 z-10">
+                <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Report Details</h3>
                 <button @click="closeViewModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
 
             <!-- Modal Content -->
-            <div class="p-6 space-y-6 bg-white dark:bg-gray-900">
+            <div class="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-white dark:bg-gray-900">
                 <template x-if="selectedReport">
                     <div class="space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 sm:p-4">
                                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">JO Number</p>
-                                <p class="mt-1 font-mono text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedReport.job_order_number"></p>
+                                <p class="mt-1 font-mono text-xs sm:text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedReport.job_order_number"></p>
                             </div>
-                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 sm:p-4">
                                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</p>
-                                <p class="mt-1 text-sm font-semibold"
+                                <p class="mt-1 text-xs sm:text-sm font-semibold"
                                    :class="selectedReport.status === 'rejected' ? 'text-red-600 dark:text-red-300' : (selectedReport.status === 'approved' ? 'text-green-600 dark:text-green-300' : 'text-yellow-600 dark:text-yellow-300')"
                                    x-text="selectedReport.status_label"></p>
                             </div>
-                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 sm:p-4">
                                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Service Type</p>
-                                <p class="mt-1 text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.service_type"></p>
+                                <p class="mt-1 text-xs sm:text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.service_type"></p>
                             </div>
-                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 sm:p-4">
                                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Customer</p>
-                                <p class="mt-1 text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.customer_name"></p>
+                                <p class="mt-1 text-xs sm:text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.customer_name"></p>
                             </div>
-                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4 md:col-span-2">
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 sm:p-4 sm:col-span-2">
                                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Location</p>
-                                <p class="mt-1 text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.location"></p>
+                                <p class="mt-1 text-xs sm:text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.location"></p>
                             </div>
-                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 sm:p-4">
                                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Submitted At</p>
-                                <p class="mt-1 text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.submitted_at"></p>
+                                <p class="mt-1 text-xs sm:text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.submitted_at"></p>
                             </div>
-                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4" x-show="selectedReport.reviewed_at">
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 sm:p-4" x-show="selectedReport.reviewed_at">
                                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Reviewed At</p>
-                                <p class="mt-1 text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.reviewed_at"></p>
+                                <p class="mt-1 text-xs sm:text-sm text-gray-900 dark:text-gray-100" x-text="selectedReport.reviewed_at"></p>
                             </div>
                         </div>
 
-                        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 sm:p-4">
                             <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Work Summary</p>
-                            <p class="mt-2 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line" x-text="selectedReport.work_summary || 'No work summary provided.'"></p>
+                            <p class="mt-2 text-xs sm:text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line" x-text="selectedReport.work_summary || 'No work summary provided.'"></p>
                         </div>
 
-                        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 sm:p-4">
                             <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Parts Used</p>
-                            <p class="mt-2 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line" x-text="selectedReport.parts_used || 'No parts listed.'"></p>
+                            <p class="mt-2 text-xs sm:text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line" x-text="selectedReport.parts_used || 'No parts listed.'"></p>
                         </div>
 
-                        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 sm:p-4">
                             <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Remarks</p>
-                            <p class="mt-2 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line" x-text="selectedReport.remarks || 'No remarks.'"></p>
+                            <p class="mt-2 text-xs sm:text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line" x-text="selectedReport.remarks || 'No remarks.'"></p>
                         </div>
 
-                        <div x-show="selectedReport.status === 'rejected'" class="rounded-xl border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4">
+                        <div x-show="selectedReport.status === 'rejected'" class="rounded-xl border border-red-300 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-3 sm:p-4">
                             <p class="text-xs uppercase tracking-wide text-red-700 dark:text-red-300">Reason For Rejection (Tech Head)</p>
-                            <p class="mt-2 text-sm text-red-900 dark:text-red-100 whitespace-pre-line" x-text="selectedReport.review_notes || 'No rejection reason provided.'"></p>
+                            <p class="mt-2 text-xs sm:text-sm text-red-900 dark:text-red-100 whitespace-pre-line" x-text="selectedReport.review_notes || 'No rejection reason provided.'"></p>
                         </div>
                     </div>
                 </template>
