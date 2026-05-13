@@ -56,9 +56,9 @@
 }" @toast.window="addToast($event.detail.message, $event.detail.type)">
     
     <!-- Toast Container -->
-    <div class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none">
+    <div class="fixed left-3 right-3 bottom-3 sm:left-auto sm:right-6 sm:bottom-6 z-[9999] flex flex-col gap-2 sm:gap-3 pointer-events-none" style="padding-bottom: max(0px, env(safe-area-inset-bottom));">
         <template x-for="toast in toasts" :key="toast.id">
-            <div class="pointer-events-auto w-[400px] rounded-lg shadow-xl flex items-center px-5 py-4"
+            <div class="pointer-events-auto w-full max-w-[calc(100vw-1.5rem)] sm:max-w-none sm:w-[400px] rounded-lg shadow-xl flex items-start sm:items-center px-3 sm:px-5 py-3 sm:py-4"
                  x-show="true"
                  x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0 transform translate-y-4"
@@ -73,7 +73,7 @@
                      'bg-fuchsia-600': toast.type === 'info'
                  }">
                 <!-- Icon -->
-                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mr-4">
+                <div class="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 flex items-center justify-center mr-3 sm:mr-4 mt-0.5 sm:mt-0">
                     <template x-if="toast.type === 'success'">
                         <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
@@ -96,10 +96,10 @@
                     </template>
                 </div>
                 <!-- Message -->
-                <span class="flex-1 text-white font-semibold text-base" x-text="toast.message"></span>
+                <span class="flex-1 min-w-0 text-white font-semibold text-sm sm:text-base leading-snug break-words" x-text="toast.message"></span>
                 <!-- Close Button -->
-                <button @click="removeToast(toast.id)" class="flex-shrink-0 ml-4 text-white/80 hover:text-white transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <button @click="removeToast(toast.id)" class="flex-shrink-0 ml-2 sm:ml-4 p-1 -m-1 text-white/80 hover:text-white transition-colors">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>

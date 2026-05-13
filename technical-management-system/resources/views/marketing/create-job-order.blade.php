@@ -24,8 +24,6 @@
                 { item_no: 1, qty: 1, equipment_name: '', model: '', capacity: '', serial_no: '' }
             ],
 
-            toast: { show: false, message: '', type: 'success' },
-
             selectCustomer() {
                 const customerId = document.querySelector('select[name="customer_id"]').value;
                 this.selectedCustomer = customerId
@@ -54,10 +52,9 @@
             },
 
             showToast(message, type = 'success') {
-                this.toast.message = message;
-                this.toast.type = type;
-                this.toast.show = true;
-                setTimeout(() => this.toast.show = false, 3000);
+                window.dispatchEvent(new CustomEvent('toast', {
+                    detail: { message, type }
+                }));
             },
 
             submitForm(event) {
@@ -517,31 +514,6 @@
         </div>
 
     </form>
-
-    {{-- TOAST --}}
-    <div x-show="toast.show"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 transform translate-y-2"
-         x-transition:enter-end="opacity-100 transform translate-y-0"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-50 max-w-sm"
-         style="display: none;">
-        <div :class="{
-            'bg-green-500': toast.type === 'success',
-            'bg-red-500': toast.type === 'error'
-        }"
-        class="text-white px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-lg flex items-center gap-2 sm:gap-3 text-sm sm:text-base">
-            <svg x-show="toast.type === 'success'" class="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            <svg x-show="toast.type === 'error'" class="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-            <span x-text="toast.message" class="break-words"></span>
-        </div>
-    </div>
 
 </div>
 @endsection

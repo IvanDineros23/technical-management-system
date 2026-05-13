@@ -19,11 +19,6 @@
                 deletingCustomerName: '',
                 detailsCustomer: {},
                 missingFields: [],
-                toast: {
-                    show: false,
-                    message: '',
-                    type: 'success' // success, error, warning
-                },
                 formData: {
                     name: '',
                     business_name: '',
@@ -105,14 +100,9 @@
                     this.openMenuId = this.openMenuId === id ? null : id;
                 },
                 showToast(message, type = 'success') {
-                    this.toast.message = message;
-                    this.toast.type = type;
-                    this.toast.show = true;
-                    
-                    // Auto hide after 3 seconds
-                    setTimeout(() => {
-                        this.toast.show = false;
-                    }, 3000);
+                    window.dispatchEvent(new CustomEvent('toast', {
+                        detail: { message, type }
+                    }));
                 },
                 openModal() {
                     this.showModal = true;
@@ -1197,42 +1187,6 @@
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div x-show="toast.show"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-         x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
-         x-transition:leave="transition ease-in duration-100"
-         x-transition:leave-start="translate-y-0 opacity-100 sm:translate-x-0"
-         x-transition:leave-end="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-         class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-50"
-         x-cloak>
-        <div :class="{
-            'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700': toast.type === 'success',
-            'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700': toast.type === 'error',
-            'bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700': toast.type === 'warning'
-        }"
-             class="rounded-lg p-4 shadow-lg flex items-center gap-3 text-sm">
-            <!-- Success Icon -->
-            <svg x-show="toast.type === 'success'" class="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-            </svg>
-            
-            <!-- Error Icon -->
-            <svg x-show="toast.type === 'error'" class="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-            </svg>
-
-            <!-- Message -->
-            <p :class="{
-                'text-green-700 dark:text-green-300': toast.type === 'success',
-                'text-red-700 dark:text-red-300': toast.type === 'error',
-                'text-yellow-700 dark:text-yellow-300': toast.type === 'warning'
-            }"
-               class="text-sm font-medium"
-               x-text="toast.message"></p>
-        </div>
-    </div>
     </div>
 @endsection
 
