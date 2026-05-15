@@ -505,7 +505,7 @@
                             </button>
                         </div>
 
-                        <form :action="'/tech-head/certificates/' + selectedCertificate?.id + '/release'" method="POST" class="space-y-4">
+                        <form :action="`{{ route('tech-head.certificates.release', ['certificate' => '__ID__']) }}`.replace('__ID__', selectedCertificate?.id)" method="POST" class="space-y-4">
                             @csrf
                             @method('PATCH')
                             

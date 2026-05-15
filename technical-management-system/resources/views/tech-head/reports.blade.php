@@ -688,7 +688,7 @@
                      x-transition:leave-start="opacity-100 scale-100"
                      x-transition:leave-end="opacity-0 scale-95"
                      class="w-full max-w-md bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700">
-                    <form method="POST" :action="selectedId ? '{{ url('/tech-head/reports') }}/' + selectedId + '/approve' : '#'" class="p-6 space-y-4">
+                    <form method="POST" :action="selectedId ? `{{ route('tech-head.reports.approve', ['report' => '__ID__']) }}`.replace('__ID__', selectedId) : '#'" class="p-6 space-y-4">
                         @csrf
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Approve Report</h3>
                         <p class="text-sm text-gray-700 dark:text-gray-300">This will lock the job as completed.</p>
@@ -713,7 +713,7 @@
                      x-transition:leave-start="opacity-100 scale-100"
                      x-transition:leave-end="opacity-0 scale-95"
                      class="w-full max-w-md bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700">
-                    <form method="POST" :action="selectedId ? '{{ url('/tech-head/reports') }}/' + selectedId + '/reject' : '#'" class="p-6 space-y-4">
+                    <form method="POST" :action="selectedId ? `{{ route('tech-head.reports.reject', ['report' => '__ID__']) }}`.replace('__ID__', selectedId) : '#'" class="p-6 space-y-4">
                         @csrf
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Reject Report</h3>
                         <textarea name="review_notes" placeholder="Reason" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"></textarea>

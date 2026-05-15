@@ -791,7 +791,7 @@
                             </button>
                         </div>
 
-                        <form :action="'/tech-head/assignments/' + selectedJobId + '/reassign'" method="POST" class="space-y-4">
+                        <form :action="selectedJobId ? `{{ route('tech-head.assignments.reassign', ['assignment' => '__ID__']) }}`.replace('__ID__', selectedJobId) : '#'" method="POST" class="space-y-4">
                             @csrf
                             @method('PATCH')
                             
@@ -851,7 +851,7 @@
                             </button>
                         </div>
 
-                        <form :action="'/tech-head/assignments/' + selectedJobId + '/status'" method="POST" class="space-y-4">
+                        <form :action="selectedJobId ? `{{ route('tech-head.assignments.status', ['assignment' => '__ID__']) }}`.replace('__ID__', selectedJobId) : '#'" method="POST" class="space-y-4">
                             @csrf
                             @method('PATCH')
                             
@@ -913,7 +913,7 @@
                             </button>
                         </div>
 
-                        <form :action="'/tech-head/assignments/' + selectedJobId + '/schedule'" method="POST" class="space-y-4">
+                        <form :action="selectedJobId ? `{{ route('tech-head.assignments.schedule', ['assignment' => '__ID__']) }}`.replace('__ID__', selectedJobId) : '#'" method="POST" class="space-y-4">
                             @csrf
                             
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

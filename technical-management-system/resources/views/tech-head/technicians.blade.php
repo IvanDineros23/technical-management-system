@@ -451,7 +451,7 @@
                             </button>
                         </div>
                         
-                        <form method="POST" :action="selectedId ? '{{ url('/tech-head/technicians') }}/' + selectedId + '/availability' : '#'" class="space-y-4">
+                        <form method="POST" :action="selectedId ? `{{ route('tech-head.technicians.availability', ['user' => '__ID__']) }}`.replace('__ID__', selectedId) : '#'" class="space-y-4">
                             @csrf
                             
                             <div>
@@ -510,7 +510,7 @@
                             </button>
                         </div>
                         
-                        <form method="POST" :action="selectedId ? '{{ url('/tech-head/technicians') }}/' + selectedId + '/skills' : '#'" class="space-y-4">
+                        <form method="POST" :action="selectedId ? `{{ route('tech-head.technicians.skills', ['user' => '__ID__']) }}`.replace('__ID__', selectedId) : '#'" class="space-y-4">
                             @csrf
                             
                             <div>
@@ -571,7 +571,7 @@
                             </p>
                         </div>
                         
-                        <form method="POST" :action="selectedId ? '{{ url('/tech-head/technicians') }}/' + selectedId + '/disable' : '#'" class="space-y-4">
+                        <form method="POST" :action="selectedId ? `{{ route('tech-head.technicians.disable', ['user' => '__ID__']) }}`.replace('__ID__', selectedId) : '#'" class="space-y-4">
                             @csrf
                             
                             <div class="flex justify-center gap-3 pt-4">

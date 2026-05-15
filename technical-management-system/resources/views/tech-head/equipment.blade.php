@@ -285,7 +285,7 @@
                     x-transition:leave-end="opacity-0 transform scale-95"
                     class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                <form method="POST" :action="selectedId ? '{{ url('/tech-head/equipment') }}/' + selectedId : '#'" class="p-4 sm:p-6 space-y-4">
+                <form method="POST" :action="selectedId ? `{{ route('tech-head.equipment.update', ['equipment' => '__ID__']) }}`.replace('__ID__', selectedId) : '#'" class="p-4 sm:p-6 space-y-4">
                     @csrf
                     @method('PUT')
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Edit Equipment</h3>
@@ -330,7 +330,7 @@
                     x-transition:leave-end="opacity-0 transform scale-95"
                     class="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                <form method="POST" :action="selectedId ? '{{ url('/tech-head/equipment') }}/' + selectedId + '/status' : '#'" class="p-4 sm:p-6 space-y-4">
+                <form method="POST" :action="selectedId ? `{{ route('tech-head.equipment.status', ['equipment' => '__ID__']) }}`.replace('__ID__', selectedId) : '#'" class="p-4 sm:p-6 space-y-4">
                     @csrf
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Update Status</h3>
                     <select name="status" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
@@ -372,7 +372,7 @@
                     x-transition:leave-end="opacity-0 transform scale-95"
                     class="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
                 >
-                <form method="POST" :action="selectedId ? '{{ url('/tech-head/equipment') }}/' + selectedId + '/location' : '#'" class="p-4 sm:p-6 space-y-4">
+                <form method="POST" :action="selectedId ? `{{ route('tech-head.equipment.location', ['equipment' => '__ID__']) }}`.replace('__ID__', selectedId) : '#'" class="p-4 sm:p-6 space-y-4">
                     @csrf
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Update Location</h3>
                     <input name="location" placeholder="Location" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />

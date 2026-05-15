@@ -3751,6 +3751,14 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         return redirect()->route('tech-head.assignments')->with('status', 'Assignment unassigned');
     })->name('assignments.unassign');
 
+    Route::patch('/assignments/{assignment}/status', function (\Illuminate\Http\Request $request, Assignment $assignment) {
+        $data = $request->validate([
+            'status' => 'required|in:assigned,in_progress,on_hold,completed,cancelled',
+        ]);
+        $assignment->update(['status' => $data['status']]);
+        return redirect()->route('tech-head.schedule')->with('status', 'Assignment status updated');
+    })->name('assignments.status');
+
     Route::post('/assignments/{assignment}/schedule', function (\Illuminate\Http\Request $request, Assignment $assignment) {
         $data = $request->validate([
             'scheduled_date' => 'required|date',

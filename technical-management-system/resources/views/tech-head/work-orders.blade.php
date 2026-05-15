@@ -1168,7 +1168,7 @@
                             </button>
                         </div>
                         
-                        <form :action="'/tech-head/work-orders/' + selectedId" method="POST" class="space-y-4">
+                        <form :action="`{{ route('tech-head.work-orders.update', ['jobOrder' => '__ID__']) }}`.replace('__ID__', selectedId)" method="POST" class="space-y-4">
                             @csrf
                             @method('PUT')
                             
@@ -1251,7 +1251,7 @@
                             </button>
                         </div>
                         
-                        <form :action="'/tech-head/work-orders/' + selectedId + '/assign'" method="POST" class="space-y-4">
+                        <form :action="`{{ route('tech-head.work-orders.assign', ['jobOrder' => '__ID__']) }}`.replace('__ID__', selectedId)" method="POST" class="space-y-4">
                             @csrf
                             
                             <div>
@@ -1307,7 +1307,7 @@
                             </button>
                         </div>
                         
-                        <form :action="'/tech-head/work-orders/' + selectedId + '/status'" method="POST" class="space-y-4">
+                        <form :action="`{{ route('tech-head.work-orders.status', ['jobOrder' => '__ID__']) }}`.replace('__ID__', selectedId)" method="POST" class="space-y-4">
                             @csrf
                             
                             <div>
@@ -1386,7 +1386,7 @@
                             </div>
                         </div>
 
-                        <form :action="'/tech-head/work-orders/' + selectedId + '/approve'" method="POST" class="space-y-4">
+                        <form :action="`{{ route('tech-head.work-orders.approve', ['jobOrder' => '__ID__']) }}`.replace('__ID__', selectedId)" method="POST" class="space-y-4">
                             @csrf
                             @method('PATCH')
                             
