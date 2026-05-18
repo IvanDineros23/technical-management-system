@@ -10,7 +10,7 @@
 @endsection
 
 @section('content')
-    <div x-data="{ showAdd:false, showEdit:false, showStatus:false, showLocation:false, showRequests:false, selectedId:null, selectedEquipment:null }" class="space-y-6">
+    <div x-data="{ showAdd:false, showEdit:false, showStatus:false, showLocation:false, selectedId:null, selectedEquipment:null, formData: { equipment_code: '', name: '', category: '', status: 'available', manufacturer: '', model: '', location: '', calibration_required: false } }" class="space-y-6">
         
         <!-- Stats -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -33,16 +33,6 @@
         </div>
 
         <div class="flex flex-col sm:flex-row sm:justify-end gap-3">
-            @php $pendingCount = isset($equipmentRequests) ? $equipmentRequests->where('status','pending')->count() : 0; @endphp
-            <button @click="showRequests=true" class="relative w-full sm:w-auto justify-center flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                </svg>
-                Equipment Requests
-                @if($pendingCount > 0)
-                <span class="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-red-500 text-white rounded-full">{{ $pendingCount }}</span>
-                @endif
-            </button>
             <button @click="showAdd=true" class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Add Equipment</button>
         </div>
 
@@ -100,7 +90,7 @@
                         </div>
 
                         <div class="mt-4 flex flex-wrap gap-2" @click.stop>
-                            <button @click="selectedId={{ $item->id }}; showEdit=true;" class="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold">Edit</button>
+                            <button @click="selectedId={{ $item->id }}; selectedEquipment = @js($item); formData = { equipment_code: selectedEquipment.equipment_code ?? '', name: selectedEquipment.name ?? '', category: selectedEquipment.category ?? '', status: selectedEquipment.status ?? 'available', manufacturer: selectedEquipment.manufacturer ?? '', model: selectedEquipment.model ?? '', location: selectedEquipment.location ?? '', calibration_required: !!selectedEquipment.calibration_required }; showEdit=true;" class="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold">Edit</button>
                             <button @click="selectedId={{ $item->id }}; showStatus=true;" class="px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold">Status</button>
                             <form method="POST" action="{{ route('tech-head.equipment.destroy', $item->id) }}" onsubmit="return confirm('Delete equipment?')" class="inline">
                                 @csrf
@@ -146,7 +136,7 @@
                                 <td class="py-3 text-center"><p class="text-sm text-gray-700 dark:text-gray-300">{{ optional($item->updated_at)->setTimezone('Asia/Manila')->format('M d, Y') }}</p></td>
                                 <td class="py-3">
                                     <div class="flex gap-2 justify-center">
-                                        <button @click="selectedId={{ $item->id }}; showEdit=true;" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">Edit</button>
+                                        <button @click="selectedId={{ $item->id }}; selectedEquipment = @js($item); formData = { equipment_code: selectedEquipment.equipment_code ?? '', name: selectedEquipment.name ?? '', category: selectedEquipment.category ?? '', status: selectedEquipment.status ?? 'available', manufacturer: selectedEquipment.manufacturer ?? '', model: selectedEquipment.model ?? '', location: selectedEquipment.location ?? '', calibration_required: !!selectedEquipment.calibration_required }; showEdit=true;" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium">Edit</button>
                                         <button @click="selectedId={{ $item->id }}; showStatus=true;" class="text-amber-600 dark:text-amber-400 hover:underline text-xs font-medium">Status</button>
                                         <form method="POST" action="{{ route('tech-head.equipment.destroy', $item->id) }}" onsubmit="return confirm('Delete equipment?')" class="inline">
                                             @csrf
@@ -172,6 +162,82 @@
                 <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No equipment found</h3>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by adding your first equipment.</p>
                 <button @click="showAdd=true" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Add Equipment</button>
+            </div>
+            @endif
+        </div>
+
+        <!-- Equipment Requests -->
+        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
+            <div class="mb-6">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Equipment Requests</h3>
+                
+            </div>
+
+            @if(isset($equipmentRequests) && $equipmentRequests->count() > 0)
+            <div class="space-y-3">
+                @foreach($equipmentRequests as $req)
+                <div x-data="{ showReject: false }" class="border border-gray-200 dark:border-gray-700 rounded-xl p-3">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-4 min-w-0">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $req->requestedBy->name ?? 'Unknown' }} <span class="text-xs text-gray-500">• {{ $req->created_at->format('M d, Y') }}</span></p>
+                                <p class="text-sm text-indigo-700 dark:text-indigo-300 truncate">{{ $req->equipment_name }}</p>
+                            </div>
+                            <div class="hidden sm:block max-w-xs">
+                                <p class="text-sm text-gray-600 dark:text-gray-400 truncate">{{ $req->purpose }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <div>
+                                <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full
+                                    {{ $req->status === 'pending'  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200' : '' }}
+                                    {{ $req->status === 'approved' ? 'bg-green-100  text-green-800  dark:bg-green-900/30  dark:text-green-200'  : '' }}
+                                    {{ $req->status === 'rejected' ? 'bg-red-100    text-red-800    dark:bg-red-900/30    dark:text-red-200'    : '' }}">
+                                    {{ ucfirst($req->status) }}
+                                </span>
+                            </div>
+
+                            @if($req->status === 'pending')
+                            <form method="POST" action="{{ route('tech-head.equipment.requests.update', $req->id) }}">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="status" value="approved">
+                                <button type="submit" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium transition-colors">Approve</button>
+                            </form>
+                            <button type="button" @click="showReject=!showReject" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors">Reject</button>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div x-show="showReject" x-cloak x-transition class="mt-3">
+                        <form method="POST" action="{{ route('tech-head.equipment.requests.update', $req->id) }}" class="space-y-2">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="rejected">
+                            <textarea name="admin_notes" rows="2" placeholder="Reason for rejection (optional)" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"></textarea>
+                            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                                <button type="button" @click="showReject=false" class="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
+                                <button type="submit" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors">Confirm Reject</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    @if($req->admin_notes)
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 italic truncate">Note: {{ $req->admin_notes }}</p>
+                    @endif
+                </div>
+                @endforeach
+            </div>
+            <div class="mt-4">
+                {{ $equipmentRequests->links() }}
+            </div>
+            @else
+            <div class="text-center py-10">
+                <svg class="mx-auto w-12 h-12 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">No equipment requests yet</p>
             </div>
             @endif
         </div>
@@ -289,14 +355,53 @@
                     @csrf
                     @method('PUT')
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Edit Equipment</h3>
-                    <input name="name" placeholder="Name" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
-                    <select name="status" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
-                        <option value="available">Available</option>
-                        <option value="in_use">In Use</option>
-                        <option value="maintenance">Maintenance</option>
-                        <option value="retired">Retired</option>
-                    </select>
-                    <input name="location" placeholder="Location" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Equipment Code</label>
+                            <input x-model="formData.equipment_code" disabled class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
+                            <input name="name" x-model="formData.name" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                            <input name="category" x-model="formData.category" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                            <select name="status" x-model="formData.status" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">
+                                <option value="available">Available</option>
+                                <option value="in_use">In Use</option>
+                                <option value="maintenance">Maintenance</option>
+                                <option value="retired">Retired</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Manufacturer</label>
+                            <input name="manufacturer" x-model="formData.manufacturer" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Model</label>
+                            <input name="model" x-model="formData.model" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+                        <input name="location" x-model="formData.location" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" name="calibration_required" value="1" x-model="formData.calibration_required" id="edit_calibration_required" class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400">
+                        <label for="edit_calibration_required" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Requires Regular Calibration</label>
+                    </div>
                     <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                         <button type="button" @click="showEdit=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">Close</button>
                         <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">Update</button>
@@ -381,121 +486,6 @@
                         <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">Save</button>
                     </div>
                 </form>
-                </div>
-            </div>
-        </div>
-        <!-- Equipment Requests Modal -->
-        <div
-            x-show="showRequests"
-            x-cloak
-            @keydown.escape.window="showRequests=false"
-            x-transition:enter="transition ease-out duration-300"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="transition ease-in duration-200"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
-            class="fixed inset-0 z-50 overflow-y-auto"
-        >
-            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showRequests=false"></div>
-            <div class="flex min-h-full items-start sm:items-center justify-center p-3 sm:p-4">
-                <div
-                    x-transition:enter="transition ease-out duration-300"
-                    x-transition:enter-start="opacity-0 transform scale-95"
-                    x-transition:enter-end="opacity-100 transform scale-100"
-                    x-transition:leave="transition ease-in duration-200"
-                    x-transition:leave-start="opacity-100 transform scale-100"
-                    x-transition:leave-end="opacity-0 transform scale-95"
-                    class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
-                >
-                    <div class="p-4 sm:p-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-                            <div>
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Equipment Requests</h3>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Review and action equipment requests from technicians</p>
-                            </div>
-                            <button type="button" @click="showRequests=false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-
-                        @if(isset($equipmentRequests) && $equipmentRequests->count() > 0)
-                        <div class="space-y-3">
-                            @foreach($equipmentRequests as $req)
-                            <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4" x-data="{ showReject: false }">
-                                {{-- Top row: name, date, status --}}
-                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
-                                    <div class="flex items-center gap-2 min-w-0 flex-wrap">
-                                        <span class="font-semibold text-sm text-gray-900 dark:text-white truncate">{{ $req->requestedBy->name ?? 'Unknown' }}</span>
-                                        <span class="text-gray-400 text-xs flex-shrink-0">•</span>
-                                        <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">{{ $req->created_at->format('M d, Y') }}</span>                                            @if($req->jobOrder)
-                                            <span class="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded">{{ $req->jobOrder->job_order_number }}</span>
-                                            @endif                                    </div>
-                                    <span class="flex-shrink-0 px-2.5 py-1 text-xs font-semibold rounded-full
-                                        {{ $req->status === 'pending'  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200' : '' }}
-                                        {{ $req->status === 'approved' ? 'bg-green-100  text-green-800  dark:bg-green-900/30  dark:text-green-200'  : '' }}
-                                        {{ $req->status === 'rejected' ? 'bg-red-100    text-red-800    dark:bg-red-900/30    dark:text-red-200'    : '' }}">
-                                        {{ ucfirst($req->status) }}
-                                    </span>
-                                </div>
-
-                                {{-- Equipment name --}}
-                                <p class="text-sm font-semibold text-indigo-700 dark:text-indigo-300 mb-1">{{ $req->equipment_name }}</p>
-
-                                {{-- Purpose --}}
-                                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $req->purpose }}</p>
-
-                                @if($req->admin_notes)
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 italic">Note: {{ $req->admin_notes }}</p>
-                                @endif
-
-                                {{-- Action buttons (pending only) --}}
-                                @if($req->status === 'pending')
-                                <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                                        <form method="POST" action="{{ route('tech-head.equipment.requests.update', $req->id) }}">
-                                            @csrf
-                                            @method('PATCH')
-                                            <input type="hidden" name="status" value="approved">
-                                            <button type="submit" class="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium transition-colors">Approve</button>
-                                        </form>
-                                        <button type="button" @click="showReject=!showReject" class="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors">
-                                            Reject
-                                        </button>
-                                    </div>
-
-                                    {{-- Inline reject form — no absolute positioning --}}
-                                    <div x-show="showReject" x-cloak x-transition class="mt-3">
-                                        <form method="POST" action="{{ route('tech-head.equipment.requests.update', $req->id) }}" class="space-y-2">
-                                            @csrf
-                                            @method('PATCH')
-                                            <input type="hidden" name="status" value="rejected">
-                                            <textarea name="admin_notes" rows="2" placeholder="Reason for rejection (optional)" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"></textarea>
-                                            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                                                <button type="button" @click="showReject=false" class="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
-                                                <button type="submit" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors">Confirm Reject</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                                @endif
-                            </div>
-                            @endforeach
-                        </div>
-                        <div class="mt-4">
-                            {{ $equipmentRequests->links() }}
-                        </div>
-                        @else
-                        <div class="text-center py-10">
-                            <svg class="mx-auto w-12 h-12 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                            </svg>
-                            <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">No equipment requests yet</p>
-                        </div>
-                        @endif
-                    </div>
                 </div>
             </div>
         </div>

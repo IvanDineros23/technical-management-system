@@ -39,7 +39,8 @@ class InventoryController extends Controller
             newValues: $data
         );
 
-        return redirect()->back()->with('status', 'Inventory item added');
+        return $this->redirectToInventoryIndex($request)
+            ->with('status', 'Inventory item added');
     }
 
     public function update(Request $request, InventoryItem $inventoryItem)
@@ -59,7 +60,8 @@ class InventoryController extends Controller
             newValues: $data
         );
 
-        return redirect()->back()->with('status', 'Inventory item updated');
+        return $this->redirectToInventoryIndex($request)
+            ->with('status', 'Inventory item updated');
     }
 
     private function renderIndex(Request $request, string $view)
@@ -161,7 +163,21 @@ class InventoryController extends Controller
             oldValues: $itemData
         );
 
-        return redirect()->back()->with('status', 'Inventory item deleted successfully');
+        return $this->redirectToInventoryIndex(request())
+            ->with('status', 'Inventory item deleted successfully');
+    }
+
+    private function redirectToInventoryIndex(Request $request)
+    {
+        if ($request->routeIs('tech-head.*')) {
+            return redirect()->route('tech-head.inventory');
+        }
+
+        if ($request->routeIs('admin.*')) {
+            return redirect()->route('admin.inventory.index');
+        }
+
+        return redirect()->back();
     }
 
     public function requestItem(Request $request)

@@ -10,7 +10,7 @@
 @endsection
 
 @section('content')
-<div class="space-y-6" x-data="{ showView: false, showEdit: false, showAdd: false, showDelete: false, showRequests: false, selectedItem: null, formData: { name: '', sku: '', category: '', quantity: 0, unit: 'units', min_level: 0, notes: '' } }">
+<div class="space-y-6" x-data="{ showView: false, showEdit: false, showAdd: {{ $errors->any() ? 'true' : 'false' }}, showDelete: false, showRequests: false, selectedItem: null, inventoryBaseUrl: @js(url('tech-head/inventory')), formData: { name: @js(old('name', '')), sku: @js(old('sku', '')), category: @js(old('category', '')), quantity: @js(old('quantity', 0)), unit: @js(old('unit', 'units')), min_level: @js(old('min_level', 0)), notes: @js(old('notes', '')) } }">
     <!-- Header -->
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -93,7 +93,7 @@
                                 <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ $item->sku ?? '—' }}</p>
                             </div>
                             <div class="text-right">
-                                <p class="text-xs text-gray-500">{{ $item->quantity }} {{ $item->unit }}</p>
+                                <p class="text-xs text-gray-500">{{ $item->quantity }}</p>
                                 <span class="inline-flex items-center px-2 py-1 text-[11px] font-medium rounded-full mt-2
                                     {{ $item->status === 'out' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200' : '' }}
                                     {{ $item->status === 'low' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200' : '' }}
@@ -110,7 +110,7 @@
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">Min Level</p>
-                                <p class="font-medium text-gray-900 dark:text-white">{{ $item->min_level }} {{ $item->unit }}</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ $item->min_level }}</p>
                             </div>
                         </div>
 
@@ -145,8 +145,8 @@
                         <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ $item->name }}</td>
                         <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $item->sku }}</td>
                         <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $item->category ?? 'N/A' }}</td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ $item->quantity }} {{ $item->unit }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $item->min_level }} {{ $item->unit }}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{{ $item->quantity }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $item->min_level }}</td>
                         <td class="px-6 py-4">
                             @if($item->status === 'out')
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">Out</span>
@@ -215,11 +215,11 @@
                         </div>
                         <div>
                             <p class="text-xs text-gray-500">Quantity</p>
-                            <p class="text-sm text-gray-900 dark:text-white" x-text="(selectedItem?.quantity ?? 0) + ' ' + (selectedItem?.unit ?? 'units')"></p>
+                            <p class="text-sm text-gray-900 dark:text-white" x-text="selectedItem?.quantity ?? 0"></p>
                         </div>
                         <div>
                             <p class="text-xs text-gray-500">Min Level</p>
-                            <p class="text-sm text-gray-900 dark:text-white" x-text="(selectedItem?.min_level ?? 0) + ' ' + (selectedItem?.unit ?? 'units')"></p>
+                            <p class="text-sm text-gray-900 dark:text-white" x-text="selectedItem?.min_level ?? 0"></p>
                         </div>
                         <div>
                             <p class="text-xs text-gray-500">Status</p>
@@ -325,39 +325,49 @@
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Add New Item</h3>
                         <button type="button" @click="showAdd=false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">✕</button>
                     </div>
+                    @if($errors->any())
+                        <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200">
+                            <p class="font-semibold mb-1">Please fix the following:</p>
+                            <ul class="list-disc pl-5 space-y-1">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Item Name *</label>
-                            <input type="text" name="name" x-model="formData.name" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
+                            <input type="text" name="name" x-model="formData.name" value="{{ old('name') }}" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SKU *</label>
-                            <input type="text" name="sku" x-model="formData.sku" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
+                            <input type="text" name="sku" x-model="formData.sku" value="{{ old('sku') }}" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
-                            <input name="category" x-model="formData.category" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
+                            <input name="category" x-model="formData.category" value="{{ old('category') }}" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
-                            <input name="unit" x-model="formData.unit" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
+                            <input name="unit" x-model="formData.unit" value="{{ old('unit', 'units') }}" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity *</label>
-                            <input type="number" name="quantity" min="0" x-model="formData.quantity" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
+                            <input type="number" name="quantity" min="0" x-model="formData.quantity" value="{{ old('quantity', 0) }}" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Min Level *</label>
-                            <input type="number" name="min_level" min="0" x-model="formData.min_level" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
+                            <input type="number" name="min_level" min="0" x-model="formData.min_level" value="{{ old('min_level', 0) }}" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white" />
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
-                        <textarea name="notes" rows="3" x-model="formData.notes" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"></textarea>
+                        <textarea name="notes" rows="3" x-model="formData.notes" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white">{{ old('notes') }}</textarea>
                     </div>
                     <div class="flex justify-end gap-3 pt-2">
                         <button type="button" @click="showAdd=false" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">Cancel</button>
@@ -374,7 +384,7 @@
             <div x-show="showDelete" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click="showDelete=false" class="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 transition-opacity" aria-hidden="true"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div x-show="showDelete" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:align-middle sm:max-w-md sm:w-full border border-gray-200 dark:border-gray-700">
-                <form method="POST" :action="selectedItem ? '{{ url('tech-head/inventory') }}/' + selectedItem.id : '#'" class="p-6">
+                <form method="POST" :action="selectedItem ? inventoryBaseUrl + '/' + selectedItem.id : '#'" class="p-6">
                     @csrf
                     @method('DELETE')
                     <div class="flex items-center gap-4 mb-4">

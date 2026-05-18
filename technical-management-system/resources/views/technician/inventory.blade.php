@@ -152,14 +152,14 @@
                         {{ ucfirst($item->status) }}
                     </span>
                 </div>
-                <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400 mb-3">
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400 mb-3">
                     <div>
                         <p class="text-gray-500 dark:text-gray-500 font-semibold">Stock Level</p>
-                        <p>{{ $item->quantity }} {{ $item->unit }}</p>
+                        <p>{{ $item->quantity }}</p>
                     </div>
                     <div>
                         <p class="text-gray-500 dark:text-gray-500 font-semibold">Min Level</p>
-                        <p>{{ $item->min_level }} {{ $item->unit }}</p>
+                        <p>{{ $item->min_level }}</p>
                     </div>
                     <div>
                         <p class="text-gray-500 dark:text-gray-500 font-semibold">Category</p>
@@ -198,8 +198,8 @@
                         <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{{ $item->name }}</td>
                         <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{{ $item->sku }}</td>
                         <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{{ $item->category ?? 'N/A' }}</td>
-                        <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{{ $item->quantity }} {{ $item->unit }}</td>
-                        <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{{ $item->min_level }} {{ $item->unit }}</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{{ $item->quantity }}</td>
+                        <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{{ $item->min_level }}</td>
                         <td class="px-3 sm:px-6 py-3 sm:py-4">
                             @if($item->status === 'out')
                                 <span class="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">Out</span>
@@ -312,7 +312,7 @@
                     </div>
                     <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
                         <p class="text-xs sm:text-sm font-medium text-gray-900 dark:text-white" x-text="selectedItem?.name"></p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="'Available: ' + (selectedItem?.quantity ?? 0) + ' ' + (selectedItem?.unit ?? 'units')"></p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="'Available: ' + (selectedItem?.quantity ?? 0)"></p>
                     </div>
                     <div>
                         <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity *</label>

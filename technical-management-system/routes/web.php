@@ -719,193 +719,9 @@ Route::middleware(['auth', 'verified', 'role:marketing'])->prefix('marketing')->
         return back()->with('status', "Job order {$jobOrderNumber} deleted.");
     })->name('job-orders.destroy');
     
-    Route::get('/create-job-order', function () {
-        $customers = \App\Models\Customer::where('is_active', true)->get();
-        return view('marketing.create-job-order', compact('customers'));
-    })->name('create-job-order');
-
-    // Customer details page
-    Route::get('/customers/{customer}', function (\App\Models\Customer $customer) {
-        $customer->loadCount('jobOrders');
-        return view('marketing.customer-details', compact('customer'));
-    })->name('customers.show');
-    
-    Route::post('/job-orders', function (Illuminate\Http\Request $request) {
-        try {
-            $validated = $request->validate([
-                'customer_id' => 'required|exists:customers,id',
-                'company_name' => 'nullable|string|max:255',
-                'company_tin' => 'nullable|string|max:255',
-                'address' => 'nullable|string',
-                'contact_no' => 'nullable|string|max:255',
-                'service_type' => 'nullable|string|max:255',
-                'services' => 'nullable|array',
-                'services.*' => 'string',
-                'priority' => 'nullable|in:normal,high,urgent',
-                'priority_level' => 'nullable|string',
-                'service_description' => 'nullable|string',
-                'expected_start_date' => 'nullable|date',
-                'expected_completion_date' => 'nullable|date|after_or_equal:expected_start_date',
-                'service_address' => 'nullable|string',
-                'calibration_site_address' => 'nullable|string',
-                'city' => 'nullable|string|max:100',
-                'province' => 'nullable|string|max:100',
-                'postal_code' => 'nullable|string|max:20',
-                'contact_person' => 'nullable|string|max:255',
-                'requested_by' => 'nullable|string|max:255',
-                'client_po_ctrl_no' => 'nullable|string|max:255',
-                'terms' => 'nullable|string',
-                'service_invoice_number' => 'nullable|string|max:255',
-                'others' => 'nullable|string|max:255',
-                'notes' => 'nullable|string',
-                'remarks' => 'nullable|string',
-                'date' => 'nullable|date',
-                'jo_no' => 'nullable|string|max:255',
-                'items' => 'nullable|array',
-                'items.*.item_no' => 'nullable|integer|min:1',
-                'items.*.qty' => 'nullable|integer|min:1',
-                'items.*.equipment_name' => 'nullable|string|max:255',
-                'items.*.model' => 'nullable|string|max:255',
-                'items.*.serial_no' => 'nullable|string|max:255',
-                'items.*.capacity' => 'nullable|string|max:255',
-            ]);
-
-            // Get the customer
-            $customer = \App\Models\Customer::findOrFail($validated['customer_id']);
-
-            // Generate job order number
-            if (!empty($validated['jo_no'])) {
-                $jobOrderNumber = trim($validated['jo_no']);
-            } else {
-                $lastJobOrder = \App\Models\JobOrder::latest('id')->first();
-                $nextNumber = $lastJobOrder ? (intval(substr((string) $lastJobOrder->job_order_number, 3)) + 1) : 1;
-                $jobOrderNumber = 'JO-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
-            }
-
-            // Map priority level
-            $priorityMap = [
-                'Normal' => 'normal',
-                'High' => 'high',
-                'Urgent' => 'urgent'
-            ];
-            $priority = $validated['priority'] ?? ($priorityMap[$validated['priority_level'] ?? ''] ?? 'normal');
-
-            $serviceType = trim((string) ($validated['service_type'] ?? ''));
-            if ($serviceType === '' && !empty($validated['services']) && is_array($validated['services'])) {
-                $serviceType = collect($validated['services'])
-                    ->map(fn ($service) => ucfirst(strtolower((string) $service)))
-                    ->implode(', ');
-            }
-            if ($serviceType === '') {
-                $serviceType = 'Other';
-            }
-
-            $serviceAddress = $validated['service_address']
-                ?? $validated['calibration_site_address']
-                ?? $customer->address
-                ?? 'N/A';
-
-            $requestDate = !empty($validated['date']) ? \Illuminate\Support\Carbon::parse($validated['date']) : now();
-
-            $notes = $validated['notes'] ?? $validated['remarks'] ?? null;
-
-            $marketingPdfOverrides = array_filter([
-                'company_name' => trim((string) ($validated['company_name'] ?? '')),
-                'company_tin' => trim((string) ($validated['company_tin'] ?? '')),
-                'address' => trim((string) ($validated['address'] ?? '')),
-                'contact_no' => trim((string) ($validated['contact_no'] ?? '')),
-            ], fn ($value) => $value !== '');
-
-            // Create job order
-            $jobOrder = \App\Models\JobOrder::create([
-                'job_order_number' => $jobOrderNumber,
-                'customer_id' => $customer->id,
-                'service_type' => $serviceType,
-                'service_description' => $validated['service_description'] ?? ($notes ?: 'Manual job order created by marketing'),
-                'expected_start_date' => $validated['expected_start_date'] ?? null,
-                'expected_completion_date' => $validated['expected_completion_date'] ?? null,
-                'service_address' => $serviceAddress,
-                'city' => $validated['city'] ?? null,
-                'province' => $validated['province'] ?? null,
-                'postal_code' => $validated['postal_code'] ?? null,
-                'requested_by' => $validated['requested_by'] ?? $validated['contact_person'] ?? $customer->contact_person ?? $customer->name,
-                'client_po_ctrl_no' => $validated['client_po_ctrl_no'] ?? null,
-                'terms' => $validated['terms'] ?? null,
-                'service_invoice_number' => $validated['service_invoice_number'] ?? null,
-                'other_details' => $validated['others'] ?? null,
-                'request_date' => $requestDate,
-                'required_date' => $validated['expected_completion_date'] ?? null,
-                'priority' => $priority,
-                'status' => 'for_accounting_approval',
-                'approved_by' => null,
-                'approved_at' => null,
-                'notes' => $notes,
-                'special_instructions' => !empty($marketingPdfOverrides)
-                    ? json_encode(['marketing_pdf_overrides' => $marketingPdfOverrides], JSON_UNESCAPED_UNICODE)
-                    : null,
-                'created_by' => auth()->id() ?? 1, // Use auth user or default to 1
-            ]);
-
-            if (!empty($validated['items']) && is_array($validated['items'])) {
-                foreach ($validated['items'] as $index => $item) {
-                    $equipmentName = trim((string) ($item['equipment_name'] ?? ''));
-                    if ($equipmentName === '') {
-                        continue;
-                    }
-
-                    DB::table('job_order_items')->insert([
-                        'job_order_id' => $jobOrder->id,
-                        'item_number' => (int) ($item['item_no'] ?? ($index + 1)),
-                        'equipment_type' => $equipmentName,
-                        'manufacturer' => null,
-                        'model' => $item['model'] ?? null,
-                        'serial_number' => $item['serial_no'] ?? null,
-                        'id_number' => null,
-                        'range' => $item['capacity'] ?? null,
-                        'resolution' => null,
-                        'accuracy' => null,
-                        'calibration_type' => null,
-                        'calibration_points' => null,
-                        'quantity' => (int) ($item['qty'] ?? 1),
-                        'unit_price' => null,
-                        'total_price' => null,
-                        'remarks' => null,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-            }
-
-            $pdfGenerated = true;
-            try {
-                app(\App\Services\MarketingJobOrderPdfService::class)->generate($jobOrder->fresh(['customer', 'items']));
-            } catch (\Throwable $e) {
-                $pdfGenerated = false;
-                \Log::warning('Manual marketing JO PDF generation failed: ' . $e->getMessage(), [
-                    'job_order_id' => $jobOrder->id,
-                ]);
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => $pdfGenerated
-                    ? 'Job Order created successfully!'
-                    : 'Job Order created successfully, but PDF generation failed. Please retry download from Job Orders.',
-                'job_order_id' => $jobOrder->id,
-                'pdf_generated' => $pdfGenerated,
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error creating job order: ' . $e->getMessage()
-            ], 500);
-        }
-    })->name('job-orders.store');
+    Route::get('/assignments', function (\Illuminate\Http\Request $request) {
+        return redirect()->route('technician.work-orders', $request->all());
+    })->name('assignments');
     
     Route::get('/customers', function () {
         $query = \App\Models\Customer::withCount('jobOrders');
@@ -1408,39 +1224,8 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         ));
     })->name('dashboard');
     
-    Route::get('/assignments', function () {
-        // Show only assignments that are explicitly assigned to the logged-in technician.
-        // Use assignment status (not job order status) because tech-head scheduling can keep
-        // job orders in "approved" while assignment is already active for a technician.
-        $currentUser = auth()->user();
-
-        $assignments = \App\Models\Assignment::with(['jobOrder.customer', 'jobOrder', 'assignedBy', 'report'])
-            ->where('assigned_to', $currentUser->id)
-            ->whereIn('status', ['assigned', 'in_progress', 'on_hold', 'completed'])
-            ->whereHas('jobOrder', function ($query) {
-                $query->where('status', '!=', 'cancelled');
-            })
-            ->latest('assigned_at')
-            ->paginate(20)
-            ->through(function ($assignment) {
-                $job = $assignment->jobOrder;
-
-                // Surface assignment metadata to the existing page without changing view contracts.
-                $job->assignment_id = $assignment->id;
-                $job->assigned_at = $assignment->assigned_at ?? $assignment->created_at;
-                $job->report_status = optional($assignment->report)->status;
-                $job->report_review_notes = optional($assignment->report)->review_notes;
-                $job->status = match ($job->report_status) {
-                    'rejected' => 'rejected',
-                    'pending' => 'pending_review',
-                    default => $assignment->status,
-                };
-                $job->assigned_by_name = optional($assignment->assignedBy)->name;
-
-                return $job;
-            });
-
-        return view('technician.assignments', compact('assignments'));
+    Route::get('/assignments', function (\Illuminate\Http\Request $request) {
+        return redirect()->route('work-orders', $request->all());
     })->name('assignments');
     
     Route::get('/work-orders', function (\Illuminate\Http\Request $request) {
@@ -3912,11 +3697,22 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
     
     Route::get('/equipment', function () {
         $search = request('search');
-        $equipment = Equipment::when($search, fn($q) => $q->where('name', 'like', "%{$search}%")
+        $equipmentQuery = Equipment::when($search, fn($q) => $q->where('name', 'like', "%{$search}%")
                 ->orWhere('equipment_code', 'like', "%{$search}%")
                 ->orWhere('category', 'like', "%{$search}%")
                 ->orWhere('location', 'like', "%{$search}%"))
-            ->latest()->paginate(20)->withQueryString();
+            ;
+
+        $equipment = (clone $equipmentQuery)
+            ->latest()
+            ->paginate(5)
+            ->withQueryString();
+
+        $availableEquipment = (clone $equipmentQuery)
+            ->where('status', 'available')
+            ->latest()
+            ->get();
+
         $equipmentStats = [
             'total' => Equipment::count(),
             'available' => Equipment::where('status', 'available')->count(),
@@ -3926,8 +3722,8 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         ];
         $equipmentRequests = \App\Models\EquipmentRequest::with(['requestedBy', 'equipment', 'jobOrder'])
             ->latest()
-            ->paginate(15, ['*'], 'eq_requests_page');
-        return view('tech-head.equipment', compact('equipment', 'equipmentStats', 'equipmentRequests', 'search'));
+            ->paginate(5, ['*'], 'eq_requests_page');
+        return view('tech-head.equipment', compact('equipment', 'availableEquipment', 'equipmentStats', 'equipmentRequests', 'search'));
     })->name('equipment');
 
     Route::patch('/equipment/requests/{equipmentRequest}', function (\Illuminate\Http\Request $request, \App\Models\EquipmentRequest $equipmentRequest) {
@@ -3983,8 +3779,12 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
     Route::put('/equipment/{equipment}', function (\Illuminate\Http\Request $request, Equipment $equipment) {
         $data = $request->validate([
             'name' => 'required|string',
+            'category' => 'nullable|string',
+            'manufacturer' => 'nullable|string',
+            'model' => 'nullable|string',
             'status' => 'nullable|in:available,in_use,maintenance,retired',
             'location' => 'nullable|string',
+            'calibration_required' => 'nullable|boolean',
         ]);
         $equipment->update($data);
         return redirect()->route('tech-head.equipment')->with('status', 'Equipment updated');
