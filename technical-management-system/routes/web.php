@@ -1887,29 +1887,12 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     
     // Attachments upload route
     Route::post('/job/{jobId}/attachments', function ($jobId, \Illuminate\Http\Request $request) {
-        if (isset($_FILES['file']) && ($_FILES['file']['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
-            $errorCode = $_FILES['file']['error'];
-            $errorMessage = match ($errorCode) {
-                UPLOAD_ERR_INI_SIZE => 'The file exceeds the server upload_max_filesize limit.',
-                UPLOAD_ERR_FORM_SIZE => 'The file exceeds the form MAX_FILE_SIZE limit.',
-                UPLOAD_ERR_PARTIAL => 'The file was only partially uploaded. Please try again.',
-                UPLOAD_ERR_NO_FILE => 'No file was uploaded. Please select a file and try again.',
-                UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder on the server.',
-                UPLOAD_ERR_CANT_WRITE => 'Failed to write the file to disk.',
-                UPLOAD_ERR_EXTENSION => 'File upload stopped by a PHP extension.',
-                default => 'The file failed to upload.',
-            };
-
-            return redirect()->back()->withErrors(['file' => $errorMessage])->withInput();
-        }
-
         $request->validate([
             'file' => 'required|file|max:10240|mimes:jpg,jpeg,png,xls,xlsx,xlsm,xlsb',
         ], [
             'file.required' => 'Please select a file to upload.',
             'file.max' => 'File must not exceed 10MB.',
             'file.mimes' => 'Allowed file types are JPG, JPEG, PNG, XLS, XLSX, XLSM, and XLSB only.',
-            'file.uploaded' => 'The file failed to upload. Please try again or check server upload limits.',
         ]);
 
         $job = \App\Models\JobOrder::findOrFail($jobId);
@@ -3327,29 +3310,12 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
     })->name('checklist.delete');
 
     Route::post('/job/{jobId}/attachments', function ($jobId, \Illuminate\Http\Request $request) {
-        if (isset($_FILES['file']) && ($_FILES['file']['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
-            $errorCode = $_FILES['file']['error'];
-            $errorMessage = match ($errorCode) {
-                UPLOAD_ERR_INI_SIZE => 'The file exceeds the server upload_max_filesize limit.',
-                UPLOAD_ERR_FORM_SIZE => 'The file exceeds the form MAX_FILE_SIZE limit.',
-                UPLOAD_ERR_PARTIAL => 'The file was only partially uploaded. Please try again.',
-                UPLOAD_ERR_NO_FILE => 'No file was uploaded. Please select a file and try again.',
-                UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder on the server.',
-                UPLOAD_ERR_CANT_WRITE => 'Failed to write the file to disk.',
-                UPLOAD_ERR_EXTENSION => 'File upload stopped by a PHP extension.',
-                default => 'The file failed to upload.',
-            };
-
-            return redirect()->back()->withErrors(['file' => $errorMessage])->withInput();
-        }
-
         $request->validate([
             'file' => 'required|file|max:10240|mimes:jpg,jpeg,png,xls,xlsx,xlsm,xlsb',
         ], [
             'file.required' => 'Please select a file to upload.',
             'file.max' => 'File must not exceed 10MB.',
             'file.mimes' => 'Allowed file types are JPG, JPEG, PNG, XLS, XLSX, XLSM, and XLSB only.',
-            'file.uploaded' => 'The file failed to upload. Please try again or check server upload limits.',
         ]);
 
         $job = \App\Models\JobOrder::findOrFail($jobId);
