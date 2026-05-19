@@ -24,6 +24,7 @@
         selectedId: null,
         selectedName: null,
         selectedTechnician: null,
+        selectedSkills: '',
         init() {
             this.$watch('showAdd', value => this.handleModalState(value));
             this.$watch('showAvailability', value => this.handleModalState(value));
@@ -55,11 +56,28 @@
             this.showDisable = false;
             this.showDetails = false;
         },
+        selectTechnician(technician) {
+            this.selectedTechnician = technician || null;
+            this.selectedId = technician ? technician.id : null;
+            this.selectedName = technician ? technician.name : null;
+            this.selectedSkills = technician && technician.skills ? technician.skills : '';
+        },
         openDetails(technician) {
-            this.selectedTechnician = technician;
+            this.selectTechnician(technician);
             this.showDetails = true;
         }
     }" class="space-y-6">
+        @if(session('status'))
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {{ $errors->first() }}
+            </div>
+        @endif
         <!-- Quick stats -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-5">
@@ -128,6 +146,17 @@
                         $completed = $stats->completed ?? 0;
                         $total = $stats->total_assignments ?? ($active + $completed);
 
+                        $skillsText = $tech->skills;
+                        if (is_array($skillsText)) {
+                            $skillsText = implode(', ', $skillsText);
+                        } elseif (is_string($skillsText)) {
+                            $decodedSkills = json_decode($skillsText, true);
+                            if (json_last_error() === JSON_ERROR_NONE && is_array($decodedSkills)) {
+                                $skillsText = implode(', ', $decodedSkills);
+                            }
+                        }
+                        $skillsText = $skillsText ? trim($skillsText) : null;
+
                         $availabilityLabel = 'Available';
                         $availabilityClass = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
 
@@ -172,15 +201,16 @@
                         </div>
 
                         <div class="mt-4 flex flex-wrap gap-2" @click.stop>
-                            <button @click="selectedId={{ $tech->id }}; showSkills=true;" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Skills</button>
-                            <button @click="selectedId={{ $tech->id }}; showAvailability=true;" class="px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold">Availability</button>
-                            <button @click="selectedId={{ $tech->id }}; selectedName='{{ $tech->name }}'; showDisable=true;" class="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold">Disable</button>
+                            <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showSkills=true;" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Skills</button>
+                            <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showAvailability=true;" class="px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold">Availability</button>
+                            <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showDisable=true;" class="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold">Disable</button>
                             <button @click="openDetails({{ json_encode([
                                 'id' => $tech->id,
                                 'name' => $tech->name,
                                 'email' => $tech->email,
                                 'role' => $tech->role->name ?? 'Technician',
                                 'availability' => $tech->availability,
+                                'skills_text' => $skillsText,
                                 'active' => $active,
                                 'scheduled' => $scheduled,
                                 'completed' => $completed,
@@ -214,6 +244,17 @@
                                 $completed = $stats->completed ?? 0;
                                 $total = $stats->total_assignments ?? ($active + $completed);
 
+                                $skillsText = $tech->skills;
+                                if (is_array($skillsText)) {
+                                    $skillsText = implode(', ', $skillsText);
+                                } elseif (is_string($skillsText)) {
+                                    $decodedSkills = json_decode($skillsText, true);
+                                    if (json_last_error() === JSON_ERROR_NONE && is_array($decodedSkills)) {
+                                        $skillsText = implode(', ', $decodedSkills);
+                                    }
+                                }
+                                $skillsText = $skillsText ? trim($skillsText) : null;
+
                                 $availabilityLabel = 'Available';
                                 $availabilityClass = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
 
@@ -235,6 +276,7 @@
                                     'email' => $tech->email,
                                     'role' => $tech->role->name ?? 'Technician',
                                     'availability' => $tech->availability,
+                                    'skills_text' => $skillsText,
                                     'active' => $active,
                                     'scheduled' => $scheduled,
                                     'completed' => $completed,
@@ -268,9 +310,9 @@
                                 </td>
                                 <td class="py-3 text-center" @click.stop>
                                     <div class="flex gap-3 justify-center">
-                                        <button @click="selectedId={{ $tech->id }}; showSkills=true;" class="text-indigo-600 dark:text-indigo-400 hover:underline text-xs font-medium">Skills</button>
-                                        <button @click="selectedId={{ $tech->id }}; showAvailability=true;" class="text-amber-600 dark:text-amber-400 hover:underline text-xs font-medium">Availability</button>
-                                        <button @click="selectedId={{ $tech->id }}; selectedName='{{ $tech->name }}'; showDisable=true;" class="text-rose-600 dark:text-rose-400 hover:underline text-xs font-medium">Disable</button>
+                                        <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showSkills=true;" class="text-indigo-600 dark:text-indigo-400 hover:underline text-xs font-medium">Skills</button>
+                                        <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showAvailability=true;" class="text-amber-600 dark:text-amber-400 hover:underline text-xs font-medium">Availability</button>
+                                        <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showDisable=true;" class="text-rose-600 dark:text-rose-400 hover:underline text-xs font-medium">Disable</button>
                                     </div>
                                 </td>
                             </tr>
@@ -371,21 +413,6 @@
                                     />
                                 </div>
                                 
-                                <div>
-                                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Department</label>
-                                    <select 
-                                        name="department" 
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    >
-                                        <option value="">Select department</option>
-                                        <option value="Electrical">Electrical</option>
-                                        <option value="Plumbing">Plumbing</option>
-                                        <option value="HVAC">HVAC</option>
-                                        <option value="IT">IT Support</option>
-                                        <option value="General Maintenance">General Maintenance</option>
-                                    </select>
-                                </div>
-                                
                                 <div class="col-span-2">
                                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Skills (comma-separated)</label>
                                     <input 
@@ -450,6 +477,7 @@
                                 </svg>
                             </button>
                         </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Selected: <span class="font-semibold" x-text="selectedName || 'N/A'"></span></p>
                         
                         <form method="POST" :action="selectedId ? `{{ route('tech-head.technicians.availability', ['user' => '__ID__']) }}`.replace('__ID__', selectedId) : '#'" class="space-y-4">
                             @csrf
@@ -509,6 +537,7 @@
                                 </svg>
                             </button>
                         </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Selected: <span class="font-semibold" x-text="selectedName || 'N/A'"></span></p>
                         
                         <form method="POST" :action="selectedId ? `{{ route('tech-head.technicians.skills', ['user' => '__ID__']) }}`.replace('__ID__', selectedId) : '#'" class="space-y-4">
                             @csrf
@@ -518,6 +547,7 @@
                                 <input 
                                     type="text" 
                                     name="skills" 
+                                    x-model="selectedSkills"
                                     placeholder="e.g., Electrical, Plumbing, HVAC, Carpentry"
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                 />
@@ -631,6 +661,10 @@
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedTechnician?.role"></p>
                             </div>
                             <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Skills</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedTechnician?.skills_text || 'N/A'"></p>
+                            </div>
+                            <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Created At</p>
                                 <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedTechnician?.created_at"></p>
                             </div>
@@ -649,8 +683,8 @@
                         </div>
                         
                         <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                            <button @click="showDetails=false; selectedId=selectedTechnician.id; showAvailability=true;" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700">Set Availability</button>
-                            <button @click="showDetails=false; selectedId=selectedTechnician.id; showSkills=true;" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Update Skills</button>
+                            <button @click="showDetails=false; selectTechnician(selectedTechnician); showAvailability=true;" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700">Set Availability</button>
+                            <button @click="showDetails=false; selectTechnician(selectedTechnician); showSkills=true;" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Update Skills</button>
                             <button @click="showDetails=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">Close</button>
                         </div>
                     </div>

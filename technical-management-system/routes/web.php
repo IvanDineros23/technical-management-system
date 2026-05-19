@@ -1225,7 +1225,7 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     })->name('dashboard');
     
     Route::get('/assignments', function (\Illuminate\Http\Request $request) {
-        return redirect()->route('work-orders', $request->all());
+        return redirect()->route('technician.work-orders', $request->all());
     })->name('assignments');
     
     Route::get('/work-orders', function (\Illuminate\Http\Request $request) {
@@ -1888,10 +1888,11 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     // Attachments upload route
     Route::post('/job/{jobId}/attachments', function ($jobId, \Illuminate\Http\Request $request) {
         $request->validate([
-            'file' => 'required|file|max:10240',
+            'file' => 'required|file|max:10240|mimes:jpg,jpeg,png,xls,xlsx,xlsm,xlsb',
         ], [
             'file.required' => 'Please select a file to upload.',
             'file.max' => 'File must not exceed 10MB.',
+            'file.mimes' => 'Allowed file types are JPG, JPEG, PNG, XLS, XLSX, XLSM, and XLSB only.',
         ]);
 
         $job = \App\Models\JobOrder::findOrFail($jobId);
@@ -1911,14 +1912,6 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         }
 
         $file = $request->file('file');
-        $allowedExtensions = ['jpg', 'jpeg', 'png', 'xls', 'xlsx', 'xlsm', 'xlsb'];
-        $extension = strtolower((string) $file->getClientOriginalExtension());
-
-        if (! in_array($extension, $allowedExtensions, true)) {
-            return redirect()->back()->withErrors([
-                'file' => 'Allowed file types are JPG, JPEG, PNG, XLS, XLSX, XLSM, and XLSB only.',
-            ])->withInput();
-        }
 
         $path = $file->store('job-attachments/' . $jobId, 'public');
 
@@ -3318,22 +3311,15 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
 
     Route::post('/job/{jobId}/attachments', function ($jobId, \Illuminate\Http\Request $request) {
         $request->validate([
-            'file' => 'required|file|max:10240',
+            'file' => 'required|file|max:10240|mimes:jpg,jpeg,png,xls,xlsx,xlsm,xlsb',
         ], [
             'file.required' => 'Please select a file to upload.',
             'file.max' => 'File must not exceed 10MB.',
+            'file.mimes' => 'Allowed file types are JPG, JPEG, PNG, XLS, XLSX, XLSM, and XLSB only.',
         ]);
 
         $job = \App\Models\JobOrder::findOrFail($jobId);
         $file = $request->file('file');
-        $allowedExtensions = ['jpg', 'jpeg', 'png', 'xls', 'xlsx', 'xlsm', 'xlsb'];
-        $extension = strtolower((string) $file->getClientOriginalExtension());
-
-        if (! in_array($extension, $allowedExtensions, true)) {
-            return redirect()->back()->withErrors([
-                'file' => 'Allowed file types are JPG, JPEG, PNG, XLS, XLSX, XLSM, and XLSB only.',
-            ])->withInput();
-        }
 
         $path = $file->store('job-attachments/' . $jobId, 'public');
 
@@ -3429,8 +3415,9 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
     })->name('technicians.availability');
 
     Route::post('/technicians/{user}/skills', function (\Illuminate\Http\Request $request, User $user) {
-        $data = $request->validate(['skills' => 'nullable|array']);
-        $user->update(['skills' => isset($data['skills']) ? json_encode($data['skills']) : null]);
+        $data = $request->validate(['skills' => 'nullable|string']);
+        $skills = array_filter(array_map('trim', explode(',', (string) ($data['skills'] ?? ''))));
+        $user->update(['skills' => $skills ?: null]);
         return redirect()->route('tech-head.technicians')->with('status', 'Skills updated');
     })->name('technicians.skills');
     

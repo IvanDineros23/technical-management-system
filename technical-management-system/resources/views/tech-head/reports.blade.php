@@ -182,6 +182,7 @@
                                         'id' => $attachment->id,
                                         'file_name' => $attachment->file_name,
                                         'file_path' => $attachment->file_path,
+                                        'file_url' => Storage::url($attachment->file_path),
                                         'created_at' => optional($attachment->created_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
                                     ];
                                 })->values()->all()
@@ -363,6 +364,7 @@
                                         'id' => $attachment->id,
                                         'file_name' => $attachment->file_name,
                                         'file_path' => $attachment->file_path,
+                                        'file_url' => Storage::url($attachment->file_path),
                                         'created_at' => optional($attachment->created_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
                                     ];
                                 })->values()->all()
@@ -637,8 +639,8 @@
                                             <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="attachment.file_name"></p>
                                             <p class="text-xs text-gray-500 dark:text-gray-400" x-text="attachment.created_at || ''"></p>
                                         </div>
-                                        <a class="text-blue-600 dark:text-blue-400 hover:underline text-sm"
-                                           :href="'{{ rtrim(Storage::url(''), '/') }}/' + attachment.file_path"
+                                                     <a class="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                                                         :href="attachment.file_url"
                                            target="_blank">
                                             View
                                         </a>
