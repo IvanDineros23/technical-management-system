@@ -25,6 +25,7 @@ class User extends Authenticatable
         'role_id',
         'customer_id',
         'department',
+        'availability',
         'skills',
         'is_active',
     ];

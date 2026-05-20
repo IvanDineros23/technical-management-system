@@ -157,10 +157,15 @@
                         }
                         $skillsText = $skillsText ? trim($skillsText) : null;
 
+                        // Determine availability status (with "Disabled" as a distinct status)
+                        $isDisabled = !($tech->is_active ?? true);
                         $availabilityLabel = 'Available';
                         $availabilityClass = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
 
-                        if (!($tech->is_active ?? true) || in_array($tech->availability, ['on_leave', 'unavailable'], true)) {
+                        if ($isDisabled) {
+                            $availabilityLabel = 'Disabled';
+                            $availabilityClass = 'bg-gray-300 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+                        } elseif (in_array($tech->availability, ['on_leave', 'unavailable'], true)) {
                             $availabilityLabel = 'Not Available';
                             $availabilityClass = 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200';
                         } elseif ($active > 0) {
@@ -171,14 +176,14 @@
                             $availabilityClass = 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
                         }
                     @endphp
-                    <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-700/30 p-4 shadow-sm">
+                    <div class="rounded-2xl border {{ $isDisabled ? 'border-gray-400 dark:border-gray-600' : 'border-gray-200 dark:border-gray-700' }} {{ $isDisabled ? 'bg-gray-200/50 dark:bg-gray-800/30 opacity-60' : 'bg-gray-50/80 dark:bg-gray-700/30' }} p-4 shadow-sm transition-all">
                         <div class="flex items-start justify-between gap-3">
-                            <div>
+                            <div class="flex-1">
                                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Technician</p>
-                                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $tech->name }}</p>
-                                <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 break-all">{{ $tech->email }}</p>
+                                <p class="text-sm font-semibold {{ $isDisabled ? 'text-gray-500 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white' }}">{{ $tech->name }}</p>
+                                <p class="text-sm {{ $isDisabled ? 'text-gray-400 dark:text-gray-500' : 'text-gray-600 dark:text-gray-300' }} mt-1 break-all">{{ $tech->email }}</p>
                             </div>
-                            <span class="px-2 py-1 text-[11px] font-medium rounded-full {{ $availabilityClass }}">{{ $availabilityLabel }}</span>
+                            <span class="px-3 py-1 text-[11px] font-semibold rounded-full {{ $availabilityClass }} whitespace-nowrap">{{ $availabilityLabel }}</span>
                         </div>
 
                         <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
@@ -201,9 +206,16 @@
                         </div>
 
                         <div class="mt-4 flex flex-wrap gap-2" @click.stop>
-                            <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showSkills=true;" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Skills</button>
-                            <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showAvailability=true;" class="px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold">Availability</button>
-                            <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showDisable=true;" class="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold">Disable</button>
+                            @if(!$isDisabled)
+                                <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showSkills=true;" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors">Skills</button>
+                                <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showAvailability=true;" class="px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors">Availability</button>
+                                <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showDisable=true;" class="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors">Disable</button>
+                            @else
+                                <form method="POST" action="{{ route('tech-head.technicians.enable', $tech->id) }}" class="inline">
+                                    @csrf
+                                    <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors">Enable Technician</button>
+                                </form>
+                            @endif
                             <button @click="openDetails({{ json_encode([
                                 'id' => $tech->id,
                                 'name' => $tech->name,
@@ -228,7 +240,8 @@
                         <tr>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Name</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Email</th>
-                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Availability / Schedule</th>
+                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Availability</th>
+                            <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Schedule</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Active</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Completed</th>
                             <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400 text-center">Total</th>
@@ -255,10 +268,15 @@
                                 }
                                 $skillsText = $skillsText ? trim($skillsText) : null;
 
+                                // Determine availability status (with "Disabled" as a distinct status)
+                                $isDisabled = !($tech->is_active ?? true);
                                 $availabilityLabel = 'Available';
                                 $availabilityClass = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
 
-                                if (!($tech->is_active ?? true) || in_array($tech->availability, ['on_leave', 'unavailable'], true)) {
+                                if ($isDisabled) {
+                                    $availabilityLabel = 'Disabled';
+                                    $availabilityClass = 'bg-gray-300 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+                                } elseif (in_array($tech->availability, ['on_leave', 'unavailable'], true)) {
                                     $availabilityLabel = 'Not Available';
                                     $availabilityClass = 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200';
                                 } elseif ($active > 0) {
@@ -283,21 +301,38 @@
                                     'total' => $total,
                                     'created_at' => $tech->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')
                                 ]) }})"
-                                class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                                class="{{ $isDisabled ? 'bg-gray-100 dark:bg-gray-800/50 opacity-60' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50' }} transition-colors cursor-pointer"
                             >
                                 <td class="py-3 text-center">
-                                    <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $tech->name }}</p>
+                                    <p class="text-sm font-semibold {{ $isDisabled ? 'text-gray-500 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white' }}">{{ $tech->name }}</p>
                                 </td>
                                 <td class="py-3 text-center">
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ $tech->email }}</p>
+                                    <p class="text-sm {{ $isDisabled ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300' }}">{{ $tech->email }}</p>
                                 </td>
                                 <td class="py-3 text-center">
-                                    <div class="flex flex-col items-center gap-1">
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full {{ $availabilityClass }}">{{ $availabilityLabel }}</span>
-                                        @if($scheduled > 0)
-                                            <span class="text-[11px] text-gray-500 dark:text-gray-400">{{ $scheduled }} scheduled</span>
-                                        @endif
-                                    </div>
+                                    @php
+                                        $availabilityLabel = 'Available';
+                                        $availabilityBadgeClass = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
+                                        
+                                        if ($isDisabled) {
+                                            $availabilityLabel = 'Disabled';
+                                            $availabilityBadgeClass = 'bg-gray-300 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+                                        } elseif ($tech->availability === 'on_leave') {
+                                            $availabilityLabel = 'On Leave';
+                                            $availabilityBadgeClass = 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
+                                        } elseif ($tech->availability === 'unavailable') {
+                                            $availabilityLabel = 'Unavailable';
+                                            $availabilityBadgeClass = 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200';
+                                        }
+                                    @endphp
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full {{ $availabilityBadgeClass }}">{{ $availabilityLabel }}</span>
+                                </td>
+                                <td class="py-3 text-center">
+                                    @if($scheduled > 0)
+                                        <span class="text-xs font-medium text-amber-700 dark:text-amber-300">{{ $scheduled }} scheduled</span>
+                                    @else
+                                        <span class="text-xs text-gray-500 dark:text-gray-400">No schedule</span>
+                                    @endif
                                 </td>
                                 <td class="py-3 text-center">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">{{ $active }}</span>
@@ -310,9 +345,16 @@
                                 </td>
                                 <td class="py-3 text-center" @click.stop>
                                     <div class="flex gap-3 justify-center">
-                                        <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showSkills=true;" class="text-indigo-600 dark:text-indigo-400 hover:underline text-xs font-medium">Skills</button>
-                                        <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showAvailability=true;" class="text-amber-600 dark:text-amber-400 hover:underline text-xs font-medium">Availability</button>
-                                        <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showDisable=true;" class="text-rose-600 dark:text-rose-400 hover:underline text-xs font-medium">Disable</button>
+                                        @if(!$isDisabled)
+                                            <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showSkills=true;" class="text-indigo-600 dark:text-indigo-400 hover:underline text-xs font-medium">Skills</button>
+                                            <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showAvailability=true;" class="text-amber-600 dark:text-amber-400 hover:underline text-xs font-medium">Availability</button>
+                                            <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showDisable=true;" class="text-rose-600 dark:text-rose-400 hover:underline text-xs font-medium">Disable</button>
+                                        @else
+                                            <form method="POST" action="{{ route('tech-head.technicians.enable', $tech->id) }}" class="inline">
+                                                @csrf
+                                                <button type="submit" class="text-emerald-600 dark:text-emerald-400 hover:underline text-xs font-medium font-semibold">Enable</button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -489,15 +531,15 @@
                                     required
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                                 >
-                                    <option value="available">Available</option>
-                                    <option value="on_leave">On Leave</option>
-                                                <option value="unavailable">Unavailable</option>
+                                    <option value="available" x-bind:selected="selectedTechnician?.availability === 'available'">Available</option>
+                                    <option value="on_leave" x-bind:selected="selectedTechnician?.availability === 'on_leave'">On Leave</option>
+                                    <option value="unavailable" x-bind:selected="selectedTechnician?.availability === 'unavailable'">Unavailable</option>
                                 </select>
                             </div>
                             
                             <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                                 <button type="button" @click="showAvailability=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
-                                <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors">Update Availability</button>
+                                <button type="submit" @click="showAvailability=false" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors">Update Availability</button>
                             </div>
                         </form>
                     </div>
@@ -661,8 +703,16 @@
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white" x-text="selectedTechnician?.role"></p>
                             </div>
                             <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Availability</p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white capitalize" x-text="selectedTechnician?.availability?.replace('_', ' ') || 'Available'"></p>
+                            </div>
+                            <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Skills</p>
                                 <p class="text-sm text-gray-700 dark:text-gray-300" x-text="selectedTechnician?.skills_text || 'N/A'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Scheduled</p>
+                                <span class="inline-block px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200" x-text="(selectedTechnician?.scheduled || 0) + ' scheduled'"></span>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Created At</p>

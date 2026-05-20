@@ -265,27 +265,27 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-6">
             <div class="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-xl border border-blue-200 dark:border-blue-800">
                 <p class="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-1 sm:mb-2">Assigned</p>
-                <p class="text-lg sm:text-2xl font-bold text-blue-900 dark:text-blue-100">{{ $assignments->where('status', 'assigned')->count() }}</p>
+                <p class="text-lg sm:text-2xl font-bold text-blue-900 dark:text-blue-100">{{ $assignmentStats['assigned'] ?? 0 }}</p>
             </div>
             <div class="bg-yellow-50 dark:bg-yellow-900/20 p-3 sm:p-4 rounded-xl border border-yellow-200 dark:border-yellow-800">
                 <p class="text-xs text-yellow-600 dark:text-yellow-400 font-semibold mb-1 sm:mb-2">In Progress</p>
-                <p class="text-lg sm:text-2xl font-bold text-yellow-900 dark:text-yellow-100">{{ $assignments->where('status', 'in_progress')->count() }}</p>
+                <p class="text-lg sm:text-2xl font-bold text-yellow-900 dark:text-yellow-100">{{ $assignmentStats['in_progress'] ?? 0 }}</p>
             </div>
             <div class="bg-orange-50 dark:bg-orange-900/20 p-3 sm:p-4 rounded-xl border border-orange-200 dark:border-orange-800">
                 <p class="text-xs text-orange-600 dark:text-orange-400 font-semibold mb-1 sm:mb-2">On Hold</p>
-                <p class="text-lg sm:text-2xl font-bold text-orange-900 dark:text-orange-100">{{ $assignments->where('status', 'on_hold')->count() }}</p>
+                <p class="text-lg sm:text-2xl font-bold text-orange-900 dark:text-orange-100">{{ $assignmentStats['on_hold'] ?? 0 }}</p>
             </div>
             <div class="bg-green-50 dark:bg-green-900/20 p-3 sm:p-4 rounded-xl border border-green-200 dark:border-green-800">
                 <p class="text-xs text-green-600 dark:text-green-400 font-semibold mb-1 sm:mb-2">Completed</p>
-                <p class="text-lg sm:text-2xl font-bold text-green-900 dark:text-green-100">{{ $assignments->where('status', 'completed')->count() }}</p>
+                <p class="text-lg sm:text-2xl font-bold text-green-900 dark:text-green-100">{{ $assignmentStats['completed'] ?? 0 }}</p>
             </div>
             <div class="bg-amber-50 dark:bg-amber-900/20 p-3 sm:p-4 rounded-xl border border-amber-200 dark:border-amber-800">
                 <p class="text-xs text-amber-600 dark:text-amber-400 font-semibold mb-1 sm:mb-2">Pending Review</p>
-                <p class="text-lg sm:text-2xl font-bold text-amber-900 dark:text-amber-100">{{ $assignments->where('status', 'pending_review')->count() }}</p>
+                <p class="text-lg sm:text-2xl font-bold text-amber-900 dark:text-amber-100">{{ $assignmentStats['pending_review'] ?? 0 }}</p>
             </div>
             <div class="bg-red-50 dark:bg-red-900/20 p-3 sm:p-4 rounded-xl border border-red-200 dark:border-red-800">
                 <p class="text-xs text-red-600 dark:text-red-400 font-semibold mb-1 sm:mb-2">Rejected</p>
-                <p class="text-lg sm:text-2xl font-bold text-red-900 dark:text-red-100">{{ $assignments->where('status', 'rejected')->count() }}</p>
+                <p class="text-lg sm:text-2xl font-bold text-red-900 dark:text-red-100">{{ $assignmentStats['rejected'] ?? 0 }}</p>
             </div>
         </div>
 

@@ -386,42 +386,42 @@
                         @endforeach
                     </div>
 
-                    <div class=\"hidden sm:block overflow-x-auto flex-1\">
-                        <table class=\"w-full\">
-                            <thead class=\"border-b border-gray-200 dark:border-gray-700\">
-                                <tr class=\"text-left\">
-                                    <th class=\"pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400\">Job Order</th>
-                                    <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Customer</th>
-                                    <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Status</th>
-                                    <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Date</th>
-                                    <th class="pb-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Actions</th>
+                    <div class="hidden sm:block overflow-x-auto flex-1">
+                        <table class="w-full">
+                            <thead class="border-b-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+                                <tr class="text-left">
+                                    <th class="px-4 py-4 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Job Order</th>
+                                    <th class="px-4 py-4 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Customer</th>
+                                    <th class="px-4 py-4 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Status</th>
+                                    <th class="px-4 py-4 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Date</th>
+                                    <th class="px-4 py-4 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                                 @foreach($recentAssignments as $assignment)
-                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                    <td class="py-3">
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $assignment->jobOrder->job_order_number ?? 'N/A' }}</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ Str::limit($assignment->jobOrder->description ?? 'No description', 30) }}</p>
+                                <tr class="hover:bg-blue-50 dark:hover:bg-gray-700/80 transition-colors">
+                                    <td class="px-4 py-4">
+                                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $assignment->jobOrder->job_order_number ?? 'N/A' }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ Str::limit($assignment->jobOrder->description ?? 'No description', 35) }}</p>
                                     </td>
-                                    <td class="py-3">
-                                        <p class="text-sm text-gray-900 dark:text-white">{{ $assignment->jobOrder->customer->name ?? 'N/A' }}</p>
+                                    <td class="px-4 py-4">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $assignment->jobOrder->customer->name ?? 'N/A' }}</p>
                                     </td>
-                                    <td class="py-3">
+                                    <td class="px-4 py-4">
                                         <span :class="{
-                                            'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300': '{{ $assignment->status }}' === 'assigned',
-                                            'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300': '{{ $assignment->status }}' === 'in_progress',
-                                            'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300': '{{ $assignment->status }}' === 'completed',
-                                            'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300': '{{ $assignment->status }}' === 'on_hold',
-                                            'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300': !['assigned','in_progress','completed','on_hold'].includes('{{ $assignment->status }}')
-                                        }" class="px-2 py-1 text-xs font-medium rounded-full">
+                                            'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300': '{{ $assignment->status }}' === 'assigned',
+                                            'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300': '{{ $assignment->status }}' === 'in_progress',
+                                            'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300': '{{ $assignment->status }}' === 'completed',
+                                            'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300': '{{ $assignment->status }}' === 'on_hold',
+                                            'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300': !['assigned','in_progress','completed','on_hold'].includes('{{ $assignment->status }}')
+                                        }" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-full">
                                             {{ ucfirst(str_replace('_', ' ', $assignment->status)) }}
                                         </span>
                                     </td>
-                                    <td class="py-3">
+                                    <td class="px-4 py-4">
                                         <p class="text-sm text-gray-600 dark:text-gray-400">{{ $assignment->assigned_at ? $assignment->assigned_at->setTimezone('Asia/Manila')->format('M d, Y') : $assignment->created_at->setTimezone('Asia/Manila')->format('M d, Y') }}</p>
                                     </td>
-                                    <td class="py-3">
+                                    <td class="px-4 py-4">
                                         <button @click='openJobDetails({{ json_encode([
                                             "id" => $assignment->jobOrder->id ?? null,
                                             "job_order_number" => $assignment->jobOrder->job_order_number ?? "N/A",
@@ -436,8 +436,8 @@
                                             "notes" => $assignment->jobOrder->notes ?? "No notes",
                                             "created_at" => ($assignment->assigned_at ?? $assignment->created_at)->setTimezone("Asia/Manila")->format("M d, Y h:i A")
                                         ]) }})' 
-                                           class="text-blue-600 dark:text-blue-400 hover:underline text-xs sm:text-sm font-medium">
-                                            View Details
+                                           class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors">
+                                            View
                                         </button>
                                     </td>
                                 </tr>

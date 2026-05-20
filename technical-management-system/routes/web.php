@@ -1225,7 +1225,92 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     })->name('dashboard');
     
     Route::get('/assignments', function (\Illuminate\Http\Request $request) {
-        return redirect()->route('technician.work-orders', $request->all());
+        $currentUserId = auth()->id();
+        $search = trim($request->string('search')->toString());
+        $status = $request->string('status')->toString();
+
+        $baseQuery = \App\Models\Assignment::with(['jobOrder.customer', 'report'])
+            ->where('assigned_to', $currentUserId)
+            ->whereIn('status', ['assigned', 'in_progress', 'on_hold', 'completed', 'pending_review', 'rejected']);
+
+        if ($search !== '') {
+            $baseQuery->whereHas('jobOrder', function ($subQuery) use ($search) {
+                $subQuery->where('job_order_number', 'like', "%{$search}%")
+                    ->orWhere('service_type', 'like', "%{$search}%")
+                    ->orWhere('service_description', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $allowedStatuses = ['assigned', 'in_progress', 'on_hold', 'completed', 'pending_review', 'rejected'];
+        if (in_array($status, $allowedStatuses, true)) {
+            if ($status === 'pending_review') {
+                $baseQuery->whereHas('report', function ($reportQuery) {
+                    $reportQuery->where('status', 'pending');
+                });
+            } elseif ($status === 'rejected') {
+                $baseQuery->whereHas('report', function ($reportQuery) {
+                    $reportQuery->where('status', 'rejected');
+                });
+            } else {
+                $baseQuery->where('status', $status);
+            }
+        }
+
+        // Get all assignments for stats calculation (without pagination)
+        $allAssignmentsForStats = $baseQuery->get()->map(function ($assignment) {
+            // Map assignment data for stats
+            if ($assignment->report && $assignment->report->status === 'pending') {
+                $assignment->status = 'pending_review';
+            } elseif ($assignment->report && $assignment->report->status === 'rejected') {
+                $assignment->status = 'rejected';
+            }
+            return $assignment;
+        });
+
+        // Get paginated assignments with transformed data
+        $assignments = $baseQuery
+            ->orderByDesc('assigned_at')
+            ->orderByDesc('id')
+            ->paginate(12)
+            ->through(function ($assignment) {
+                // Map assignment data to look like job order data for the view
+                $assignment->job_order_number = $assignment->jobOrder->job_order_number;
+                $assignment->service_type = $assignment->jobOrder->service_type;
+                $assignment->description = $assignment->jobOrder->service_description ?? 'No description';
+                $assignment->customer = $assignment->jobOrder->customer;
+                $assignment->created_at = $assignment->jobOrder->created_at;
+                $assignment->location = $assignment->location;
+                $assignment->equipment = $assignment->jobOrder->equipment ?? 'N/A';
+                $assignment->notes = $assignment->notes ?? 'No notes available';
+                $assignment->priority = $assignment->priority;
+                $assignment->report_review_notes = $assignment->report?->review_notes ?? '';
+                
+                // Determine display status
+                if ($assignment->report && $assignment->report->status === 'pending') {
+                    $assignment->status = 'pending_review';
+                } elseif ($assignment->report && $assignment->report->status === 'rejected') {
+                    $assignment->status = 'rejected';
+                }
+                
+                return $assignment;
+            })
+            ->appends($request->only(['search', 'status']));
+
+        // For the stats section, pass the stats data separately
+        $assignmentStats = [
+            'assigned' => $allAssignmentsForStats->where('status', 'assigned')->count(),
+            'in_progress' => $allAssignmentsForStats->where('status', 'in_progress')->count(),
+            'on_hold' => $allAssignmentsForStats->where('status', 'on_hold')->count(),
+            'completed' => $allAssignmentsForStats->where('status', 'completed')->count(),
+            'pending_review' => $allAssignmentsForStats->where('status', 'pending_review')->count(),
+            'rejected' => $allAssignmentsForStats->where('status', 'rejected')->count(),
+        ];
+
+        return view('technician.assignments', compact('assignments', 'search', 'status', 'assignmentStats'));
     })->name('assignments');
     
     Route::get('/work-orders', function (\Illuminate\Http\Request $request) {
@@ -3404,20 +3489,65 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
     })->name('technicians.store');
 
     Route::post('/technicians/{user}/disable', function (User $user) {
+        $oldValues = ['is_active' => $user->is_active];
         $user->update(['is_active' => false]);
+        AuditLogHelper::log(
+            'DISABLE',
+            'User',
+            $user->id,
+            "{$user->name} was disabled",
+            $oldValues,
+            ['is_active' => false],
+            ['is_active']
+        );
         return redirect()->route('tech-head.technicians')->with('status', 'Technician disabled');
     })->name('technicians.disable');
 
+    Route::post('/technicians/{user}/enable', function (User $user) {
+        $oldValues = ['is_active' => $user->is_active];
+        $user->update(['is_active' => true]);
+        AuditLogHelper::log(
+            'ENABLE',
+            'User',
+            $user->id,
+            "{$user->name} was enabled",
+            $oldValues,
+            ['is_active' => true],
+            ['is_active']
+        );
+        return redirect()->route('tech-head.technicians')->with('status', 'Technician enabled');
+    })->name('technicians.enable');
+
     Route::post('/technicians/{user}/availability', function (\Illuminate\Http\Request $request, User $user) {
         $data = $request->validate(['availability' => 'required|in:available,on_leave,unavailable']);
+        $oldValues = ['availability' => $user->availability];
         $user->update(['availability' => $data['availability']]);
+        AuditLogHelper::log(
+            'AVAILABILITY_CHANGE',
+            'User',
+            $user->id,
+            "{$user->name} availability changed from {$oldValues['availability']} to {$data['availability']}",
+            $oldValues,
+            ['availability' => $data['availability']],
+            ['availability']
+        );
         return redirect()->route('tech-head.technicians')->with('status', 'Availability updated');
     })->name('technicians.availability');
 
     Route::post('/technicians/{user}/skills', function (\Illuminate\Http\Request $request, User $user) {
         $data = $request->validate(['skills' => 'nullable|string']);
         $skills = array_filter(array_map('trim', explode(',', (string) ($data['skills'] ?? ''))));
+        $oldValues = ['skills' => $user->skills];
         $user->update(['skills' => $skills ?: null]);
+        AuditLogHelper::log(
+            'SKILLS_CHANGE',
+            'User',
+            $user->id,
+            "{$user->name} skills were updated",
+            $oldValues,
+            ['skills' => $skills ?: null],
+            ['skills']
+        );
         return redirect()->route('tech-head.technicians')->with('status', 'Skills updated');
     })->name('technicians.skills');
     
