@@ -3467,24 +3467,51 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
 
     // Technicians management
     Route::post('/technicians', function (\Illuminate\Http\Request $request) {
+        // Mark as explicitly logged to prevent middleware duplication
+        if (app()->bound('request')) {
+            $request->attributes->set('audit.explicit_logged', true);
+        }
+        
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'department' => 'nullable|string|max:100',
-            'skills' => 'nullable|array',
+            'skills' => 'nullable|string',
         ]);
         $roleId = Role::where('slug', 'tech_personnel')->value('id');
+        
+        // Convert comma-separated string to array
+        $skills = array_filter(array_map('trim', explode(',', (string) ($data['skills'] ?? ''))));
+        
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => bcrypt($data['password']),
             'role_id' => $roleId,
-            'department' => $data['department'] ?? null,
+            'department' => $data['department'] ?? 'Tech Personnel',
             'is_active' => true,
             'availability' => 'available',
-            'skills' => isset($data['skills']) ? json_encode($data['skills']) : null,
+            'skills' => $skills ?: null,
         ]);
+        
+        // Log the creation with technician name and actual saved fields
+        AuditLogHelper::log(
+            'CREATE',
+            'User',
+            $user->id,
+            "Tech head created a user account named {$user->name} (Department: Tech Personnel)",
+            null,
+            [
+                'name' => $user->name,
+                'email' => $user->email,
+                'department' => $user->department,
+                'skills' => $user->skills,
+                'availability' => $user->availability,
+            ],
+            ['name', 'email', 'department', 'skills', 'availability']
+        );
+        
         return redirect()->route('tech-head.technicians')->with('status', 'Technician added: ' . $user->name);
     })->name('technicians.store');
 
@@ -3517,6 +3544,32 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         );
         return redirect()->route('tech-head.technicians')->with('status', 'Technician enabled');
     })->name('technicians.enable');
+
+    Route::delete('/technicians/{user}', function (User $user) {
+        $userName = $user->name;
+        $userId = $user->id;
+        $oldValues = [
+            'name' => $user->name,
+            'email' => $user->email,
+            'department' => $user->department,
+            'skills' => $user->skills,
+            'availability' => $user->availability,
+            'is_active' => $user->is_active,
+        ];
+        
+        AuditLogHelper::log(
+            'DELETE',
+            'User',
+            $userId,
+            "{$userName} was deleted",
+            $oldValues,
+            [],
+            array_keys($oldValues)
+        );
+        
+        $user->delete();
+        return redirect()->route('tech-head.technicians')->with('status', 'Technician ' . $userName . ' has been permanently deleted');
+    })->name('technicians.delete');
 
     Route::post('/technicians/{user}/availability', function (\Illuminate\Http\Request $request, User $user) {
         $data = $request->validate(['availability' => 'required|in:available,on_leave,unavailable']);

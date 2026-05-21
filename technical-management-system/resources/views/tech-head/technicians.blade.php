@@ -20,6 +20,7 @@
         showAvailability: false, 
         showSkills: false, 
         showDisable: false,
+        showDelete: false,
         showDetails: false,
         selectedId: null,
         selectedName: null,
@@ -30,6 +31,7 @@
             this.$watch('showAvailability', value => this.handleModalState(value));
             this.$watch('showSkills', value => this.handleModalState(value));
             this.$watch('showDisable', value => this.handleModalState(value));
+            this.$watch('showDelete', value => this.handleModalState(value));
             this.$watch('showDetails', value => this.handleModalState(value));
         },
         handleModalState(isOpen) {
@@ -54,6 +56,7 @@
             this.showAvailability = false;
             this.showSkills = false;
             this.showDisable = false;
+            this.showDelete = false;
             this.showDetails = false;
         },
         selectTechnician(technician) {
@@ -349,11 +352,13 @@
                                             <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showSkills=true;" class="text-indigo-600 dark:text-indigo-400 hover:underline text-xs font-medium">Skills</button>
                                             <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showAvailability=true;" class="text-amber-600 dark:text-amber-400 hover:underline text-xs font-medium">Availability</button>
                                             <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showDisable=true;" class="text-rose-600 dark:text-rose-400 hover:underline text-xs font-medium">Disable</button>
+                                            <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showDelete=true;" class="text-red-600 dark:text-red-400 hover:underline text-xs font-medium">Delete</button>
                                         @else
                                             <form method="POST" action="{{ route('tech-head.technicians.enable', $tech->id) }}" class="inline">
                                                 @csrf
                                                 <button type="submit" class="text-emerald-600 dark:text-emerald-400 hover:underline text-xs font-medium font-semibold">Enable</button>
                                             </form>
+                                            <button @click="selectTechnician({ id: {{ $tech->id }}, name: @js($tech->name), skills: @js($skillsText) }); showDelete=true;" class="text-red-600 dark:text-red-400 hover:underline text-xs font-medium">Delete</button>
                                         @endif
                                     </div>
                                 </td>
@@ -649,6 +654,57 @@
                             <div class="flex justify-center gap-3 pt-4">
                                 <button type="button" @click="showDisable=false" class="px-6 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
                                 <button type="submit" class="px-6 py-2 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 transition-colors">Yes, Disable</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div 
+            x-show="showDelete" 
+            x-cloak
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 z-50 overflow-y-auto"
+        >
+            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showDelete=false"></div>
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div 
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 transform scale-95"
+                    x-transition:enter-end="opacity-100 transform scale-100"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100 transform scale-100"
+                    x-transition:leave-end="opacity-0 transform scale-95"
+                    class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-[20px] shadow-xl border border-gray-200 dark:border-gray-700"
+                >
+                    <div class="p-6 space-y-4">
+                        <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full">
+                            <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </div>
+                        
+                        <div class="text-center">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Delete Technician?</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                Are you sure you want to permanently delete <strong class="text-gray-900 dark:text-white" x-text="selectedName"></strong>? This action cannot be undone and all associated data will be removed.
+                            </p>
+                        </div>
+                        
+                        <form method="POST" :action="selectedId ? `{{ route('tech-head.technicians.delete', ['user' => '__ID__']) }}`.replace('__ID__', selectedId) : '#'" class="space-y-4">
+                            @csrf
+                            @method('DELETE')
+                            
+                            <div class="flex justify-center gap-3 pt-4">
+                                <button type="button" @click="showDelete=false" class="px-6 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Cancel</button>
+                                <button type="submit" class="px-6 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">Yes, Delete</button>
                             </div>
                         </form>
                     </div>

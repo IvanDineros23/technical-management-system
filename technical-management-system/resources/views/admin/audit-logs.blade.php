@@ -124,8 +124,9 @@
                             $departmentLabel = $department ?: 'Unassigned Department';
 
                             $summary = $log->description ?: "{$actor} performed {$action}";
+                            $hasDescription = trim((string) $log->description) !== '';
 
-                            if ($model === 'User' && $action === 'UPDATE') {
+                            if (!$hasDescription && $model === 'User' && $action === 'UPDATE') {
                                 if (in_array('name', $changedFields, true) && isset($newValues['name'])) {
                                     $summary = "{$actor} changed name to {$newValues['name']} for this user (Department: {$departmentLabel}).";
                                 } elseif (in_array('email', $changedFields, true) && isset($newValues['email'])) {
@@ -142,11 +143,11 @@
                                 }
                             }
 
-                            if ($model === 'User' && $action === 'CREATE') {
+                            if (!$hasDescription && $model === 'User' && $action === 'CREATE') {
                                 $summary = "{$actor} created a user account (Department: {$departmentLabel}).";
                             }
 
-                            if ($model === 'User' && $action === 'DELETE') {
+                            if (!$hasDescription && $model === 'User' && $action === 'DELETE') {
                                 $summary = "{$actor} deleted a user account (Department: {$departmentLabel}).";
                             }
                         @endphp
@@ -211,8 +212,9 @@
                                 $departmentLabel = $department ?: 'Unassigned Department';
 
                                 $summary = $log->description ?: "{$actor} performed {$action}";
+                                $hasDescription = trim((string) $log->description) !== '';
 
-                                if ($model === 'User' && $action === 'UPDATE') {
+                                if (!$hasDescription && $model === 'User' && $action === 'UPDATE') {
                                     if (in_array('name', $changedFields, true) && isset($newValues['name'])) {
                                         $summary = "{$actor} changed name to {$newValues['name']} for this user (Department: {$departmentLabel}).";
                                     } elseif (in_array('email', $changedFields, true) && isset($newValues['email'])) {
@@ -229,11 +231,11 @@
                                     }
                                 }
 
-                                if ($model === 'User' && $action === 'CREATE') {
+                                if (!$hasDescription && $model === 'User' && $action === 'CREATE') {
                                     $summary = "{$actor} created a user account (Department: {$departmentLabel}).";
                                 }
 
-                                if ($model === 'User' && $action === 'DELETE') {
+                                if (!$hasDescription && $model === 'User' && $action === 'DELETE') {
                                     $summary = "{$actor} deleted a user account (Department: {$departmentLabel}).";
                                 }
                             @endphp
