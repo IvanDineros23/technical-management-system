@@ -371,15 +371,6 @@
         Equipment
     </a>
 
-    <a href="{{ route('technician.inventory') }}"
-       class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-        </svg>
-        Inventory
-    </a>
-
     <a href="{{ route('technician.reports') }}"
        class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -809,9 +800,6 @@
                                 Request Equipment (Locked)
                             </button>
                         @else
-                            <a href="{{ route('technician.inventory') }}" class="block w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center">
-                                Request Materials
-                            </a>
                             <button type="button" @click="showEquipmentRequest=true" class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
                                 Request Equipment
                             </button>
@@ -1008,7 +996,7 @@
                             @click="eqSelectMode='existing'; eqId=''; eqName=''"
                             :class="eqSelectMode==='existing' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'"
                             class="flex-1 py-2 rounded-lg text-sm font-medium transition-colors">
-                            Select from Inventory
+                            Select from Equipment List
                         </button>
                         <button type="button"
                             @click="eqSelectMode='new'; eqId=''; eqName=''"

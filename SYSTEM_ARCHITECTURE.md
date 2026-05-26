@@ -37,7 +37,7 @@ technical-management-system/
 │   │   │   ├── Release/
 │   │   │   │   ├── ReleaseController.php
 │   │   │   │   └── AccountingReleaseController.php
-│   │   │   ├── Inventory/
+│   │   │   ├── Equipment/
 │   │   │   │   ├── EquipmentController.php
 │   │   │   │   ├── StandardController.php
 │   │   │   │   └── CalibrationHistoryController.php
@@ -91,7 +91,7 @@ technical-management-system/
 │   │   │   ├── Release.php
 │   │   │   ├── AccountingRelease.php
 │   │   │   └── Invoice.php
-│   │   ├── Inventory/
+│   │   ├── Equipment/
 │   │   │   ├── Equipment.php
 │   │   │   ├── Standard.php
 │   │   │   ├── StandardCalibration.php

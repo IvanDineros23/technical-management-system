@@ -73,7 +73,7 @@ All 32 migration files created:
 - ✅ create_accounting_releases_table
 - ✅ create_invoices_table
 
-#### Inventory (4)
+#### Equipment (4)
 - ✅ create_equipment_table
 - ✅ create_standards_table
 - ✅ create_standard_calibrations_table

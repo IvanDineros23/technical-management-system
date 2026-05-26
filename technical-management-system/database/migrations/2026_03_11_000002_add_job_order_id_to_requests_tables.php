@@ -13,9 +13,6 @@ return new class extends Migration
             $table->timestamp('returned_at')->nullable()->after('approved_at');
         });
 
-        Schema::table('inventory_requests', function (Blueprint $table) {
-            $table->foreignId('job_order_id')->nullable()->constrained('job_orders')->nullOnDelete()->after('inventory_item_id');
-        });
     }
 
     public function down(): void
@@ -25,9 +22,5 @@ return new class extends Migration
             $table->dropColumn(['job_order_id', 'returned_at']);
         });
 
-        Schema::table('inventory_requests', function (Blueprint $table) {
-            $table->dropForeign(['job_order_id']);
-            $table->dropColumn('job_order_id');
-        });
     }
 };

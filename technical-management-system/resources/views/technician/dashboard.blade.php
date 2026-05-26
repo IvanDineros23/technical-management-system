@@ -101,15 +101,6 @@
         Equipment
     </a>
 
-    <a href="{{ route('technician.inventory') }}"
-       class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-        </svg>
-        Inventory
-    </a>
-
     <a href="{{ route('technician.reports') }}"
        class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,25 +242,6 @@
                         </div>
                     @endif
 
-                    @if(($inventoryRequests ?? collect())->count() > 0)
-                        <div>
-                            <p class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-2">Inventory Requests</p>
-                            <div class="space-y-2">
-                                @foreach($inventoryRequests as $request)
-                                    <div class="p-2 sm:p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/40">
-                                        <p class="text-xs sm:text-sm font-semibold text-indigo-900 dark:text-indigo-100">
-                                            {{ $request->inventoryItem->name ?? 'Item Request' }}
-                                        </p>
-                                        <p class="text-xs text-indigo-700 dark:text-indigo-300">
-                                            Status: {{ ucfirst($request->status) }} • Qty: {{ $request->quantity }}
-                                        </p>
-                                        <p class="text-xs text-indigo-600 dark:text-indigo-300">Updated: {{ $request->updated_at?->format('M d, Y') }}</p>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
-
                     @if(($newAssignments ?? collect())->count() > 0)
                         <div>
                             <p class="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2">New Assignments</p>
@@ -327,7 +299,7 @@
                         </div>
                     @endif
 
-                    @if($overdueAssignments->count() === 0 && $dueTodayAssignments->count() === 0 && ($inventoryRequests ?? collect())->count() === 0 && ($newAssignments ?? collect())->count() === 0 && ($onHoldAssignments ?? collect())->count() === 0 && ($highPriorityAssignments ?? collect())->count() === 0)
+                    @if($overdueAssignments->count() === 0 && $dueTodayAssignments->count() === 0 && ($newAssignments ?? collect())->count() === 0 && ($onHoldAssignments ?? collect())->count() === 0 && ($highPriorityAssignments ?? collect())->count() === 0)
                         <div class="text-center py-4 flex items-center justify-center">
                             <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">No alerts at the moment</p>
                         </div>
@@ -463,7 +435,7 @@
     <!-- Quick Actions -->
     <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6 sm:mb-8">
         <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
             <a href="{{ route('technician.assignments') }}" 
                class="p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-xl transition-colors border border-blue-200 dark:border-blue-800 flex flex-col items-center">
                 <svg class="w-6 sm:w-8 h-6 sm:h-8 text-blue-600 dark:text-blue-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -480,14 +452,6 @@
                 </svg>
                 <p class="text-xs sm:text-sm font-semibold text-green-900 dark:text-green-100 text-center">Submit Report</p>
             </a>
-            <a href="{{ route('technician.inventory') }}" 
-               class="p-3 sm:p-4 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-xl transition-colors border border-orange-200 dark:border-orange-800 flex flex-col items-center">
-                <svg class="w-6 sm:w-8 h-6 sm:h-8 text-orange-600 dark:text-orange-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                </svg>
-                <p class="text-xs sm:text-sm font-semibold text-orange-900 dark:text-orange-100 text-center">Request Materials</p>
-            </a>
             <a href="{{ route('technician.calendar') }}" 
                class="p-3 sm:p-4 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors border border-purple-200 dark:border-purple-800 flex flex-col items-center">
                 <svg class="w-6 sm:w-8 h-6 sm:h-8 text-purple-600 dark:text-purple-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -495,6 +459,30 @@
                           d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
                 <p class="text-xs sm:text-sm font-semibold text-purple-900 dark:text-purple-100 text-center">View Schedule</p>
+            </a>
+            <a href="{{ route('technician.work-orders') }}" 
+               class="p-3 sm:p-4 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-xl transition-colors border border-amber-200 dark:border-amber-800 flex flex-col items-center">
+                <svg class="w-6 sm:w-8 h-6 sm:h-8 text-amber-600 dark:text-amber-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                <p class="text-xs sm:text-sm font-semibold text-amber-900 dark:text-amber-100 text-center">Job Orders</p>
+            </a>
+            <a href="{{ route('technician.equipment') }}" 
+               class="p-3 sm:p-4 bg-teal-50 dark:bg-teal-900/20 hover:bg-teal-100 dark:hover:bg-teal-900/30 rounded-xl transition-colors border border-teal-200 dark:border-teal-800 flex flex-col items-center">
+                <svg class="w-6 sm:w-8 h-6 sm:h-8 text-teal-600 dark:text-teal-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+                </svg>
+                <p class="text-xs sm:text-sm font-semibold text-teal-900 dark:text-teal-100 text-center">Equipment</p>
+            </a>
+            <a href="{{ route('technician.timeline') }}" 
+               class="p-3 sm:p-4 bg-slate-50 dark:bg-slate-900/20 hover:bg-slate-100 dark:hover:bg-slate-900/30 rounded-xl transition-colors border border-slate-200 dark:border-slate-700 flex flex-col items-center">
+                <svg class="w-6 sm:w-8 h-6 sm:h-8 text-slate-600 dark:text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 text-center">Timeline</p>
             </a>
         </div>
     </div>

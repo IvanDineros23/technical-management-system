@@ -16,12 +16,10 @@ class LogPageVisit
         'admin.dashboard' => 'Dashboard',
         'admin.users.index' => 'Users',
         'admin.equipment.index' => 'Equipment',
-        'admin.inventory.index' => 'Inventory',
         'admin.audit-logs.index' => 'Audit Logs',
         'tech-head.dashboard' => 'Dashboard',
-        'tech-head.inventory.index' => 'Inventory',
+        
         'technician.dashboard' => 'Dashboard',
-        'technician.inventory' => 'Inventory',
         'technician.certificates' => 'Certificates',
         'accounting.dashboard' => 'Dashboard',
         'accounting.invoices' => 'Invoices',

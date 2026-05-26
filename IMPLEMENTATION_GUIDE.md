@@ -186,7 +186,7 @@ php artisan make:migration create_releases_table
 php artisan make:migration create_accounting_releases_table
 php artisan make:migration create_invoices_table
 
-# Inventory
+# Equipment
 php artisan make:migration create_equipment_table
 php artisan make:migration create_standards_table
 php artisan make:migration create_standard_calibrations_table
@@ -487,9 +487,9 @@ php artisan make:controller Certificate/CertificateVerificationController
 php artisan make:controller Release/ReleaseController --resource
 php artisan make:controller Release/AccountingReleaseController
 
-# Inventory
-php artisan make:controller Inventory/EquipmentController --resource
-php artisan make:controller Inventory/StandardController --resource
+# Equipment
+php artisan make:controller Equipment/EquipmentController --resource
+php artisan make:controller Equipment/StandardController --resource
 
 # Customers
 php artisan make:controller Customer/CustomerController --resource

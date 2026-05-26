@@ -3,7 +3,7 @@
 @section('title', 'Equipment')
 
 @section('page-title', 'Equipment')
-@section('page-subtitle', 'Inventory status and utilization')
+@section('page-subtitle', 'Equipment status and utilization')
 
 @section('sidebar-nav')
     @include('tech-head.partials.sidebar')
@@ -40,7 +40,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div>
-                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Equipment Inventory</h3>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Equipment List</h3>
                 </div>
                 <form method="GET" action="{{ route('tech-head.equipment') }}" class="w-full sm:w-auto flex flex-col sm:flex-row sm:items-center gap-2">
                     <div class="relative">

@@ -661,7 +661,7 @@ INDEX idx_due_date (due_date)
 
 ---
 
-### 9. Inventory & Standards
+### 9. Equipment & Standards
 
 #### **equipment** (Lab's internal equipment)
 ```sql

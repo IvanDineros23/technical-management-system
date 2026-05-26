@@ -24,7 +24,7 @@ class RoleSeeder extends Seeder
                     'view_all_reports',
                     'system_settings',
                     'approve_requests',
-                    'manage_inventory'
+                    'manage_equipment'
                 ]),
                 'is_active' => true,
                 'created_at' => now(),

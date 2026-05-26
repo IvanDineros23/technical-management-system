@@ -1,7 +1,7 @@
 <?php
 
 use App\Helpers\AuditLogHelper;
-use App\Http\Controllers\{AdminBackupController, AdminController, ApprovalController, AuditLogController, CalibrationController, CustomerPortalController, EquipmentController, InventoryController, ProfileController, ReportController, RoleController, SettingsController, SignatoryController, TimelineController, VerificationController};
+use App\Http\Controllers\{AdminBackupController, AdminController, ApprovalController, AuditLogController, CalibrationController, CustomerPortalController, EquipmentController, ProfileController, ReportController, RoleController, SettingsController, SignatoryController, TimelineController, VerificationController};
 use App\Models\{Assignment, Calibration, Certificate, Customer, Equipment, JobOrder, Report, Role, User};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1180,12 +1180,6 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             ->take(3)
             ->get();
 
-        $inventoryRequests = \App\Models\InventoryRequest::with(['inventoryItem'])
-            ->where('requested_by', $user->id)
-            ->latest('updated_at')
-            ->take(5)
-            ->get();
-
         $newAssignments = \App\Models\Assignment::with(['jobOrder.customer'])
             ->where('assigned_to', $user->id)
             ->where('status', 'assigned')
@@ -1217,7 +1211,6 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             'recentAssignments',
             'overdueAssignments',
             'dueTodayAssignments',
-            'inventoryRequests',
             'newAssignments',
             'onHoldAssignments',
             'highPriorityAssignments'
@@ -2284,9 +2277,6 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         return redirect()->route('technician.equipment')->with('status', 'Equipment request submitted. Waiting for approval.');
     })->name('equipment.request');
 
-    Route::get('/inventory', [InventoryController::class, 'technicianIndex'])->name('inventory');
-    Route::post('/inventory/request', [InventoryController::class, 'requestItem'])->name('inventory.request');
-    
     Route::get('/reports', function () {
         $user = auth()->user();
         
@@ -3924,12 +3914,6 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         return redirect()->route('tech-head.equipment')->with('status', 'Equipment request ' . $validated['status'] . '.');
     })->name('equipment.requests.update');
 
-    Route::get('/inventory', [InventoryController::class, 'techHeadIndex'])->name('inventory');
-    Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
-    Route::put('/inventory/{inventoryItem}', [InventoryController::class, 'update'])->name('inventory.update');
-    Route::delete('/inventory/{inventoryItem}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
-    Route::patch('/inventory/requests/{inventoryRequest}', [InventoryController::class, 'updateRequestStatus'])->name('inventory.requests.update');
-
     // Equipment CRUD
     Route::post('/equipment', function (\Illuminate\Http\Request $request) {
         $data = $request->validate([
@@ -4241,12 +4225,6 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('/equipment/{equipment}/calibrate', [EquipmentController::class, 'calibrate'])->name('equipment.calibrate');
     Route::delete('/equipment/{equipment}', [EquipmentController::class, 'destroy'])->name('equipment.destroy');
     
-    Route::get('/inventory', [InventoryController::class, 'adminIndex'])->name('inventory.index');
-    Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
-    Route::put('/inventory/{inventoryItem}', [InventoryController::class, 'update'])->name('inventory.update');
-    Route::delete('/inventory/{inventoryItem}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
-    Route::patch('/inventory/requests/{inventoryRequest}', [InventoryController::class, 'updateRequestStatus'])->name('inventory.requests.update');
-
     Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings/general', [\App\Http\Controllers\SettingsController::class, 'updateGeneral'])->name('settings.general.update');
     Route::get('/settings/backup', [AdminBackupController::class, 'listBackups'])->name('settings.backup.index');

@@ -947,7 +947,7 @@
                         <p class="text-2xl font-bold text-rose-900 dark:text-rose-100">{{ number_format($equipmentSummary['critical']) }}</p>
                     </div>
                 </div>
-                <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">Monitor flagged equipment and manage inventory.</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">Monitor flagged equipment and manage assets.</p>
             </div>
         </div>
     </div>
