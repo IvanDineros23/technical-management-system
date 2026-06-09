@@ -84,8 +84,10 @@ class RegisteredUserController extends Controller
             'is_active' => false,
         ]);
 
+        $mailSent = false;
         try {
             Mail::to($user->email)->send(new RegistrationSuccessfulMail($user));
+            $mailSent = true;
         } catch (\Throwable $e) {
             Log::warning('Failed to send registration success email', [
                 'user_id' => $user->id,
@@ -111,6 +113,18 @@ class RegisteredUserController extends Controller
             ],
             changedFields: ['name', 'email', 'password', 'role_id', 'customer_id', 'is_active']
         );
+
+        if ($mailSent) {
+            AuditLogHelper::log(
+                action: 'EMAIL',
+                modelType: 'User',
+                modelId: $user->id,
+                description: "Registration email sent to: {$user->email}",
+                oldValues: null,
+                newValues: ['email_sent' => true],
+                changedFields: ['email_sent']
+            );
+        }
 
         if ($wasAuthenticated) {
             Auth::guard('web')->logout();
