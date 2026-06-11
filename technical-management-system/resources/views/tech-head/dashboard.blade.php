@@ -325,12 +325,26 @@
             <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6 h-full">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <h3 class="text-base font-bold text-slate-900 dark:text-white">Job Orders Overview</h3>
-                    <div class="flex flex-wrap gap-2">
-                        <a href="{{ route('tech-head.dashboard', ['status' => '']) }}" class="px-3 py-1 text-xs font-medium rounded-full {{ empty($statusFilter) ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">All</a>
-                        <a href="{{ route('tech-head.dashboard', ['status' => 'pending']) }}" class="px-3 py-1 text-xs font-medium rounded-full {{ $statusFilter === 'pending' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">Pending</a>
-                        <a href="{{ route('tech-head.dashboard', ['status' => 'overdue']) }}" class="px-3 py-1 text-xs font-medium rounded-full {{ $statusFilter === 'overdue' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">Overdue</a>
-                        <a href="{{ route('tech-head.dashboard', ['status' => 'high_priority']) }}" class="px-3 py-1 text-xs font-medium rounded-full {{ $statusFilter === 'high_priority' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">High Priority</a>
-                    </div>
+                    <form method="GET" action="{{ route('tech-head.dashboard') }}" class="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <div class="flex items-center gap-2">
+                            <label for="dashboard-job-filter" class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Filter</label>
+                            <select id="dashboard-job-filter" name="status" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs sm:text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                <option value="" {{ empty($statusFilter) ? 'selected' : '' }}>All Jobs</option>
+                                <option value="pending" {{ $statusFilter === 'pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="approved" {{ $statusFilter === 'approved' ? 'selected' : '' }}>Approved</option>
+                                <option value="in_progress" {{ $statusFilter === 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                                <option value="overdue" {{ $statusFilter === 'overdue' ? 'selected' : '' }}>Overdue</option>
+                                <option value="high_priority" {{ $statusFilter === 'high_priority' ? 'selected' : '' }}>High Priority</option>
+                                <option value="completed" {{ $statusFilter === 'completed' ? 'selected' : '' }}>Completed</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="submit" class="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-colors">Apply</button>
+                            @if(!empty($statusFilter))
+                                <a href="{{ route('tech-head.dashboard') }}" class="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">Clear</a>
+                            @endif
+                        </div>
+                    </form>
                 </div>
                 @if($workOrders->count() > 0)
                     <div class="space-y-3 md:hidden">
@@ -766,32 +780,26 @@
                         <h3 class="text-base font-bold text-slate-900 dark:text-white">Job Orders Overview</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400">Quick filters and latest jobs</p>
                     </div>
-                    <div class="flex flex-wrap gap-2">
-                        @php
-                            $filters = [
-                                '' => 'All',
-                                'pending' => 'Pending',
-                                'approved' => 'Approved',
-                                'in_progress' => 'In Progress',
-                                'overdue' => 'Overdue',
-                                'high_priority' => 'High Priority',
-                                'completed' => 'Completed',
-                            ];
-                        @endphp
-                        @foreach($filters as $key => $label)
-                            @php $isActive = ($statusFilter ?? '') === $key; @endphp
-                            <a href="{{ route('tech-head.dashboard', ['status' => $key]) }}"
-                                    class="px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-colors {{ $isActive ? 'bg-blue-600 dark:bg-blue-600 text-white border-blue-600 dark:border-blue-500' : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600' }}">
-                                {{ $label }}
-                                @php
-                                    $mapKey = $key === '' ? 'all' : $key;
-                                @endphp
-                                @if(isset($workOrderCounts[$mapKey]))
-                                    <span class="ml-2 text-[11px] px-2 py-0.5 rounded-full font-bold {{ $isActive ? 'bg-blue-500 dark:bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300' }}">{{ $workOrderCounts[$mapKey] }}</span>
-                                @endif
-                            </a>
-                        @endforeach
-                    </div>
+                    <form method="GET" action="{{ route('tech-head.dashboard') }}" class="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <div class="flex items-center gap-2">
+                            <label for="dashboard-status-filter" class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Filter</label>
+                            <select id="dashboard-status-filter" name="status" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs sm:text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                <option value="" {{ empty($statusFilter) ? 'selected' : '' }}>All Jobs</option>
+                                <option value="pending" {{ $statusFilter === 'pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="approved" {{ $statusFilter === 'approved' ? 'selected' : '' }}>Approved</option>
+                                <option value="in_progress" {{ $statusFilter === 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                                <option value="overdue" {{ $statusFilter === 'overdue' ? 'selected' : '' }}>Overdue</option>
+                                <option value="high_priority" {{ $statusFilter === 'high_priority' ? 'selected' : '' }}>High Priority</option>
+                                <option value="completed" {{ $statusFilter === 'completed' ? 'selected' : '' }}>Completed</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="submit" class="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-colors">Apply</button>
+                            @if(!empty($statusFilter))
+                                <a href="{{ route('tech-head.dashboard') }}" class="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">Clear</a>
+                            @endif
+                        </div>
+                    </form>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">

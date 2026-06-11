@@ -7,6 +7,9 @@
     <script>
         function reportsPage() {
             return {
+                routes: {
+                    submitReport: @json(route('technician.reports.submit', ['assignment' => '__ASSIGNMENT_ID__'])),
+                },
                 showSubmitModal: false,
                 showViewModal: false,
                 selectedReport: null,
@@ -86,7 +89,7 @@
                     this.isSubmitting = true;
                     const form = event.target;
                     const formData = new FormData(form);
-                    const url = `{{ url('/technician/reports') }}/${this.selectedAssignmentId}/submit`;
+                    const url = this.routes.submitReport.replace('__ASSIGNMENT_ID__', encodeURIComponent(this.selectedAssignmentId));
 
                     try {
                         const response = await fetch(url, {

@@ -143,7 +143,6 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6">
             <div>
                 <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Equipment</h3>
-                <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Browse and request available equipment</p>
             </div>
             <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                 <form method="GET" action="{{ route('technician.equipment') }}" class="flex items-center gap-2 flex-1 sm:flex-none">
@@ -153,7 +152,23 @@
                         </svg>
                         <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search..." class="w-full sm:w-52 pl-8 sm:pl-9 pr-3 sm:pr-4 py-2 text-xs sm:text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
                     </div>
-                    @if(!empty($search))
+                    <select name="status" class="w-full sm:w-44 px-3 py-2 text-xs sm:text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                        <option value="">All statuses</option>
+                        <option value="available" {{ request('status') === 'available' ? 'selected' : '' }}>Available</option>
+                        <option value="in_use" {{ request('status') === 'in_use' ? 'selected' : '' }}>In Use</option>
+                        <option value="maintenance" {{ request('status') === 'maintenance' ? 'selected' : '' }}>Maintenance</option>
+                        <option value="retired" {{ request('status') === 'retired' ? 'selected' : '' }}>Retired</option>
+                    </select>
+                    <select name="sort" class="w-full sm:w-40 px-3 py-2 text-xs sm:text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                        <option value="name" {{ request('sort', 'name') === 'name' ? 'selected' : '' }}>Name</option>
+                        <option value="code" {{ request('sort') === 'code' ? 'selected' : '' }}>Code</option>
+                        <option value="category" {{ request('sort') === 'category' ? 'selected' : '' }}>Category</option>
+                        <option value="location" {{ request('sort') === 'location' ? 'selected' : '' }}>Location</option>
+                        <option value="updated" {{ request('sort') === 'updated' ? 'selected' : '' }}>Updated</option>
+                        <option value="status" {{ request('sort') === 'status' ? 'selected' : '' }}>Status</option>
+                    </select>
+                    <button type="submit" class="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-indigo-700 transition-colors whitespace-nowrap">Apply</button>
+                    @if(!empty($search) || request('status') || request('sort'))
                     <a href="{{ route('technician.equipment') }}" class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 whitespace-nowrap">Clear</a>
                     @endif
                 </form>
@@ -177,6 +192,18 @@
         </div>
 
         @if($equipment->count() > 0)
+        <div class="mb-3 flex items-center justify-between text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+            <span>
+                @if(request('status'))
+                    Filtering: {{ ucfirst(str_replace('_', ' ', request('status'))) }}
+                @else
+                    Showing all equipment
+                @endif
+            </span>
+            <span>
+                Sorted by: {{ ucfirst(request('sort', 'name')) }}
+            </span>
+        </div>
         <!-- Mobile Cards View -->
         <div class="sm:hidden space-y-3 flex-1">
             @foreach($equipment as $item)
@@ -389,6 +416,7 @@
                                 <option value="{{ $eq->id }}" data-name="{{ $eq->name }}">{{ $eq->name }} ({{ $eq->equipment_code }}) - {{ ucfirst(str_replace('_', ' ', $eq->status)) }}</option>
                                 @endforeach
                             </select>
+                            <p class="mt-1 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">Only available equipment can be requested from this list.</p>
                         </div>
 
                         <div x-show="selectMode==='new'">

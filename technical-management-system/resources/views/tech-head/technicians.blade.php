@@ -160,6 +160,8 @@
                         }
                         $skillsText = $skillsText ? trim($skillsText) : null;
 
+                        $isUnavailable = in_array($tech->availability, ['on_leave', 'unavailable'], true);
+
                         // Determine availability status (with "Disabled" as a distinct status)
                         $isDisabled = !($tech->is_active ?? true);
                         $availabilityLabel = 'Available';
@@ -168,8 +170,8 @@
                         if ($isDisabled) {
                             $availabilityLabel = 'Disabled';
                             $availabilityClass = 'bg-gray-300 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-                        } elseif (in_array($tech->availability, ['on_leave', 'unavailable'], true)) {
-                            $availabilityLabel = 'Not Available';
+                        } elseif ($isUnavailable) {
+                            $availabilityLabel = $tech->availability === 'on_leave' ? 'On Leave' : 'Unavailable';
                             $availabilityClass = 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200';
                         } elseif ($active > 0) {
                             $availabilityLabel = 'Assigned';
@@ -179,14 +181,19 @@
                             $availabilityClass = 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
                         }
                     @endphp
-                    <div class="rounded-2xl border {{ $isDisabled ? 'border-gray-400 dark:border-gray-600' : 'border-gray-200 dark:border-gray-700' }} {{ $isDisabled ? 'bg-gray-200/50 dark:bg-gray-800/30 opacity-60' : 'bg-gray-50/80 dark:bg-gray-700/30' }} p-4 shadow-sm transition-all">
+                    <div class="rounded-2xl border {{ ($isDisabled || $isUnavailable) ? 'border-gray-400 dark:border-gray-600' : 'border-gray-200 dark:border-gray-700' }} {{ ($isDisabled || $isUnavailable) ? 'bg-gray-200/50 dark:bg-gray-800/30 opacity-60 grayscale-[0.15]' : 'bg-gray-50/80 dark:bg-gray-700/30' }} p-4 shadow-sm transition-all">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex-1">
                                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Technician</p>
-                                <p class="text-sm font-semibold {{ $isDisabled ? 'text-gray-500 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white' }}">{{ $tech->name }}</p>
-                                <p class="text-sm {{ $isDisabled ? 'text-gray-400 dark:text-gray-500' : 'text-gray-600 dark:text-gray-300' }} mt-1 break-all">{{ $tech->email }}</p>
+                                <p class="text-sm font-semibold {{ $isDisabled ? 'text-gray-500 dark:text-gray-500 line-through' : ($isUnavailable ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white') }}">{{ $tech->name }}</p>
+                                <p class="text-sm {{ ($isDisabled || $isUnavailable) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-600 dark:text-gray-300' }} mt-1 break-all">{{ $tech->email }}</p>
                             </div>
-                            <span class="px-3 py-1 text-[11px] font-semibold rounded-full {{ $availabilityClass }} whitespace-nowrap">{{ $availabilityLabel }}</span>
+                            <div class="text-right">
+                                <span class="px-3 py-1 text-[11px] font-semibold rounded-full {{ $availabilityClass }} whitespace-nowrap">{{ $availabilityLabel }}</span>
+                                @if($isUnavailable)
+                                    <p class="mt-2 text-[11px] font-semibold text-rose-600 dark:text-rose-300">Not assignable</p>
+                                @endif
+                            </div>
                         </div>
 
                         <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
@@ -271,6 +278,8 @@
                                 }
                                 $skillsText = $skillsText ? trim($skillsText) : null;
 
+                                $isUnavailable = in_array($tech->availability, ['on_leave', 'unavailable'], true);
+
                                 // Determine availability status (with "Disabled" as a distinct status)
                                 $isDisabled = !($tech->is_active ?? true);
                                 $availabilityLabel = 'Available';
@@ -279,8 +288,8 @@
                                 if ($isDisabled) {
                                     $availabilityLabel = 'Disabled';
                                     $availabilityClass = 'bg-gray-300 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-                                } elseif (in_array($tech->availability, ['on_leave', 'unavailable'], true)) {
-                                    $availabilityLabel = 'Not Available';
+                                } elseif ($isUnavailable) {
+                                    $availabilityLabel = $tech->availability === 'on_leave' ? 'On Leave' : 'Unavailable';
                                     $availabilityClass = 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200';
                                 } elseif ($active > 0) {
                                     $availabilityLabel = 'Assigned';
@@ -304,13 +313,13 @@
                                     'total' => $total,
                                     'created_at' => $tech->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A')
                                 ]) }})"
-                                class="{{ $isDisabled ? 'bg-gray-100 dark:bg-gray-800/50 opacity-60' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50' }} transition-colors cursor-pointer"
+                                class="{{ ($isDisabled || $isUnavailable) ? 'bg-gray-100 dark:bg-gray-800/50 opacity-60 grayscale-[0.15]' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50' }} transition-colors cursor-pointer"
                             >
                                 <td class="py-3 text-center">
-                                    <p class="text-sm font-semibold {{ $isDisabled ? 'text-gray-500 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white' }}">{{ $tech->name }}</p>
+                                    <p class="text-sm font-semibold {{ $isDisabled ? 'text-gray-500 dark:text-gray-500 line-through' : ($isUnavailable ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white') }}">{{ $tech->name }}</p>
                                 </td>
                                 <td class="py-3 text-center">
-                                    <p class="text-sm {{ $isDisabled ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300' }}">{{ $tech->email }}</p>
+                                    <p class="text-sm {{ ($isDisabled || $isUnavailable) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300' }}">{{ $tech->email }}</p>
                                 </td>
                                 <td class="py-3 text-center">
                                     @php
@@ -329,6 +338,9 @@
                                         }
                                     @endphp
                                     <span class="px-2 py-1 text-xs font-medium rounded-full {{ $availabilityBadgeClass }}">{{ $availabilityLabel }}</span>
+                                    @if($isUnavailable)
+                                        <p class="mt-1 text-[11px] font-semibold text-rose-600 dark:text-rose-300">Not assignable</p>
+                                    @endif
                                 </td>
                                 <td class="py-3 text-center">
                                     @if($scheduled > 0)

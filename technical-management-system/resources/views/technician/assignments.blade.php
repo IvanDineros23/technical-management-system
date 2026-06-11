@@ -9,6 +9,11 @@
     <script>
         function assignmentsPage() {
             return {
+                routes: {
+                    startJob: @json(route('technician.job.start', ['jobId' => '__JOB_ID__'])),
+                    pauseJob: @json(route('technician.job.pause', ['jobId' => '__JOB_ID__'])),
+                    reports: @json(route('technician.reports')),
+                },
                 selectedStatus: 'all',
                 searchQuery: '',
                 assignments: [],
@@ -27,7 +32,8 @@
                     // Load assignments from data attributes
                     const jobCards = document.querySelectorAll('[data-job-number]');
                     this.assignments = Array.from(jobCards).map(card => ({
-                        id: card.id.replace('job-', ''),
+                        assignmentId: card.getAttribute('data-assignment-id') || card.id.replace('job-', ''),
+                        id: card.getAttribute('data-job-order-id') || card.id.replace('job-', ''),
                         jobNumber: card.getAttribute('data-job-number'),
                         status: card.getAttribute('data-status'),
                         priority: card.getAttribute('data-priority'),
@@ -55,7 +61,7 @@
                     
                     // Show/hide assignment elements based on filter
                     this.assignments.forEach(job => {
-                        const isVisible = this.filteredAssignments.some(filtered => filtered.id === job.id);
+                        const isVisible = this.filteredAssignments.some(filtered => filtered.assignmentId === job.assignmentId);
                         if (job.element) {
                             job.element.style.display = isVisible ? '' : 'none';
                         }
@@ -67,7 +73,7 @@
                 },
                 openDetails(jobId) {
                     // Find the job from the assignments data
-                    const jobElement = document.getElementById(`job-${jobId}`);
+                    const jobElement = document.querySelector(`[data-job-order-id="${jobId}"]`);
                     if (jobElement) {
                         this.selectedJob = {
                             id: jobId,
@@ -118,50 +124,53 @@
                     this.confirmJobId = jobId;
                     this.showConfirmModal = true;
                 },
-                confirmStartJob() {
-                    // Use fetch to update job status
-                    fetch(`/technician/job/${this.confirmJobId}/start`, {
+                jobRoute(template, jobId) {
+                    return template.replace('__JOB_ID__', encodeURIComponent(jobId));
+                },
+                async submitJobAction(url, fallbackMessage) {
+                    const response = await fetch(url, {
                         method: 'POST',
                         headers: {
+                            'Accept': 'application/json',
                             'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Reload page to show updated status
-                            window.location.reload();
-                        }
-                    })
+                    });
+
+                    const contentType = response.headers.get('content-type') || '';
+                    const data = contentType.includes('application/json') ? await response.json() : {};
+
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || fallbackMessage);
+                    }
+
+                    window.location.reload();
+                },
+                confirmStartJob() {
+                    this.submitJobAction(
+                        this.jobRoute(this.routes.startJob, this.confirmJobId),
+                        'Failed to start job. Please try again.'
+                    )
                     .catch(error => {
                         console.error('Error:', error);
-                        alert('Failed to start job. Please try again.');
+                        alert(error.message || 'Failed to start job. Please try again.');
                         this.closeConfirmModal();
                     });
                 },
                 confirmCompleteJob() {
-                    window.location.href = `/technician/reports?job_id=${this.confirmJobId}`;
+                    const reportsUrl = new URL(this.routes.reports, window.location.origin);
+                    reportsUrl.searchParams.set('job_id', this.confirmJobId);
+                    window.location.href = reportsUrl.toString();
                 },
                 confirmPauseJob() {
-                    // Use fetch to update job status
-                    fetch(`/technician/job/${this.confirmJobId}/pause`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Reload page to show updated status
-                            window.location.reload();
-                        }
-                    })
+                    this.submitJobAction(
+                        this.jobRoute(this.routes.pauseJob, this.confirmJobId),
+                        'Failed to pause job. Please try again.'
+                    )
                     .catch(error => {
                         console.error('Error:', error);
-                        alert('Failed to pause job. Please try again.');
+                        alert(error.message || 'Failed to pause job. Please try again.');
                         this.closeConfirmModal();
                     });
                 }
@@ -329,6 +338,8 @@
                 <div class="space-y-4">
                     @foreach($assignments as $job)
                     <div id="job-{{ $job->id }}"
+                         data-assignment-id="{{ $job->id }}"
+                         data-job-order-id="{{ $job->job_order_id }}"
                          data-job-number="{{ $job->job_order_number }}"
                          data-status="{{ $job->status }}"
                          data-priority="{{ $job->priority }}"
@@ -380,16 +391,16 @@
                             </div>
                             <div class="flex flex-wrap gap-2 sm:flex-col sm:gap-2 sm:ml-4 w-full sm:w-auto">
                                 @if($job->status === 'assigned')
-                                <button @click="openConfirmStart({{ $job->id }})" 
+                                <button @click="openConfirmStart({{ $job->job_order_id }})"
                                         class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700 transition-colors whitespace-nowrap">
                                     Start Work
                                 </button>
                                 @elseif($job->status === 'in_progress')
-                                <button @click="openConfirmComplete({{ $job->id }})" 
+                                <button @click="openConfirmComplete({{ $job->job_order_id }})"
                                         class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-green-700 transition-colors whitespace-nowrap">
                                     Complete
                                 </button>
-                                <button @click="openConfirmPause({{ $job->id }})" 
+                                <button @click="openConfirmPause({{ $job->job_order_id }})"
                                         class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-orange-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-700 transition-colors whitespace-nowrap">
                                     Pause
                                 </button>
@@ -399,12 +410,12 @@
                                     Pending Review
                                 </button>
                                 @elseif($job->status === 'rejected')
-                                <a href="{{ route('technician.job-details', ['id' => $job->id]) }}"
+                                <a href="{{ route('technician.job-details', ['id' => $job->job_order_id]) }}"
                                    class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-red-700 transition-colors text-center whitespace-nowrap">
                                     Revise & Resubmit
                                 </a>
                                 @endif
-                                <a href="{{ route('technician.job-details', ['id' => $job->id]) }}"
+                                <a href="{{ route('technician.job-details', ['id' => $job->job_order_id]) }}"
                                    class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-center whitespace-nowrap">
                                     View Details
                                 </a>

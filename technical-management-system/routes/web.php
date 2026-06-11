@@ -1146,12 +1146,29 @@ Route::middleware(['auth', 'customer.verified', 'role:customer'])->prefix('custo
 // Technician Routes
 Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technician')->name('technician.')->group(function () {
     Route::get('/dashboard', function () {
-        // Temporarily show all job orders until technician assignment is implemented
         $user = auth()->user();
-        $todayAssignments = \App\Models\JobOrder::whereDate('created_at', today())->count();
-        $pendingJobs = \App\Models\JobOrder::where('status', 'pending')->count();
-        $inProgressJobs = \App\Models\JobOrder::where('status', 'in_progress')->count();
-        $completedJobs = \App\Models\JobOrder::where('status', 'completed')->count();
+        $assignmentBaseQuery = \App\Models\Assignment::query()
+            ->where('assigned_to', $user->id)
+            ->whereHas('jobOrder', function ($query) {
+                $query->where('status', '!=', 'cancelled');
+            });
+
+        $todayAssignments = (clone $assignmentBaseQuery)
+            ->whereDate('assigned_at', today())
+            ->count();
+
+        $pendingJobs = (clone $assignmentBaseQuery)
+            ->where('status', 'assigned')
+            ->count();
+
+        $inProgressJobs = (clone $assignmentBaseQuery)
+            ->where('status', 'in_progress')
+            ->count();
+
+        $completedJobs = (clone $assignmentBaseQuery)
+            ->where('status', 'completed')
+            ->count();
+
         $recentAssignments = \App\Models\Assignment::with(['jobOrder.customer'])
             ->where('assigned_to', $user->id)
             ->whereIn('status', ['assigned', 'in_progress', 'on_hold', 'completed'])
@@ -1521,6 +1538,8 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
 
         $technicianRoleId = \App\Models\Role::where('slug', 'tech_personnel')->value('id');
         $technicians = \App\Models\User::where('role_id', $technicianRoleId)
+            ->where('is_active', true)
+            ->where('availability', 'available')
             ->where('id', '!=', auth()->id()) // Exclude current user since they're auto-added
             ->orderBy('name')
             ->get(['id', 'name']);
@@ -2235,19 +2254,53 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
     })->name('job.tracking.update');
     
     Route::get('/equipment', function () {
-        $search = request('search');
-        $equipment = Equipment::when($search, fn($q) => $q->where('name', 'like', "%{$search}%")
-                ->orWhere('equipment_code', 'like', "%{$search}%")
-                ->orWhere('category', 'like', "%{$search}%")
-                ->orWhere('location', 'like', "%{$search}%"))
-            ->latest()->paginate(20)->withQueryString();
+        $search = trim((string) request('search', ''));
+        $statusFilter = request('status');
+        $sortBy = request('sort', 'name');
+
+        $allowedStatuses = ['available', 'in_use', 'maintenance', 'retired'];
+        $allowedSorts = [
+            'name' => 'name',
+            'code' => 'equipment_code',
+            'category' => 'category',
+            'location' => 'location',
+            'updated' => 'updated_at',
+            'status' => 'status',
+        ];
+
+        $equipmentQuery = Equipment::query();
+
+        if ($search !== '') {
+            $equipmentQuery->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('equipment_code', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%");
+            });
+        }
+
+        if (in_array($statusFilter, $allowedStatuses, true)) {
+            $equipmentQuery->where('status', $statusFilter);
+        }
+
+        $sortColumn = $allowedSorts[$sortBy] ?? 'name';
+
+        $equipment = $equipmentQuery
+            ->orderByRaw("CASE WHEN status = 'retired' THEN 1 ELSE 0 END ASC")
+            ->orderBy($sortColumn)
+            ->orderBy('name')
+            ->paginate(20)
+            ->appends(request()->only(['search', 'status', 'sort']));
         $equipmentStats = [
             'total' => Equipment::count(),
             'available' => Equipment::where('status', 'available')->count(),
             'in_use' => Equipment::where('status', 'in_use')->count(),
             'maintenance' => Equipment::where('status', 'maintenance')->count(),
+            'retired' => Equipment::where('status', 'retired')->count(),
         ];
-        $allEquipment = Equipment::orderBy('name')->get(['id', 'name', 'equipment_code', 'status']);
+        $allEquipment = Equipment::where('status', 'available')
+            ->orderBy('name')
+            ->get(['id', 'name', 'equipment_code', 'status']);
         $myRequests = \App\Models\EquipmentRequest::where('requested_by', auth()->id())
             ->with(['equipment', 'jobOrder'])
             ->latest()
@@ -2256,12 +2309,24 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             ->whereIn('status', ['assigned', 'in_progress'])
             ->with('jobOrder')
             ->get();
-        return view('technician.equipment', compact('equipment', 'equipmentStats', 'allEquipment', 'myRequests', 'myActiveJobOrders', 'search'));
+        return view('technician.equipment', compact('equipment', 'equipmentStats', 'allEquipment', 'myRequests', 'myActiveJobOrders', 'search', 'statusFilter', 'sortBy'));
     })->name('equipment');
 
     Route::post('/equipment/request', function (\Illuminate\Http\Request $request) {
         $validated = $request->validate([
-            'equipment_id'  => 'nullable|exists:equipment,id',
+            'equipment_id'  => [
+                'nullable',
+                'exists:equipment,id',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    $equipment = \App\Models\Equipment::where('id', $value)
+                        ->where('status', 'available')
+                        ->first();
+
+                    if (!$equipment) {
+                        $fail('Selected equipment is not available for request.');
+                    }
+                },
+            ],
             'equipment_name' => 'required|string|max:255',
             'purpose'       => 'required|string|max:1000',
             'job_order_id'  => 'nullable|exists:job_orders,id',
@@ -2842,18 +2907,27 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         // Get all active technicians for assignment
         $technicianRoleId = \App\Models\Role::where('slug', 'tech_personnel')->value('id');
         $technicians = \App\Models\User::where('role_id', $technicianRoleId)
+            ->where('is_active', true)
+            ->where('availability', 'available')
             ->orderBy('name')
             ->get();
+        $allTechnicians = \App\Models\User::where('role_id', $technicianRoleId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $customers = \App\Models\Customer::orderBy('name')->get(['id', 'name']);
         
-        return view('tech-head.work-orders', compact('workOrders', 'search', 'technicians'));
+        return view('tech-head.work-orders', compact('workOrders', 'search', 'technicians', 'allTechnicians', 'customers'));
     })->name('work-orders');
 
     // Work Orders CRUD & Management
     Route::post('/work-orders', function (\Illuminate\Http\Request $request) {
         $data = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => 'nullable|exists:customers,id',
+            'customer_name' => 'nullable|string|max:255',
             'priority' => 'required|in:low,normal,high,urgent',
-            'status' => 'required|string|max:50',
+            'status' => 'nullable|string|max:50',
             'required_date' => 'nullable|date',
             'service_type' => 'nullable|string',
             'service_description' => 'nullable|string',
@@ -2863,20 +2937,45 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             'postal_code' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
+
+        $customerId = $data['customer_id'] ?? null;
+        $customerName = trim((string) ($data['customer_name'] ?? ''));
+
+        if (! $customerId && $customerName === '') {
+            return back()->withErrors(['customer_name' => 'Select a registered customer or enter a customer name.'])->withInput();
+        }
+
+        if (! $customerId) {
+            $customer = \App\Models\Customer::where('name', $customerName)
+                ->orWhere('business_name', $customerName)
+                ->first();
+
+            if (! $customer) {
+                $customer = \App\Models\Customer::create([
+                    'name' => $customerName,
+                    'business_name' => $customerName,
+                    'is_active' => true,
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            $customerId = $customer->id;
+        }
+
         $number = 'WO-' . now()->format('YmdHis');
         $order = JobOrder::create(array_merge($data, [
+            'customer_id' => $customerId,
             'job_order_number' => $number,
             'request_date' => now()->toDateString(),
             'created_by' => auth()->id(),
+            'status' => $data['status'] ?? 'pending',
         ]));
         return redirect()->route('tech-head.work-orders')->with('status', 'Work order created: ' . $order->job_order_number);
     })->name('work-orders.store');
 
     Route::put('/work-orders/{jobOrder}', function (\Illuminate\Http\Request $request, JobOrder $jobOrder) {
         $data = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
             'priority' => 'required|in:low,normal,high,urgent',
-            'status' => 'required|string|max:50',
             'required_date' => 'nullable|date',
             'service_type' => 'nullable|string',
             'service_description' => 'nullable|string',
@@ -2885,8 +2984,102 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             'province' => 'nullable|string',
             'postal_code' => 'nullable|string',
             'notes' => 'nullable|string',
+            'assigned_to' => [
+                'nullable',
+                'exists:users,id',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if (! $value) {
+                        return;
+                    }
+
+                    $technician = \App\Models\User::where('id', $value)
+                        ->whereHas('role', function ($roleQuery) {
+                            $roleQuery->where('slug', 'tech_personnel');
+                        })
+                        ->where('is_active', true)
+                        ->first();
+
+                    if (! $technician) {
+                        $fail('Selected technician is not available for assignment.');
+                    }
+                },
+            ],
         ]);
-        $jobOrder->update($data);
+
+        DB::transaction(function () use ($data, $jobOrder) {
+            $workOrderData = collect($data)->only([
+                'priority',
+                'required_date',
+                'service_type',
+                'service_description',
+                'service_address',
+                'city',
+                'province',
+                'postal_code',
+                'notes',
+            ])->all();
+
+            $jobOrder->update($workOrderData);
+
+            $activeAssignment = Assignment::where('job_order_id', $jobOrder->id)
+                ->whereIn('status', ['assigned', 'in_progress', 'on_hold'])
+                ->latest('id')
+                ->first();
+
+            $assignedTo = $data['assigned_to'] ?? null;
+
+         if (! $assignedTo) {
+            if ($activeAssignment) {
+                $previousTechnicianId = $activeAssignment->assigned_to;
+
+                // Remove the assignment completely since assigned_to cannot be NULL
+                $activeAssignment->delete();
+
+                if ($previousTechnicianId) {
+                    \App\Models\JobOrderCrewMember::where('job_order_id', $jobOrder->id)
+                        ->where('user_id', $previousTechnicianId)
+                        ->delete();
+                }
+
+                if (in_array($jobOrder->status, ['assigned', 'in_progress', 'on_hold'], true)) {
+                    $jobOrder->update([
+                        'status' => $jobOrder->approved_by ? 'approved' : 'pending',
+                    ]);
+                }
+            }
+
+            return;
+        }
+
+            if ($activeAssignment) {
+                $previousTechnicianId = $activeAssignment->assigned_to;
+
+                $activeAssignment->update([
+                    'assigned_to' => $assignedTo,
+                    'status' => 'assigned',
+                    'priority' => $data['priority'],
+                ]);
+
+                if ($previousTechnicianId && (int) $previousTechnicianId !== (int) $assignedTo) {
+                    \App\Models\JobOrderCrewMember::where('job_order_id', $jobOrder->id)
+                        ->where('user_id', $previousTechnicianId)
+                        ->delete();
+                }
+            } else {
+                Assignment::create([
+                    'job_order_id' => $jobOrder->id,
+                    'assigned_to' => $assignedTo,
+                    'assigned_by' => auth()->id(),
+                    'priority' => $data['priority'],
+                    'status' => 'assigned',
+                    'location' => $jobOrder->service_address,
+                    'notes' => 'Assigned from Tech Head edit job order modal.',
+                ]);
+            }
+
+            $jobOrder->update(['status' => 'assigned']);
+        });
+
         return redirect()->route('tech-head.work-orders')->with('status', 'Work order updated');
     })->name('work-orders.update');
 
@@ -2908,7 +3101,23 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
 
     Route::post('/work-orders/{jobOrder}/assign', function (\Illuminate\Http\Request $request, JobOrder $jobOrder) {
         $data = $request->validate([
-            'assigned_to' => 'required|exists:users,id',
+            'assigned_to' => [
+                'required',
+                'exists:users,id',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    $technician = \App\Models\User::where('id', $value)
+                        ->whereHas('role', function ($roleQuery) {
+                            $roleQuery->where('slug', 'tech_personnel');
+                        })
+                        ->where('is_active', true)
+                        ->where('availability', 'available')
+                        ->first();
+
+                    if (!$technician) {
+                        $fail('Selected technician is not available for assignment.');
+                    }
+                },
+            ],
             'scheduled_date' => 'nullable|date',
             'scheduled_time' => 'nullable|date_format:H:i',
             'priority' => 'nullable|in:low,normal,high,urgent',
@@ -3645,7 +3854,23 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
     Route::post('/assignments', function (\Illuminate\Http\Request $request) {
         $data = $request->validate([
             'job_order_id' => 'required|exists:job_orders,id',
-            'assigned_to' => 'required|exists:users,id',
+            'assigned_to' => [
+                'required',
+                'exists:users,id',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    $technician = \App\Models\User::where('id', $value)
+                        ->whereHas('role', function ($roleQuery) {
+                            $roleQuery->where('slug', 'tech_personnel');
+                        })
+                        ->where('is_active', true)
+                        ->where('availability', 'available')
+                        ->first();
+
+                    if (!$technician) {
+                        $fail('Selected technician is not available for assignment.');
+                    }
+                },
+            ],
             'scheduled_date' => 'required|date',
             'scheduled_time' => 'nullable|date_format:H:i',
             'priority' => 'nullable|in:low,normal,high,urgent',
@@ -3686,14 +3911,50 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
     })->name('assignments.store');
 
     Route::post('/assignments/{assignment}/reassign', function (\Illuminate\Http\Request $request, Assignment $assignment) {
-        $data = $request->validate(['assigned_to' => 'required|exists:users,id']);
+        $data = $request->validate([
+            'assigned_to' => [
+                'required',
+                'exists:users,id',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    $technician = \App\Models\User::where('id', $value)
+                        ->whereHas('role', function ($roleQuery) {
+                            $roleQuery->where('slug', 'tech_personnel');
+                        })
+                        ->where('is_active', true)
+                        ->where('availability', 'available')
+                        ->first();
+
+                    if (!$technician) {
+                        $fail('Selected technician is not available for reassignment.');
+                    }
+                },
+            ],
+        ]);
         $assignment->update(['assigned_to' => $data['assigned_to'], 'status' => 'assigned']);
         return redirect()->route('tech-head.work-orders')->with('status', 'Assignment reassigned');
     })->name('assignments.reassign');
 
     Route::post('/assignments/{assignment}/unassign', function (Assignment $assignment) {
-        $assignment->update(['assigned_to' => null, 'status' => 'pending']);
-        return redirect()->route('tech-head.assignments')->with('status', 'Assignment unassigned');
+        DB::transaction(function () use ($assignment) {
+            $jobOrder = $assignment->jobOrder;
+            $previousTechnicianId = $assignment->assigned_to;
+
+            $assignment->update(['assigned_to' => null, 'status' => 'pending']);
+
+            if ($jobOrder && $previousTechnicianId) {
+                \App\Models\JobOrderCrewMember::where('job_order_id', $jobOrder->id)
+                    ->where('user_id', $previousTechnicianId)
+                    ->delete();
+            }
+
+            if ($jobOrder && in_array($jobOrder->status, ['assigned', 'in_progress', 'on_hold'], true)) {
+                $jobOrder->update([
+                    'status' => $jobOrder->approved_by ? 'approved' : 'pending',
+                ]);
+            }
+        });
+
+        return redirect()->route('tech-head.work-orders')->with('status', 'Assignment unassigned');
     })->name('assignments.unassign');
 
     Route::patch('/assignments/{assignment}/status', function (\Illuminate\Http\Request $request, Assignment $assignment) {
@@ -3728,15 +3989,13 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         } elseif ($filter === 'rejected') {
             $query->where('status', 'rejected');
         }
-        
-        $reports = $query->paginate(15);
-        
-        // Get pending reports for the card
-        $pendingReports = Report::with(['assignment.jobOrder.customer', 'assignment.jobOrder.attachments', 'submittedBy'])
+        $reports = $query->paginate(10)->withQueryString();
+        $pendingReports = Report::with(['assignment.jobOrder.customer', 'submittedBy'])
             ->where('status', 'pending')
             ->latest()
+            ->take(5)
             ->get();
-        
+
         // Report stats
         $stats = [
             'total' => Report::count(),
@@ -4018,6 +4277,7 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
         $technicianRoleId = Role::where('slug', 'tech_personnel')->value('id');
         $technicians = User::where('role_id', $technicianRoleId)
             ->where('is_active', true)
+            ->where('availability', 'available')
             ->orderBy('name')
             ->get();
 

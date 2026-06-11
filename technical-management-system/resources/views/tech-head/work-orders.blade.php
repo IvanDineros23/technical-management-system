@@ -42,6 +42,8 @@
             attachments: [],
             checklist: [],
             assignments: [],
+            current_assignment_id: null,
+            assigned_to: '',
         },
         signatureData: '',
         init() {
@@ -116,6 +118,8 @@
                 attachments: [],
                 checklist: [],
                 assignments: [],
+                current_assignment_id: null,
+                assigned_to: '',
             };
             this.showCreate = true;
         },
@@ -128,8 +132,13 @@
             this.selectedId = order.id;
             this.showEdit = true;
         },
-        openAssign(id) {
-            this.selectedId = id;
+        openAssign(order) {
+            if (typeof order === 'object' && order !== null) {
+                this.selectedId = order.id;
+                this.selectedOrder = { ...this.selectedOrder, ...order };
+            } else {
+                this.selectedId = order;
+            }
             this.showAssign = true;
         },
         openStatus(id) {
@@ -468,87 +477,59 @@
             </div>
         @endif
         
-        <!-- Filter Buttons -->
-        <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4">
-            <div class="flex flex-wrap gap-2">
-                <a href="{{ route('tech-head.work-orders') }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ !request('status') && !request('priority') ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    All
-                </a>
-                
-                <span class="text-gray-400 self-center">|</span>
-                
-                <a href="{{ route('tech-head.work-orders', ['status' => 'pending'] + request()->except('status')) }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'pending' ? 'bg-amber-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    Waiting for Assignment
-                </a>
+        <!-- Filter Controls -->
+        <form method="GET" action="{{ route('tech-head.work-orders') }}" class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-4">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+                <div class="lg:col-span-4">
+                    <label for="status_filter" class="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Status</label>
+                    <select id="status_filter" name="status" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All statuses</option>
+                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Waiting for Assignment</option>
+                        <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>Approved</option>
+                        <option value="in_progress" {{ request('status') === 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                        <option value="for_accounting_approval" {{ request('status') === 'for_accounting_approval' ? 'selected' : '' }}>Pending Approval</option>
+                        <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
+                        <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                    </select>
+                </div>
 
-                <a href="{{ route('tech-head.work-orders', ['status' => 'approved'] + request()->except('status')) }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'approved' ? 'bg-emerald-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    Approved
-                </a>
-                
-                <a href="{{ route('tech-head.work-orders', ['status' => 'in_progress'] + request()->except('status')) }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'in_progress' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    In Progress
-                </a>
-                
-                <a href="{{ route('tech-head.work-orders', ['status' => 'completed'] + request()->except('status')) }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'completed' ? 'bg-emerald-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    Completed
-                </a>
+                <div class="lg:col-span-4">
+                    <label for="priority_filter" class="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Priority</label>
+                    <select id="priority_filter" name="priority" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All priorities</option>
+                        <option value="normal" {{ request('priority') === 'normal' ? 'selected' : '' }}>Normal</option>
+                        <option value="high" {{ request('priority') === 'high' ? 'selected' : '' }}>High Priority</option>
+                        <option value="urgent" {{ request('priority') === 'urgent' ? 'selected' : '' }}>Urgent</option>
+                    </select>
+                </div>
 
-                <a href="{{ route('tech-head.work-orders', ['status' => 'cancelled'] + request()->except('status')) }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('status') === 'cancelled' ? 'bg-rose-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    Cancelled
-                </a>
-                
-                     <a href="{{ route('tech-head.work-orders', ['status' => 'for_accounting_approval'] + request()->except('status')) }}" 
-                         class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ in_array(request('status'), ['pending_approval', 'for_accounting_approval'], true) ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    Pending Approval
-                </a>
-                
-                <span class="text-gray-400 self-center">|</span>
-                
-                <a href="{{ route('tech-head.work-orders', ['priority' => 'urgent'] + request()->except('priority')) }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('priority') === 'urgent' ? 'bg-red-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    Urgent
-                </a>
-                
-                <a href="{{ route('tech-head.work-orders', ['priority' => 'high'] + request()->except('priority')) }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('priority') === 'high' ? 'bg-orange-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    High Priority
-                </a>
-                
-                <a href="{{ route('tech-head.work-orders', ['priority' => 'normal'] + request()->except('priority')) }}" 
-                   class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {{ request('priority') === 'normal' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
-                    Normal
-                </a>
-                
-            </div>
-            
-            @if(request('status') || request('priority'))
-                <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                    <div class="flex items-center gap-2 text-sm">
-                        <span class="text-gray-600 dark:text-gray-400">Active filters:</span>
-                        @if(request('status'))
-                            <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded text-xs font-medium">
-                                Status: {{ ucfirst(str_replace('_', ' ', request('status'))) }}
-                            </span>
-                        @endif
-                        @if(request('priority'))
-                            <span class="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 rounded text-xs font-medium">
-                                Priority: {{ ucfirst(request('priority')) }}
-                            </span>
-                        @endif
-                    </div>
-                    <a href="{{ route('tech-head.work-orders', request()->except(['status', 'priority'])) }}" 
-                       class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                        Clear all filters
+                <div class="lg:col-span-4 flex flex-wrap gap-2 lg:justify-end">
+                    <input type="hidden" name="search" value="{{ $search ?? '' }}">
+                    <button type="submit" class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm">
+                        Apply Filters
+                    </button>
+                    <a href="{{ route('tech-head.work-orders', request()->except(['status', 'priority', 'search'])) }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        Clear Filters
                     </a>
                 </div>
+            </div>
+
+            @if(request('status') || request('priority'))
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center gap-2 text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Active filters:</span>
+                    @if(request('status'))
+                        <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded text-xs font-medium">
+                            Status: {{ request('status') === 'for_accounting_approval' ? 'Pending Approval' : ucfirst(str_replace('_', ' ', request('status'))) }}
+                        </span>
+                    @endif
+                    @if(request('priority'))
+                        <span class="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 rounded text-xs font-medium">
+                            Priority: {{ ucfirst(request('priority')) }}
+                        </span>
+                    @endif
+                </div>
             @endif
-        </div>
+        </form>
         
         <div class="bg-white dark:bg-gray-800 rounded-[20px] shadow-md border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex items-center justify-between mb-4">
@@ -560,6 +541,10 @@
                         $hasPendingTechHeadReview = $order->assignments->contains(function ($assignment) {
                             return optional($assignment->report)->status === 'pending';
                         });
+                       $activeAssignment = $order->assignments
+                        ->where('status', '!=', 'cancelled')
+                        ->sortByDesc('id')
+                        ->first();
 
                         $orderPayload = [
                             'id' => $order->id,
@@ -578,6 +563,8 @@
                             'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
                             'certificates_count' => (int) $order->certificates_count,
                             'has_pending_tech_head_review' => $hasPendingTechHeadReview,
+                            'current_assignment_id' => $activeAssignment?->id,
+                            'assigned_to' => (string) ($activeAssignment?->assigned_to ?? ''),
                             'attachments' => $order->attachments->map(function ($attachment) {
                                 return [
                                     'id' => $attachment->id,
@@ -611,6 +598,7 @@
                         $editPayload = [
                             'id' => $order->id,
                             'wo_number' => $order->job_order_number,
+                            'customer_id' => $order->customer_id,
                             'customer' => $order->customer->name ?? 'N/A',
                             'service_type' => $order->service_type ?? 'N/A',
                             'service_description' => $order->service_description ?? '',
@@ -622,6 +610,8 @@
                             'city' => $order->city ?? '',
                             'notes' => $order->notes ?? '',
                             'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
+                            'current_assignment_id' => $activeAssignment?->id,
+                            'assigned_to' => (string) ($activeAssignment?->assigned_to ?? ''),
                         ];
                     @endphp
                     <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-700/30 p-4 shadow-sm">
@@ -648,7 +638,7 @@
                                 <p class="text-xs text-gray-500 dark:text-gray-400">Assigned To</p>
                                 <p class="font-medium text-gray-900 dark:text-white">
                                     @if($order->assignments && $order->assignments->count() > 0)
-                                        {{ $order->assignments->pluck('assignedTo.name')->filter()->unique()->take(2)->join(', ') ?: 'Unassigned' }}
+                                        {{ $order->assignments->where('status', '!=', 'cancelled')->pluck('assignedTo.name')->filter()->unique()->take(2)->join(', ') ?: 'Unassigned' }}
                                     @else
                                         Unassigned
                                     @endif
@@ -665,11 +655,13 @@
                         </div>
 
                         <div class="mt-4 flex flex-wrap gap-2" @click.stop>
-                            <button @click="openDetails({{ json_encode($orderPayload) }})" class="px-3 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold dark:bg-gray-100 dark:text-gray-900">View</button>
+                        <button @click="openDetails({{ json_encode($orderPayload) }})" class="px-3 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold dark:bg-gray-100 dark:text-gray-900">View</button>
+                        @if($order->status !== 'completed')
                             <button @click="openEdit({{ json_encode($editPayload) }})" class="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold">Edit</button>
                             <button @click="openAssign({{ $order->id }})" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Assign</button>
-                            <button @click="openStatus({{ $order->id }})" class="px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold">Status</button>
-                        </div>
+                        @endif
+                        <button @click="openStatus({{ $order->id }})" class="px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold">Status</button>
+                    </div>
                     </div>
                 @empty
                     <div class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
@@ -697,6 +689,10 @@
                                 $hasPendingTechHeadReview = $order->assignments->contains(function ($assignment) {
                                     return optional($assignment->report)->status === 'pending';
                                 });
+                                $activeAssignment = $order->assignments
+                                ->where('status', '!=', 'cancelled')
+                                ->sortByDesc('id')
+                                ->first();
 
                                 $orderPayload = [
                                     'id' => $order->id,
@@ -714,6 +710,8 @@
                                     'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
                                     'certificates_count' => (int) $order->certificates_count,
                                     'has_pending_tech_head_review' => $hasPendingTechHeadReview,
+                                    'current_assignment_id' => $activeAssignment?->id,
+                                    'assigned_to' => (string) ($activeAssignment?->assigned_to ?? ''),
                                     'attachments' => $order->attachments->map(function ($attachment) {
                                         return [
                                             'id' => $attachment->id,
@@ -735,6 +733,7 @@
                                     'assignments' => $order->assignments->map(function ($assignment) {
                                         return [
                                             'id' => $assignment->id,
+                                            'assigned_to' => $assignment->assigned_to,
                                             'technician' => optional($assignment->assignedTo)->name ?? 'N/A',
                                             'status' => $assignment->status,
                                             'report_status' => optional($assignment->report)->status,
@@ -747,6 +746,7 @@
                                 $editPayload = [
                                     'id' => $order->id,
                                     'wo_number' => $order->job_order_number,
+                                    'customer_id' => $order->customer_id,
                                     'customer' => $order->customer->name ?? 'N/A',
                                     'service_type' => $order->service_type ?? 'N/A',
                                     'service_description' => $order->service_description ?? '',
@@ -757,6 +757,8 @@
                                     'city' => $order->city ?? '',
                                     'notes' => $order->notes ?? '',
                                     'created_at' => $order->created_at->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
+                                    'current_assignment_id' => $activeAssignment?->id,
+                                   'assigned_to' => (string) ($activeAssignment?->assigned_to ?? '')
                                 ];
                             @endphp
                             <tr 
@@ -770,19 +772,22 @@
                                     <p class="text-sm text-gray-700 dark:text-gray-300">{{ $order->customer->name ?? 'N/A' }}</p>
                                 </td>
                                 <td class="py-3 text-center">
-                                    @if($order->assignments && $order->assignments->count() > 0)
-                                        @php
-                                            $assignedNames = $order->assignments->pluck('assignedTo.name')->filter()->unique()->take(2);
-                                        @endphp
+                                    @php
+                                      $assignedNames = $order->assignments
+                                        ->where('status', '!=', 'cancelled')
+                                        ->pluck('assignedTo.name')
+                                        ->filter()
+                                        ->unique()
+                                        ->take(2);
+                                    @endphp
+
+                                    @if($assignedNames->count() > 0)
                                         <div class="flex flex-col items-center gap-1">
                                             @foreach($assignedNames as $name)
                                                 <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
                                                     {{ $name }}
                                                 </span>
                                             @endforeach
-                                            @if($order->assignments->count() > 2)
-                                                <span class="text-xs text-gray-500 dark:text-gray-400">+{{ $order->assignments->count() - 2 }} more</span>
-                                            @endif
                                         </div>
                                     @else
                                         <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
@@ -833,7 +838,7 @@
                                             class="right-0 z-50 w-56 origin-top-right rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-xl overflow-hidden"
                                             :class="openActionMenuPlacement === 'up' ? 'absolute bottom-full mb-2' : 'absolute top-full mt-2'"
                                         >
-                                            <div class="p-2 space-y-1">
+                                           <div class="p-2 space-y-1">
                                                 @if($order->certificates_count > 0)
                                                     <a href="{{ route('tech-head.certificates', ['status' => 'generated']) }}" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20">
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -859,6 +864,7 @@
                                                     </button>
                                                 @endif
 
+                                            @if($order->status !== 'completed')
                                                 <button @click="openEdit({{ json_encode($editPayload) }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -866,7 +872,7 @@
                                                     Edit
                                                 </button>
 
-                                                <button @click="openAssign({{ $order->id }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                                                <button @click="openAssign({{ json_encode($editPayload) }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                                                     </svg>
@@ -879,7 +885,8 @@
                                                     </svg>
                                                     Status
                                                 </button>
-                                            </div>
+                                            @endif
+                                        </div>
                                         </div>
                                     </div>
                                 </td>
@@ -1043,10 +1050,9 @@
                                 Full Details
                             </a>
                             <div class="flex gap-3">
-                                <button @click="showDetails=false; openEdit(selectedOrder);" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Edit</button>
-                                <button @click="showDetails=false; selectedId=selectedOrder.id; showAssign=true;" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Assign</button>
-                                <button @click="showDetails=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">Close</button>
-                            </div>
+                            <button x-show="selectedOrder?.status !== 'completed'" @click="showDetails=false; openEdit(selectedOrder);" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Edit</button>
+                            <button x-show="selectedOrder?.status !== 'completed'" @click="showDetails=false; openAssign(selectedOrder);" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Assign</button>
+                            <button @click="showDetails=false" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">Close</button>
                         </div>
                     </div>
                 </div>
@@ -1088,11 +1094,25 @@
                         
                         <form action="{{ route('tech-head.work-orders.store') }}" method="POST" class="space-y-4">
                             @csrf
+                            <input type="hidden" name="status" value="pending">
                             
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Customer</label>
-                                    <input type="text" x-model="selectedOrder.customer" disabled class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-white text-sm cursor-default">
+                                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Registered Customer (optional)</label>
+                                    <select name="customer_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Choose a customer...</option>
+                                        @foreach($customers ?? [] as $customer)
+                                            <option value="{{ $customer->id }}">{{ $customer->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">If the customer is not registered, type the name below instead.</p>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Manual Customer Name</label>
+                                    <input type="text" name="customer_name" placeholder="Enter customer name if not registered" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    @error('customer_name')
+                                        <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                                    @enderror
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Priority</label>
@@ -1186,6 +1206,18 @@
                                         <option value="low">Low</option>
                                     </select>
                                 </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Assigned Technician</label>
+                                    <select name="assigned_to" x-model="selectedOrder.assigned_to" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Unassigned</option>
+                                    @foreach(($allTechnicians ?? $technicians) as $technician)
+                                        <option value="{{ (string) $technician->id }}" :selected="selectedOrder.assigned_to == '{{ $technician->id }}'">
+                                            {{ $technician->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Choose Unassigned to remove the current technician from this work order.</p>
+                                </div>
                                 <div>
                                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">Service Type</label>
                                     <input type="text" name="service_type" x-model="selectedOrder.service_type" placeholder="e.g., Maintenance, Repair" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -1259,7 +1291,7 @@
                                 <select name="assigned_to" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">Choose a technician...</option>
                                     @foreach($technicians as $technician)
-                                        <option value="{{ $technician->id }}">{{ $technician->name }}</option>
+                                        <option value="{{ (string) $technician->id }}" :selected="selectedOrder.assigned_to == '{{ $technician->id }}'">{{ $technician->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
