@@ -450,7 +450,10 @@
                                                 'id' => $attachment->id,
                                                 'file_name' => $attachment->file_name,
                                                 'file_path' => $attachment->file_path,
-                                                'created_at' => optional($attachment->created_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
+                                                'file_url' => Storage::url($attachment->file_path),
+                                                'created_at' => optional($attachment->created_at)
+                                                    ->setTimezone('Asia/Manila')
+                                                    ->format('M d, Y h:i A'),
                                             ];
                                         })->values()->all()
                                         : [],
@@ -635,13 +638,15 @@
                             <div class="space-y-2">
                                 <template x-for="attachment in (selectedReport && selectedReport.attachments) ? selectedReport.attachments : []" :key="attachment.id">
                                     <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-                                        <div>
-                                            <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="attachment.file_name"></p>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400" x-text="attachment.created_at || ''"></p>
-                                        </div>
-                                                     <a class="text-blue-600 dark:text-blue-400 hover:underline text-sm"
-                                                         :href="attachment.file_url"
-                                           target="_blank">
+                                       <p class="text-sm font-medium text-gray-900 dark:text-white"
+                                        x-text="attachment.file_name"></p>
+
+                                        <p class="text-xs text-gray-500 dark:text-gray-400"
+                                        x-text="attachment.created_at"></p>
+
+                                        <a :href="attachment.file_url"
+                                        target="_blank"
+                                        class="text-blue-600 dark:text-blue-400 hover:underline text-sm">
                                             View
                                         </a>
                                     </div>

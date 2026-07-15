@@ -3745,30 +3745,38 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
     })->name('technicians.enable');
 
     Route::delete('/technicians/{user}', function (User $user) {
-        $userName = $user->name;
-        $userId = $user->id;
-        $oldValues = [
-            'name' => $user->name,
-            'email' => $user->email,
-            'department' => $user->department,
-            'skills' => $user->skills,
-            'availability' => $user->availability,
-            'is_active' => $user->is_active,
-        ];
-        
-        AuditLogHelper::log(
-            'DELETE',
-            'User',
-            $userId,
-            "{$userName} was deleted",
-            $oldValues,
-            [],
-            array_keys($oldValues)
-        );
-        
-        $user->delete();
-        return redirect()->route('tech-head.technicians')->with('status', 'Technician ' . $userName . ' has been permanently deleted');
-    })->name('technicians.delete');
+
+    $userName = $user->name;
+    $userId = $user->id;
+
+    $oldValues = [
+        'name' => $user->name,
+        'email' => $user->email,
+        'department' => $user->department,
+        'skills' => $user->skills,
+        'availability' => $user->availability,
+        'is_active' => $user->is_active,
+    ];
+
+    $user->update([
+        'is_active' => 0,
+    ]);
+
+    AuditLogHelper::log(
+        'DEACTIVATE',
+        'User',
+        $userId,
+        "{$userName} was deactivated",
+        $oldValues,
+        ['is_active' => 0],
+        ['is_active']
+    );
+
+    return redirect()
+        ->route('tech-head.technicians')
+        ->with('status', 'Technician ' . $userName . ' has been deactivated.');
+
+})->name('technicians.delete');
 
     Route::post('/technicians/{user}/availability', function (\Illuminate\Http\Request $request, User $user) {
         $data = $request->validate(['availability' => 'required|in:available,on_leave,unavailable']);
