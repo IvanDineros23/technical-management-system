@@ -182,7 +182,7 @@
                                         'id' => $attachment->id,
                                         'file_name' => $attachment->file_name,
                                         'file_path' => $attachment->file_path,
-                                        'file_url' => Storage::url($attachment->file_path),
+                                        'file_url' => url(Storage::url($attachment->file_path)),
                                         'created_at' => optional($attachment->created_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
                                     ];
                                 })->values()->all()
@@ -364,7 +364,7 @@
                                         'id' => $attachment->id,
                                         'file_name' => $attachment->file_name,
                                         'file_path' => $attachment->file_path,
-                                        'file_url' => Storage::url($attachment->file_path),
+                                        'file_url' => url(Storage::url($attachment->file_path)),
                                         'created_at' => optional($attachment->created_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A'),
                                     ];
                                 })->values()->all()
@@ -450,7 +450,7 @@
                                                 'id' => $attachment->id,
                                                 'file_name' => $attachment->file_name,
                                                 'file_path' => $attachment->file_path,
-                                                'file_url' => Storage::url($attachment->file_path),
+                                                'file_url' => url(Storage::url($attachment->file_path)),
                                                 'created_at' => optional($attachment->created_at)
                                                     ->setTimezone('Asia/Manila')
                                                     ->format('M d, Y h:i A'),
