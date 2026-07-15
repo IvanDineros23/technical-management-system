@@ -762,12 +762,17 @@
                                 ];
                             @endphp
                             <tr 
-                                @click="openDetails({{ json_encode($orderPayload) }})"
-                                class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                                    class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                             >
                                 <td class="py-3 text-center">
-                                    <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $order->job_order_number }}</p>
-                                </td>
+                                        <button
+                                            type="button"
+                                            @click="openDetails({{ json_encode($orderPayload) }})"
+                                            class="text-sm font-semibold text-blue-600 hover:underline dark:text-blue-400"
+                                        >
+                                            {{ $order->job_order_number }}
+                                        </button>
+                                    </td>
                                 <td class="py-3 text-center">
                                     <p class="text-sm text-gray-700 dark:text-gray-300">{{ $order->customer->name ?? 'N/A' }}</p>
                                 </td>
