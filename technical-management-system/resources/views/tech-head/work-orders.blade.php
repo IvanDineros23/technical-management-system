@@ -655,9 +655,9 @@
                         </div>
 
                         <div class="mt-4 flex flex-wrap gap-2" @click.stop>
-                        <button @click="openDetails({{ json_encode($orderPayload) }})" class="px-3 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold dark:bg-gray-100 dark:text-gray-900">View</button>
+                        <button @click='openDetails(@json($orderPayload))' class="px-3 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold dark:bg-gray-100 dark:text-gray-900">View</button>
                         @if($order->status !== 'completed')
-                            <button @click="openEdit({{ json_encode($editPayload) }})" class="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold">Edit</button>
+                            <button @click='openEdit(@json($editPayload))' class="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold">Edit</button>
                             <button @click="openAssign({{ $order->id }})" class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Assign</button>
                         @endif
                         <button @click="openStatus({{ $order->id }})" class="px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold">Status</button>
@@ -767,7 +767,7 @@
                                 <td class="py-3 text-center">
                                         <button
                                             type="button"
-                                            @click="openDetails({{ json_encode($orderPayload) }})"
+                                            @click='openDetails(@json($orderPayload))'
                                             class="text-sm font-semibold text-blue-600 hover:underline dark:text-blue-400"
                                         >
                                             {{ $order->job_order_number }}
@@ -843,54 +843,54 @@
                                             class="right-0 z-50 w-56 origin-top-right rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-xl overflow-hidden"
                                             :class="openActionMenuPlacement === 'up' ? 'absolute bottom-full mb-2' : 'absolute top-full mt-2'"
                                         >
-                                           <div class="p-2 space-y-1">
-                                                @if($order->certificates_count > 0)
-                                                    <a href="{{ route('tech-head.certificates', ['status' => 'generated']) }}" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
-                                                        </svg>
-                                                        Certificate
-                                                    </a>
-                                                @endif
-
-                                                <button @click="openTimeline({{ json_encode($orderPayload) }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                          <div class="p-2 space-y-1">
+                                            @if($order->certificates_count > 0)
+                                                <a href="{{ route('tech-head.certificates', ['status' => 'generated']) }}" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
                                                     </svg>
-                                                    Timeline
-                                                </button>
+                                                    Certificate
+                                                </a>
+                                            @endif
 
-                                                @if($order->status === 'for_accounting_approval' || $order->status === 'completed')
-                                                    <button @click="openApproval({{ json_encode($orderPayload) }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                        </svg>
-                                                        Approve
-                                                    </button>
-                                                @endif
+                                            <button @click='openTimeline(@json($orderPayload)); closeActionMenu()' class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                Timeline
+                                            </button>
 
-                                            @if($order->status !== 'completed')
-                                                <button @click="openEdit({{ json_encode($editPayload) }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                    </svg>
-                                                    Edit
-                                                </button>
-
-                                                <button @click="openAssign({{ json_encode($editPayload) }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                                                    </svg>
-                                                    Assign
-                                                </button>
-
-                                                <button @click="openStatus({{ $order->id }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20">
+                                            @if($order->status === 'for_accounting_approval' || $order->status === 'completed')
+                                                <button @click='openApproval(@json($orderPayload)); closeActionMenu()' class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                                     </svg>
-                                                    Status
+                                                    Approve
                                                 </button>
                                             @endif
+
+                                        @if($order->status !== 'completed')
+                                            <button @click='openEdit(@json($editPayload)); closeActionMenu()' class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                </svg>
+                                                Edit
+                                            </button>
+
+                                            <button @click='openAssign(@json($editPayload)); closeActionMenu()' class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                                </svg>
+                                                Assign
+                                            </button>
+
+                                            <button @click="openStatus({{ $order->id }}); closeActionMenu()" class="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                Status
+                                            </button>
+                                        @endif
                                         </div>
                                         </div>
                                     </div>
