@@ -1063,6 +1063,7 @@
                 </div>
             </div>
         </div>
+    </div>
 
         <!-- Create Job Order Modal -->
         <div 
