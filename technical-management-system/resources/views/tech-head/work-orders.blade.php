@@ -995,10 +995,10 @@
                                                 <p class="text-xs text-gray-500 dark:text-gray-400" x-text="attachment.created_at ? new Date(attachment.created_at).toLocaleString('en-US') : ''"></p>
                                             </div>
                                             <a class="text-blue-600 dark:text-blue-400 hover:underline text-sm"
-                                               :href="'{{ rtrim(Storage::url(''), '/') }}/' + attachment.file_path"
-                                               target="_blank">
-                                                View
-                                            </a>
+                                                :href="'{{ asset('storage') }}/' + attachment.file_path"
+                                                target="_blank">
+                                                    View
+                                                </a>
                                         </div>
                                     </template>
                                 </div>
