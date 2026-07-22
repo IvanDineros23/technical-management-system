@@ -1239,8 +1239,14 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
         $search = trim($request->string('search')->toString());
         $status = $request->string('status')->toString();
 
-        $baseQuery = \App\Models\Assignment::with(['jobOrder.customer', 'report'])
-            ->where('assigned_to', $currentUserId)
+       $baseQuery = \App\Models\Assignment::with(['jobOrder.customer', 'report'])
+            ->where(function ($query) use ($currentUserId) {
+                // Makikita nila kung sila ang primary OR kung nasa field team sila
+                $query->where('assigned_to', $currentUserId)
+                      ->orWhereHas('jobOrder.crewMembers', function ($crewQuery) use ($currentUserId) {
+                          $crewQuery->where('user_id', $currentUserId);
+                      });
+            })
             ->whereIn('status', ['assigned', 'in_progress', 'on_hold', 'completed', 'pending_review', 'rejected']);
 
         if ($search !== '') {
@@ -1480,20 +1486,23 @@ Route::middleware(['auth', 'verified', 'role:tech_personnel'])->prefix('technici
             'crewMembers.user',
             'crewMembers.addedBy'
         ])->findOrFail($id);
-        $assignment = \App\Models\Assignment::with('report')
+       $assignment = \App\Models\Assignment::with('report')
             ->where('job_order_id', $id)
-            ->where('assigned_to', auth()->id())
             ->whereIn('status', ['assigned', 'in_progress', 'on_hold', 'completed'])
             ->latest('id')
             ->first();
 
-        if (!$assignment) {
+        // I-check kung siya ang primary assignee OR kasama siya sa Field Team (crewMembers)
+        $isPrimaryAssignee = $assignment && $assignment->assigned_to === auth()->id();
+        $isCrewMember = $job->crewMembers()->where('user_id', auth()->id())->exists();
+
+        if (!$isPrimaryAssignee && !$isCrewMember) {
             return redirect()->route('technician.work-orders')
-                ->with('error', 'Please assign this work order to yourself first before opening full job details.');
+                ->with('error', 'You must be assigned to this work order or added to the field team to view its details.');
         }
         
-        // Automatically add assigned technician to crew if not already added
-        if ($assignment) {
+        // Automatically add primary assigned technician to crew if not already added
+        if ($isPrimaryAssignee) {
             $alreadyInCrew = $job->crewMembers()->where('user_id', auth()->id())->exists();
             if (!$alreadyInCrew) {
                 $crewMember = $job->crewMembers()->create([
