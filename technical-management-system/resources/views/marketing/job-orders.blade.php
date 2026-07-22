@@ -79,7 +79,7 @@
         Dashboard
     </a>
 
-    <a href="{{ route('marketing.create-job-order') }}"
+    <a href="{{ route('marketing.customer-request-forms') }}"
        class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -139,7 +139,7 @@
                 <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Job Orders</h2>
                 <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">View and manage all job orders</p>
             </div>
-            <a href="{{ route('marketing.create-job-order') }}"
+            <a href="{{ route('marketing.customer-request-forms') }}"
                class="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>

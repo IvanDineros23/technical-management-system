@@ -278,7 +278,7 @@
         Dashboard
     </a>
 
-    <a href="{{ route('marketing.create-job-order') }}"
+   <a href="{{ route('marketing.customer-request-forms') }}"
        class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -391,16 +391,16 @@
                             <button @click='openDetailsModal(@json($customer))' class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                 View Details
                             </button>
-                            <a href="{{ route('marketing.create-job-order', [
-                                'customer_name' => $customer->name,
-                                'email' => $customer->email,
-                                'phone' => $customer->phone,
-                                'service_address' => $customer->address,
-                                'city' => $customer->city,
-                                'province' => $customer->province ?? null
-                            ]) }}" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                Create JO
-                            </a>
+                            <a href="{{ route('marketing.customer-request-forms', [
+                                            'customer_name' => $customer->name,
+                                            'email' => $customer->email,
+                                            'phone' => $customer->phone,
+                                            'service_address' => $customer->address,
+                                            'city' => $customer->city,
+                                            'province' => $customer->province ?? null
+                                        ]) }}" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                            Create JO
+                                        </a>
                             <button @click='openEditModal(@json($customer))' class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                 Edit
                             </button>
@@ -458,7 +458,7 @@
                                         <button @click='openDetailsModal(@json($customer))' class="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                             View Details
                                         </button>
-                                        <a href="{{ route('marketing.create-job-order', [
+                                       <a href="{{ route('marketing.customer-request-forms', [
                                             'customer_name' => $customer->name,
                                             'email' => $customer->email,
                                             'phone' => $customer->phone,
@@ -1181,7 +1181,7 @@
                 <div class="bg-gray-50 dark:bg-gray-700/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row gap-3 justify-end">
                     <button type="button" @click="closeDetailsModal()" class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Close</button>
                     <button type="button" @click="openEditFromDetails()" class="w-full sm:w-auto px-4 py-2 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors">Update Details</button>
-                    <a :href="`{{ route('marketing.create-job-order') }}?customer_name=${encodeURIComponent(detailsCustomer.name||'')}&email=${encodeURIComponent(detailsCustomer.email||'')}&phone=${encodeURIComponent(detailsCustomer.phone||'')}&service_address=${encodeURIComponent(detailsCustomer.address||'')}&city=${encodeURIComponent(detailsCustomer.city||'')}`" class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center">Create JO</a>
+                    <a :href="`{{ route('marketing.customer-request-forms') }}?customer_name=${encodeURIComponent(detailsCustomer.name||'')}&email=${encodeURIComponent(detailsCustomer.email||'')}&phone=${encodeURIComponent(detailsCustomer.phone||'')}&service_address=${encodeURIComponent(detailsCustomer.address||'')}&city=${encodeURIComponent(detailsCustomer.city||'')}`" class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center">Create JO</a>
                 </div>
             </div>
         </div>
