@@ -48,7 +48,7 @@
         Dashboard
     </a>
 
-    <a href="{{ route('marketing.create-job-order') }}"
+    <a href="{{ route('marketing.customer-request-forms') }}"
        class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -201,7 +201,7 @@
             </div>
 
             <div class="p-4 space-y-2">
-                <a href="{{ route('marketing.create-job-order') }}" class="w-full flex items-center gap-3 p-3 bg-blue-600 dark:bg-blue-700 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-md shadow-blue-200 dark:shadow-blue-900/50">
+                <a href="{{ route('marketing.customer-request-forms') }}" class="w-full flex items-center gap-3 p-3 bg-blue-600 dark:bg-blue-700 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-md shadow-blue-200 dark:shadow-blue-900/50">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
