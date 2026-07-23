@@ -3388,12 +3388,13 @@ Route::middleware(['auth', 'verified', 'role:tech_head'])->prefix('tech-head')->
             'crewMembers.addedBy'
         ])->findOrFail($id);
         
-        $assignment = \App\Models\Assignment::with(['report.submittedBy', 'assignedTo'])
+       $assignment = \App\Models\Assignment::with(['report.submittedBy', 'assignedTo'])
             ->where('job_order_id', $id)
             ->latest('id')
             ->first();
 
-        if ($assignment && $assignment->assigned_to) {
+        // Safety check: Siguraduhing buhay at nag-e-exist pa yung mismong user (assignedTo) sa database
+        if ($assignment && $assignment->assigned_to && $assignment->assignedTo) {
             $isAssignedTechInCrew = $job->crewMembers()
                 ->where('user_id', $assignment->assigned_to)
                 ->exists();
